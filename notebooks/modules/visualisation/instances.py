@@ -3,7 +3,7 @@ from itertools import chain
 import time
 from typing import Callable, Generic, Optional, TypeVar
 
-from ..geometry.core import GeometricObject, LineSegment, Point
+from ..geometry.core import GeometricObject, LineSegment, Point, PointReference
 from ..data_structures import DoublyConnectedSimplePolygon, DoublyConnectedEdgeList
 from .drawing import DrawingMode, LineSegmentsMode, PointsMode, PolygonMode, DCELMode
 
@@ -210,8 +210,18 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
 
     @staticmethod
     def extract_points_from_raw_instance(instance: DoublyConnectedEdgeList) -> list[Point]:
-        return [vertex.point for vertex in instance.vertices()]
+        point_list: list[PointReference] = []
+        for vertex in instance.vertices():
+            neighbors: list[Point] = [vertex.point] #start with the point itself in the list
+            if vertex.edge.destination != vertex: #at least one neighbor
+                neighbors.append(vertex.edge.destination.point)
+                edge = vertex.edge.twin.next
+                while edge != vertex.edge: #iterate over all neighbors
+                    neighbors.append(edge.destination.point)
+                    edge = edge.twin.next
+            point_list.append(PointReference(neighbors, 0))
+        return point_list
 
     @property
     def default_number_of_random_points(self) -> int:
-        return 100
+        return 20

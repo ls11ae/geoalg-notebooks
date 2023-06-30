@@ -53,19 +53,19 @@ class DoublyConnectedEdgeList:
                         and search_edge.origin.point.orientation(search_edge.next.origin.point, search_edge.next.destination.point) == ORT.RIGHT)):
                     search_edge = search_edge.next.twin
                     if search_edge == vertex_1.edge.twin:
-                        raise Exception("Could not find a suitable edge")
+                        raise Exception(f"Could not find a suitable edge while inserting {edge}")
             
             #Find correct order around vertex_2
             search_edge2 = vertex_2.edge.twin
             if vertex_2.edge != vertex_2.edge.twin and vertex_2.edge.twin != vertex_2.edge.prev: # >1 adjacent vertices
-                while not ((vertex_2.point.orientation(search_edge2.origin.point, search_edge2.destination.point) == ORT.LEFT
-                        and (vertex_2.point.orientation(search_edge2.next.origin.point, search_edge2.next.destination.point) == ORT.LEFT
+                while not ((vertex_1.point.orientation(search_edge2.origin.point, search_edge2.destination.point) == ORT.LEFT
+                        and (vertex_1.point.orientation(search_edge2.next.origin.point, search_edge2.next.destination.point) == ORT.LEFT
                         or search_edge2.next.destination.point.orientation(search_edge2.origin.point, search_edge2.destination.point) == ORT.RIGHT))
-                        or (vertex_2.point.orientation(search_edge2.next.origin.point, search_edge2.next.destination.point) == ORT.LEFT
+                        or (vertex_1.point.orientation(search_edge2.next.origin.point, search_edge2.next.destination.point) == ORT.LEFT
                         and search_edge2.origin.point.orientation(search_edge2.next.origin.point, search_edge2.next.destination.point) == ORT.RIGHT)):
                     search_edge2 = search_edge2.next.twin
                     if search_edge2 == vertex_2.edge.twin:
-                        raise Exception("Could not find a suitable edge")
+                        raise Exception(f"Could not find a suitable edge while inserting {edge}")
                     
             half_edge_1._set_twin(half_edge_2)
 
@@ -77,7 +77,7 @@ class DoublyConnectedEdgeList:
             
             half_edge_1._set_next(old_s2_next)
             half_edge_2._set_next(old_s1_next)
-            return newVertex
+        return newVertex
 
     def clear(self):
         self._start_vertex: Optional[Vertex] = None

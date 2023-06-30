@@ -145,6 +145,8 @@ class PointReference(Point):    # TODO: Make this a generic type for points with
     def _y(self) -> float:
         return self.point.y
 
+    def __repr__(self) -> str:
+        return f"({self._x}, {self._y})+{self.container}"
 
 class LineSegment:
     def __init__(self, p: Point, q: Point):

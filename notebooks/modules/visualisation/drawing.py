@@ -292,8 +292,20 @@ class DCELMode(DrawingMode):
         self._highlight_radius = highlight_radius
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
-        drawer.main_canvas.clear()
-        drawer.main_canvas.draw_points(points, self._vertex_radius)
+        vertex_queue = drawer._get_drawing_mode_state(default = [])
+        vertex_queue.extend(points)
+        #drawer.main_canvas.clear()
+        point_queue: Iterable[PointReference] = points
+        drawer.main_canvas.draw_points(point_queue, self._vertex_radius)
+        for point in point_queue:
+            if not isinstance(point, PointReference):
+                continue
+            for i, neighbor in enumerate(point.container):
+                if i != point.position:
+                    pair = [point, neighbor]
+                    drawer.main_canvas.draw_path(pair)
+                    
+        #drawer._set_drawing_mode_state(vertex_queue)
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
         pass
