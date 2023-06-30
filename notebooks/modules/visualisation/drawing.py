@@ -286,6 +286,18 @@ class PolygonMode(PathMode):           # TODO: If possible, maybe use compositio
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
         super().animate(drawer, self._polygon_event_iterator(animation_events), animation_time_step)
 
+class DCELMode(DrawingMode):
+    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
+        self._vertex_radius = vertex_radius
+        self._highlight_radius = highlight_radius
+
+    def draw(self, drawer: Drawer, points: Iterable[Point]):
+        drawer.main_canvas.clear()
+        drawer.main_canvas.draw_points(points, self._vertex_radius)
+
+    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
+        pass
+
 class ChansHullMode(PolygonMode):
     @classmethod
     def from_polygon_mode(cls, polygon_mode: PolygonMode) -> ChansHullMode:
@@ -412,6 +424,10 @@ class LineSegmentsMode(FixedVertexNumberPathsMode):
     highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
         super().__init__(2, vertex_radius, highlight_radius)
 
+class SlabDecompositionMode(FixedVertexNumberPathsMode):
+    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS,
+    highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
+        super().__init__(2, vertex_radius, highlight_radius)
 
 class MonotonePartitioningMode(DrawingMode):    # TODO: If possible, this could maybe make use of composition too.
     def __init__(self, animate_sweep_line: bool, vertex_radius: int = DEFAULT_POINT_RADIUS,

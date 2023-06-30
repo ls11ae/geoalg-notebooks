@@ -4,8 +4,8 @@ import time
 from typing import Callable, Generic, Optional, TypeVar
 
 from ..geometry.core import GeometricObject, LineSegment, Point
-from ..data_structures import DoublyConnectedSimplePolygon
-from .drawing import DrawingMode, LineSegmentsMode, PointsMode, PolygonMode
+from ..data_structures import DoublyConnectedSimplePolygon, DoublyConnectedEdgeList
+from .drawing import DrawingMode, LineSegmentsMode, PointsMode, PolygonMode, DCELMode
 
 import numpy as np
 
@@ -187,3 +187,31 @@ class SimplePolygonInstance(InstanceHandle[DoublyConnectedSimplePolygon]):
                 continue
 
             return self.extract_points_from_raw_instance(polygon)
+
+class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
+    def __init__(self, drawing_mode: Optional[DrawingMode] = None):
+        if drawing_mode is None:
+            drawing_mode = DCELMode(vertex_radius = 3)
+        super().__init__(DoublyConnectedEdgeList(), drawing_mode)
+
+    def add_point(self, point: Point) -> bool:
+        try:
+            self._instance.add_vertex(point)
+        except Exception:
+            return False
+
+        return True
+
+    def clear(self):
+        self._instance.clear()
+
+    def size(self) -> int:
+        return len(self._instance)
+
+    @staticmethod
+    def extract_points_from_raw_instance(instance: DoublyConnectedEdgeList) -> list[Point]:
+        return [vertex.point for vertex in instance.vertices()]
+
+    @property
+    def default_number_of_random_points(self) -> int:
+        return 100
