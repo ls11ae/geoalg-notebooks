@@ -4,6 +4,7 @@ from itertools import chain
 from typing import Iterable, Iterator, Optional
 
 from ..geometry import LineSegment, Orientation, Point
+from .objects import Vertex, HalfEdge
 
 class DoublyConnectedSimplePolygon:
     def __init__(self, boundary_path: Iterable[Point] = []):
@@ -35,6 +36,22 @@ class DoublyConnectedSimplePolygon:
         self._is_reversed: bool = False
         self._has_diagonals: bool = False
         self._number_of_vertices: int = 0
+
+    def find_edge(self, point_from: Point, point_to: Point) -> HalfEdge:
+        vertex = self.find_vertex(point_from)
+        if vertex == None:
+            return None
+        for edge in vertex.outgoing_edges():
+            if edge.destination.point is point_to:
+                return edge
+        return None    
+                
+
+    def find_vertex(self, point: Point) -> Optional[Vertex]:
+        for vertex in self.vertices_acw():
+            if vertex.point is point:
+                return vertex
+        return None
 
     @property
     def topmost_vertex(self) -> Optional[Vertex]:
@@ -183,77 +200,3 @@ class DoublyConnectedSimplePolygon:
 
     def __len__(self) -> int:
         return self._number_of_vertices
-
-class Vertex:
-    def __init__(self, point: Point):
-        self._point = point
-        self._edge: HalfEdge = HalfEdge(self)
-
-    @property
-    def point(self) -> Point:
-        return self._point
-
-    @property
-    def x(self) -> float:
-        return self._point.x
-
-    @property
-    def y(self) -> float:
-        return self._point.y
-
-    @property
-    def edge(self) -> HalfEdge:
-        return self._edge
-
-    def __repr__(self) -> str:
-        return f"Vertex@{self._point}"
-
-class HalfEdge:
-    def __init__(self, origin: Vertex):
-        self._origin = origin
-        self._twin: HalfEdge = self
-        self._prev: HalfEdge = self
-        self._next: HalfEdge = self
-
-    @property
-    def origin(self) -> Vertex:
-        return self._origin
-
-    @property
-    def destination(self) -> Vertex:
-        return self._twin._origin
-
-    @property
-    def upper_and_lower(self) -> tuple[Vertex, Vertex]:
-        p, q = self._origin, self.destination
-        if p.y > q.y or (p.y == q.y and p.x < q.x):
-            return p, q
-        else:
-            return q, p
-
-    @property
-    def twin(self) -> HalfEdge:
-        return self._twin
-
-    @property
-    def prev(self) -> HalfEdge:
-        return self._prev
-
-    @property
-    def next(self) -> HalfEdge:
-        return self._next
-
-    def _set_twin(self, twin: HalfEdge):
-        self._twin = twin
-        twin._twin = self
-
-    def _set_prev(self, prev: HalfEdge):
-        self._prev = prev
-        prev._next = self
-
-    def _set_next(self, next: HalfEdge):
-        self._next = next
-        next._prev = self
-
-    def __repr__(self) -> str:
-        return f"Edge@{self._origin._point}->{self.destination._point}"

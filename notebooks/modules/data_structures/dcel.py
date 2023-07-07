@@ -5,130 +5,9 @@ from typing import Iterable, Iterator, Optional, Tuple
 import numpy as np
 
 from ..geometry import LineSegment, Orientation as ORT, Point
-
-class Vertex:
-    def __init__(self, point: Point):
-        self._point = point
-        self._edge: HalfEdge = HalfEdge(self)
-
-    def outgoing_edges(self) -> Iterable[HalfEdge]:
-        outgoing_edges = []
-        outgoing_edge = self.edge
-        if outgoing_edge.destination == self: #single vertex
-            return []
-        outgoing_edges.append(outgoing_edge) #at least one outgoing edge
-        outgoing_edge = outgoing_edge.twin.next
-        while outgoing_edge != self.edge:
-            outgoing_edges.append(outgoing_edge)
-            outgoing_edge = outgoing_edge.twin.next
-        return outgoing_edges
-
-    #outgoing and ingoing edges
-    def incident_edges(self) -> Iterable[HalfEdge]:
-        incident_edges = []
-        for out_edge in self.outgoing_edges():
-            incident_edges.append(out_edge)
-            incident_edges.append(out_edge.twin)
-        return incident_edges
-
-    @property
-    def point(self) -> Point:
-        return self._point
-
-    @property
-    def x(self) -> float:
-        return self._point.x
-
-    @property
-    def y(self) -> float:
-        return self._point.y
-
-    @property
-    def edge(self) -> HalfEdge:
-        return self._edge
-
-    def __repr__(self) -> str:
-        return f"Vertex@{self._point}"
-
-class HalfEdge:
-    def __init__(self, origin: Vertex):
-        self._origin = origin
-        self._twin: HalfEdge = self
-        self._prev: HalfEdge = self
-        self._next: HalfEdge = self
-        self._incident_face = None
-
-    def cycle(self) -> Iterable[HalfEdge]:
-        cycle = [self]
-        next_edge = self.next
-        while next_edge != self:
-            cycle.append(next_edge)
-            next_edge = next_edge.next
-        return cycle
-
-    @property
-    def origin(self) -> Vertex:
-        return self._origin
-
-    @property
-    def destination(self) -> Vertex:
-        return self._twin._origin
-
-    @property
-    def upper_and_lower(self) -> tuple[Vertex, Vertex]:
-        p, q = self._origin, self.destination
-        if p.y > q.y or (p.y == q.y and p.x < q.x):
-            return p, q
-        else:
-            return q, p
-
-    @property
-    def twin(self) -> HalfEdge:
-        return self._twin
-
-    @property
-    def prev(self) -> HalfEdge:
-        return self._prev
-
-    @property
-    def next(self) -> HalfEdge:
-        return self._next
-    
-    @property
-    def incident_face(self) -> Face:
-        return self._incident_face
-
-    def _set_twin(self, twin: HalfEdge):
-        self._twin = twin
-        twin._twin = self
-
-    def _set_prev(self, prev: HalfEdge):
-        self._prev = prev
-        prev._next = self
-
-    def _set_next(self, next: HalfEdge):
-        self._next = next
-        next._prev = self
-
-    def __repr__(self) -> str:
-        return f"Edge@{self._origin._point}->{self.destination._point}"
-
-class Face:
-    """ Simple face without inner components """
-    #TODO: add inner components
-    def __init__(self, outer_component: HalfEdge):
-        self._outer_component: HalfEdge = outer_component
-        self._is_outer = False
-    
-    @property
-    def outer_component(self):
-        return self._outer_component
-    
-    @property
-    def is_outer(self):
-        return self._is_outer
-    
-    # TODO maybe add additional methods (see ruler of the plane): outervertices, outerhalfedges, outerpoints, (innercomponents, innerhalfedges, innerpolygons,) polygon, polygonwithourholes, area, contains, boundingbox, tostring
+from .objects import Vertex, HalfEdge, Face
+# from .dcsp import DoublyConnectedSimplePolygon
+# from .triangulation import monotone_triangulation
 
 class DoublyConnectedEdgeList:
     """ Simple DCEL without inner components """
@@ -136,7 +15,7 @@ class DoublyConnectedEdgeList:
     # boundingbox, (init with boundingbox, init with linesegments and bounding box,)
     # addvertexinedge, addsegment, addline, 
     # IMPROVE: AddEdge, splitface, getsplittingface, getcontainingface, (addface,)
-    # PRIVATE: addvertexinedgechain, fixinnercomponents, iscycleclockwise, updatefaceincycle, onedge, assertwellformed
+    # PRIVATE: oncycle, addvertexinedgechain, fixinnercomponents, iscycleclockwise, updatefaceincycle, onedge, assertwellformed
     def __init__(self, points: Iterable[Point] = [], edges: Iterable[Tuple[int, int]] = []):
         self.clear()
         for point in points:
@@ -249,12 +128,22 @@ class DoublyConnectedEdgeList:
         else:
             return None
         
-    def find_containing_face(self, point: Point):
+    def find_containing_face(self, point: Point) -> Face:
         for face in self.inner_faces():
-            face_cycle = face.outer_component.cycle
-            #TODO: Need to triangulate and check each (convex) traingle
-            pass
-                
+            if face.contains(point):
+                return face
+        return self.outer_face
+
+    def find_splitting_face(self, vertex: Vertex, point: Point):
+        out_edges = vertex.outgoing_edges()
+        if out_edges == 0:
+            raise Exception("Vertex should be connected to face boundary")
+        for edge in out_edges:
+            if point.orientation(edge.origin, edge.destination) == ORT.LEFT \
+                and point.orientation(edge.prev.origin, edge.prev.destination) == ORT.LEFT:
+                return edge.incident_face
+                #  TODO: Double-check, maybe use edge-insertion-comparision
+        
 
     @property
     def start_vertex(self) -> Optional[Vertex]:
