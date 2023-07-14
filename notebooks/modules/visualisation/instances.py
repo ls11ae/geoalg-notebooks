@@ -206,7 +206,7 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
         self._instance.clear()
 
     def size(self) -> int:
-        return len(self._instance)
+        return self._instance.number_of_vertices
 
     @staticmethod
     def extract_points_from_raw_instance(instance: DoublyConnectedEdgeList) -> list[Point]:

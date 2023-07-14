@@ -95,6 +95,10 @@ class HalfEdge:
     def incident_face(self) -> Face:
         return self._incident_face
 
+    @incident_face.setter
+    def incident_face(self, incident_face):
+        self._incident_face = incident_face
+
     def _set_twin(self, twin: HalfEdge):
         self._twin = twin
         twin._twin = self
@@ -114,12 +118,16 @@ class Face:
     """ Simple face without inner components """
     #TODO: add inner components (and corresponding methods: innercomponents, innerhalfedges, innerpolygons, ...)
     def __init__(self, outer_component: HalfEdge):
-        self._outer_component: HalfEdge = outer_component
+        self._outer_component: HalfEdge = outer_component # TODO maybe check this for the outer face
         self._is_outer = False
     
     @property
     def outer_component(self):
         return self._outer_component
+    
+    @outer_component.setter
+    def outer_component(self, edge):
+        self._outer_component = edge
     
     @property
     def is_outer(self):
@@ -141,13 +149,13 @@ class Face:
             current_edge = current_edge.next
         return outer_edges
     
-    def contains(self, point: Point) -> bool:
+    def contains(self, search_point: Point) -> bool:
         # import here because of circular imports
         from .dcsp import DoublyConnectedSimplePolygon
         from .triangulation import monotone_triangulation
         if self.is_convex():
             for edge in self.outer_half_edges():
-                if point.orientation(edge.origin, edge.destination) != ORT.LEFT:
+                if search_point.orientation(edge.origin.point, edge.destination.point) != ORT.LEFT:
                     return False
             return True
         else:
@@ -164,15 +172,22 @@ class Face:
                     first = None
                     inside = True
                     for edge in added_edge.cycle():
-                        if point.orientation(edge.origin, edge.destination) != ORT.LEFT:
+                        if search_point.orientation(edge.origin.point, edge.destination.point) != ORT.LEFT:
                             inside = False
-                            continue
+                            break
+                    if inside:
+                        return True
+                    inside = True
+                    for edge in added_edge.twin.cycle():
+                        if search_point.orientation(edge.origin.point, edge.destination.point) != ORT.LEFT:
+                            inside = False
+                            break
                     if inside:
                         return True
             return False
 
     def is_convex(self) -> bool:
-        if len(self.outer_vertices) < 3:
+        if len(self.outer_vertices()) < 3:
             raise Exception("Convexitivity is illdefined for polygons of 2 or less vertices.")
         for edge in self.outer_half_edges():
             if edge.next.destination.point.orientation(edge.origin.point, edge.destination.point) == ORT.RIGHT:
