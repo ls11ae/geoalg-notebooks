@@ -12,9 +12,8 @@ class DoublyConnectedEdgeList:
     """ Edge order: Inner = ACW, Outer = CW """
     # TODO: Add additional methods (see ruler of the plane):
     # boundingbox, (init with boundingbox, init with linesegments and bounding box,)
-    # init empty, addvertexinedge, addsegment, addline, 
-    # IMPROVE: addedge
-    # PRIVATE: addvertexinedgechain, fixinnercomponents, onedge, assertwellformed
+    # addsegment, addline, # IMPROVE: addedge
+    # PRIVATE: (addvertexinedgechain -> inside of add_edge), fixinnercomponents, assertwellformed
     def __init__(self, points: Iterable[Point] = [], edges: Iterable[Tuple[int, int]] = []):
         self.clear()
         for point in points:
@@ -22,15 +21,21 @@ class DoublyConnectedEdgeList:
         for edge in edges:
             self.add_edge(edge)
 
-
     def add_vertex(self, point: Point) -> Vertex:
-        #TODO: check on edge
+        # Check for correct insertion
         if point in [vertex.point for vertex in self._vertices]:
             return None
-        newVertex: Vertex = Vertex(point)
-        newVertex.edge.incident_face = self.find_containing_face(point)
-        self._vertices.append(newVertex)
-        self._edges.append(newVertex.edge)
+        on_edge = self._on_edge(point)
+        if on_edge[0]:
+            self.add_vertex_in_edge(on_edge[1], point)
+        else:
+            # Create vertex
+            newVertex: Vertex = Vertex(point)
+            self._vertices.append(newVertex)
+            self._edges.append(newVertex.edge)
+            newVertex.edge.incident_face = self.find_containing_face(point)
+
+        # First Vertex inserted is the start vertex
         if len(self._vertices) > 0:
             self._start_vertex = self._vertices[0]
         return newVertex
@@ -140,6 +145,40 @@ class DoublyConnectedEdgeList:
         else:
             return None
         
+    def add_vertex_in_edge(self, edge: HalfEdge, point: Point) -> Vertex:
+        # Checks for correct insertion
+        if not edge in self.edges():
+            raise Exception(f"Edge {edge} should already be part of the DCEL to add point {point} in it.")
+        if not edge.origin.point != edge.destination.point and point.orientation(edge.origin.point, edge.destination.point) == ORT.BETWEEN:
+            raise Exception(f"Point {point} should lie on the edge {edge}")
+        if edge.origin.point == point or edge.destination.point == point: # vertex is one of the endpoints of the edge.
+            return # vertex does not need to be added
+        
+        # Create vertex
+        newVertex = Vertex(point)
+        self._vertices.append(newVertex)
+        self._edges.append(newVertex.edge)
+        newHalfEdge = HalfEdge(newVertex)
+        self._edges.append(newHalfEdge)
+
+        old_next = edge.next
+        old_twin_next = edge.twin.next
+
+        # Fix twin and next pointers
+        newVertex.edge._set_twin(edge.twin)
+        newHalfEdge._set_twin(edge)
+
+        edge._set_next(newVertex.edge)
+        newVertex.edge._set_next(old_next)
+        newVertex.edge.twin._set_next(newHalfEdge)
+        newHalfEdge._set_next(old_twin_next)
+
+        # Set faces
+        newVertex.edge.incident_face = edge.incident_face
+        newHalfEdge.incident_face = newVertex.edge.twin.incident_face
+
+        return newVertex
+        
     def find_containing_face(self, point: Point) -> Face:
         for face in self.inner_faces():
             if face.contains(point):
@@ -199,6 +238,16 @@ class DoublyConnectedEdgeList:
         for edge in start_edge.cycle():
             a += (edge.origin.point.y + edge.destination.point.y) * (edge.origin.point.x - edge.destination.point.x)
         return a < -epsilon
+
+    def _on_edge(self, point: Point) -> Tuple[bool, HalfEdge]:
+        found_edges = list(filter(lambda edge: edge.origin.point != edge.destination.point and point.orientation(edge.origin.point, edge.destination.point) == ORT.BETWEEN, self.edges()))
+        num_of_found_edges = len(found_edges)
+        if num_of_found_edges < 0 or num_of_found_edges % 2 == 1:
+            raise Exception(f"Point {point} lies on a non-possible amount of edges. Something is wrong in the structure of the DCEL.")
+        elif num_of_found_edges == 0:
+            return (False, None)
+        else: # num_of_found_edges is even and >=2, if greater than 2 than it is on a vertex.
+            return (True, found_edges[0])
 
     @property
     def start_vertex(self) -> Optional[Vertex]:
