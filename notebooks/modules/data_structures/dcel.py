@@ -24,9 +24,12 @@ class DoublyConnectedEdgeList:
         self._assert_well_formed()
 
     def add_vertex(self, point: Point) -> Vertex:
+        """ Add a new vertex to the DCEL """
         # Check for correct insertion
-        if point in [vertex.point for vertex in self._vertices]:
-            return None
+        for vertex in self._vertices:
+            if point is vertex.point:
+                return vertex
+            
         on_edge, edge = self._on_edge(point)
         if on_edge:
             self.add_vertex_in_edge(edge, point)
@@ -141,6 +144,7 @@ class DoublyConnectedEdgeList:
         self._fix_inner_components(half_edge_0, half_edge_1, face_0, face_1)
 
     def clear(self):
+        """ Clears the DCEL """
         self._start_vertex: Optional[Vertex] = None
         self._vertices: list[Vertex] = []
         self._edges: list[HalfEdge] = []
@@ -150,6 +154,7 @@ class DoublyConnectedEdgeList:
         self._faces.append(self._outer_face)
 
     def find_vertex(self, point: Point) -> Vertex:
+        """ Gives a vertex for a point if it is in the DCEL, None otherwise. """
         vertices = list(filter(lambda vertex: vertex.point == point, self._vertices))
         if len(vertices) > 1:
             raise AssertionError("More than one vertex at the given position")
@@ -159,6 +164,7 @@ class DoublyConnectedEdgeList:
             return None
         
     def add_vertex_in_edge(self, edge: HalfEdge, point: Point) -> Vertex:
+        """ Adds a vertex on an existing edge by splitting it. """
         # Checks for correct insertion
         if not edge in self.edges():
             raise Exception(f"Edge {edge} should already be part of the DCEL to add point {point} in it.")
@@ -193,12 +199,14 @@ class DoublyConnectedEdgeList:
         return newVertex
         
     def find_containing_face(self, point: Point) -> Face:
+        """ Returns the faces which contains the given point. """
         for face in self.inner_faces():
             if face.contains(point):
                 return face
         return self.outer_face
 
     def find_splitting_face(self, vertex: Vertex, point: Point):
+        """ Return the face that is split by a line segment between the given vertex and point and is closest to the vertex. """
         out_edges = vertex.outgoing_edges()
         if len(out_edges) == 0:
             raise Exception("Vertex should be connected to face boundary")

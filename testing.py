@@ -1,18 +1,19 @@
-from notebooks.modules.data_structures import DoublyConnectedEdgeList
-from notebooks.modules.geometry import Point
+from notebooks.modules.data_structures import DoublyConnectedEdgeList, DoublyConnectedSimplePolygon
+from notebooks.modules.geometry import Point, PointReference
+from notebooks.modules.data_structures import monotone_triangulation, recursive_triangulation
 
 def main():
-    c = 0.5 * 64
-    r = c
-    s = c - r
-    t = c + r
-    u = (t - s) / 32
-    u = 1
-    points = [Point(s + 20*u, t), Point(s + 26*u, t -  6*u), Point(s + 30*u, t -  8*u), Point(s + 28*u, t - 10*u)]
-    edges = [(1,2), (2,3), (2,4)]
+    """ Testing """
+
+    points = [Point(0,0), Point(2,0), Point(2,2), Point(0,2)]#, Point(4,2), Point(5,1), Point(6,4)]
+    edges = [(0,1), (1,2), (0,2), (3,0)]#, (4,5), (5,6), (6,0)]
+
     dcel = DoublyConnectedEdgeList(points, edges)
-    for vertex in dcel.vertices():
-        print(vertex.edge)
+    
+    for edge in dcel.edges():
+        print(edge)
+    print("------")
+
 
 if __name__ == "__main__":
     main()

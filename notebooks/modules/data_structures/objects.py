@@ -1,10 +1,10 @@
 from __future__ import annotations
 from typing import Iterable, Iterator, Optional, Tuple
-from functools import reduce
 
 from ..geometry import LineSegment, Orientation as ORT, Point
 
 class Vertex:
+    """ A vertex for the DCEL """
     def __init__(self, point: Point):
         self._point = point
         self._edge: HalfEdge = HalfEdge(self)
@@ -49,6 +49,7 @@ class Vertex:
         return f"Vertex@{self._point}"
 
 class HalfEdge:
+    """ A halfedge defined by an origin and twin, previous and next halfedges. """
     def __init__(self, origin: Vertex):
         self._origin = origin
         self._twin: HalfEdge = self
