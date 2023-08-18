@@ -8,12 +8,12 @@ from ..geometry import LineSegment, Orientation as ORT, Point, EPSILON
 from .objects import Vertex, HalfEdge, Face
 
 class DoublyConnectedEdgeList:
-    """ Simple DCEL without inner components """
-    """ Edge order: Inner = ACW, Outer = CW """
-    # TODO: Add additional methods (see ruler of the plane):
-    # boundingbox, (init with boundingbox, init with linesegments and bounding box,)
-    # addsegment, addline, # IMPROVE: addedge
-    # PRIVATE: (addvertexinedgechain -> inside of add_edge), fixinnercomponents
+    """ 
+    Simple DCEL without inner components 
+    Edge order: Inner = ACW, Outer = CW
+    """
+    # TODO: constructors for bounding-box (init with boundingbox, init with linesegments and bounding box) (see ruler of the plane):
+    # methods: addsegment, addline
     def __init__(self, points: Iterable[Point] = [], edges: Iterable[Tuple[int, int]] = []):
         self.clear()
         for point in points:
@@ -27,9 +27,9 @@ class DoublyConnectedEdgeList:
         # Check for correct insertion
         if point in [vertex.point for vertex in self._vertices]:
             return None
-        on_edge = self._on_edge(point)
-        if on_edge[0]:
-            self.add_vertex_in_edge(on_edge[1], point)
+        on_edge, edge = self._on_edge(point)
+        if on_edge:
+            self.add_vertex_in_edge(edge, point)
         else:
             # Create vertex
             newVertex: Vertex = Vertex(point)
@@ -43,6 +43,11 @@ class DoublyConnectedEdgeList:
         return newVertex
 
     def add_edge(self, edge: Tuple[int, int]) -> None:
+        """Adds a new edge to the DCEL. 
+        
+        The edge is given by the indicies of the vertices.
+        It is assumed, that the given edge can be inserted and does not cross other edges or vertices.
+        """
         if (edge[0] >= self.number_of_vertices or edge[0] < 0
             or edge[1] >= self.number_of_vertices or edge[1] < 0): # Impossible indicies
             return
@@ -70,9 +75,11 @@ class DoublyConnectedEdgeList:
             face_0 = self.find_splitting_face(vertex_0, vertex_1.point)
             face_1 = self.find_splitting_face(vertex_1, vertex_0.point)
 
-            # Check if new edge will create additional face TODO: Fill with logic once inner components are added
-            new_inner_face = True # Inner component with both vertices on the cycle exists ("face inside the face")
-            outer_component_split = True # Outer component (of the face) is split by the new edge
+            # Check if new edge will create additional face
+            # An Inner component with both vertices on the cycle exists
+            new_inner_face = len(list(filter(lambda e: self._on_cycle(e, vertex_0) and self._on_cycle(e, vertex_1), face_0.inner_components))) >= 1
+            # OR outer component (of the face) is split by the new edge
+            outer_component_split = (not face_0.is_outer) and self._on_cycle(face_0.outer_component, vertex_0) and self._on_cycle(face_0.outer_component, vertex_1)
             new_face = new_inner_face or outer_component_split
 
         elif num_out_edges_0 != 0:
@@ -82,9 +89,11 @@ class DoublyConnectedEdgeList:
             face_0 = self.find_containing_face(vertex_0.point)
             face_1 = self.find_splitting_face(vertex_1, vertex_0.point)
         else:
-            face_0 = self.find_containing_face(vertex_0)
-            face_1 = self.find_containing_face(vertex_1)
-            # TODO: When adding inner components: New inner component inside face: the new edge
+            face_0 = self.find_containing_face(vertex_0.point)
+            face_1 = self.find_containing_face(vertex_1.point)
+            
+            # new inner component
+            face_0.inner_components.append(half_edge_0)
         if face_0 != face_1:
             raise RuntimeError(f"Vertices {vertex_0} and {vertex_1} do not lie in the same face. Faces: {face_0} and {face_1}")
 
@@ -127,7 +136,9 @@ class DoublyConnectedEdgeList:
         else:
             face_1 = None
 
-        # Add fix for inner components here
+        # fix inner components: inner components has become part of outer components
+        # or inner components have merged
+        self._fix_inner_components(half_edge_0, half_edge_1, face_0, face_1)
 
     def clear(self):
         self._start_vertex: Optional[Vertex] = None
@@ -194,14 +205,14 @@ class DoublyConnectedEdgeList:
         for edge in out_edges:
             if DoublyConnectedEdgeList._point_between_edge_and_next(point, edge.twin):
                 return edge.twin.incident_face
+        raise Exception(f"Malformed DCEL: point {point} must split a face around vertex {vertex}")
         
     @staticmethod
     def _point_between_edge_and_next(point: Point, edge: HalfEdge) -> bool:
         edge_0, edge_1 = edge, edge.next
         edge_0_origin, edge_0_destination = edge_0.origin.point, edge_0.destination.point
         edge_1_origin, edge_1_destination = edge_1.origin.point, edge_1.destination.point
-        # TODO: MAKE ROBUST
-        # TODO: Maybe assert that point is not a vertex of the edges or on one of the edges.
+        
         if edge_0.twin is edge_1:
             return True
         return point.orientation(edge_0_origin, edge_0_destination) == ORT.LEFT and (
@@ -242,25 +253,54 @@ class DoublyConnectedEdgeList:
         for edge in start_edge.cycle():
             a += (edge.origin.point.y + edge.destination.point.y) * (edge.origin.point.x - edge.destination.point.x)
         return a < -epsilon
+    
+    def _fix_inner_components(self, edge_0: HalfEdge, edge_1: HalfEdge, old_face: Face, new_face: Face):
+        # remove all inner components that were affected by adding halfedges
+        old_face.inner_components = filter(
+            lambda e: e.incident_face == old_face and edge_0 not in e.cycle() and edge_1 not in e.cycle(), 
+            old_face.inner_components)
 
-    def _on_edge(self, point: Point) -> Tuple[bool, HalfEdge]:
+        # add one of the half edges if both not part of the outer component
+        if old_face.is_outer or not (edge_0 in old_face.outer_component.cycle() or edge_1 in old_face.outer_component.cycle()):
+            old_face.inner_components.append(edge_0 if edge_0.incident_face == old_face else edge_1)
+
+        # redistribute inner components that are now contained inside the new face
+        if new_face != None:
+            components_to_move = list(filter(
+                lambda e: new_face.contains(e.origin.point) and not (edge_0 in e.cycle() or edge_1 in e.cycle()),
+                old_face.inner_components))
+            for component in components_to_move:
+                #TODO: is it necessary to check intersection of component with edge_0? (see ruler of the plane)
+
+                # move components to new face
+                old_face.inner_components.remove(component)
+                new_face.inner_components.append(component)
+
+                self._update_face_in_cycle(component, new_face)
+
+
+    def _on_edge(self, point: Point):
         found_edges = list(filter(lambda edge: edge.origin.point != edge.destination.point and point.orientation(edge.origin.point, edge.destination.point) == ORT.BETWEEN, self.edges()))
         num_of_found_edges = len(found_edges)
         if num_of_found_edges < 0 or num_of_found_edges % 2 == 1:
             raise Exception(f"Point {point} lies on a non-possible amount of edges. Something is wrong in the structure of the DCEL.")
         elif num_of_found_edges == 0:
-            return (False, None)
+            return False, None
         else: # num_of_found_edges is even and >=2, if greater than 2 than it is on a vertex.
-            return (True, found_edges[0])
+            return True, found_edges[0]
 
     def _assert_well_formed(self, epsilon = EPSILON):
         # Check empty DCEL
         if self.number_of_vertices == 0:
-            if len(self.vertices()) != 0 or len(self.edges()) != 0 or len(self.faces()) != 0:
+            if len(self.vertices()) != 0 or len(self.edges()) != 0 or len(self.faces()) != 1:
                 raise Exception(f"Malformed DCEL: Should be empty.")
             return
 
         for edge in self.edges():
+            # Skip edges of single vertices
+            if edge == edge.twin:
+                continue
+
             # Check previous and next connections
             if edge.prev.next != edge:
                 raise Exception(f"Malformed DCEL: prev-next connection error in edge {edge}")
@@ -284,7 +324,8 @@ class DoublyConnectedEdgeList:
                 raise Exception(f"Malformed DCEL: Invalid twin point positions")
 
             # Check edge faces
-            if not edge.incident_face.is_outer and edge not in edge.incident_face.outer_half_edges(): #TODO add inner half edges
+            if edge not in edge.incident_face.outer_half_edges() \
+                and edge not in edge.incident_face.inner_half_edges():
                 raise Exception(f"Malformed DCEL: edge ({edge}) face mismatch with face components")
             
         for face in self.faces():
@@ -302,7 +343,10 @@ class DoublyConnectedEdgeList:
                     raise Exception(f"Malformed DCEL: Unexpected incident face of edge {edge}")
                 
             # Check cycle around inner components
-            # TODO: add inner component check
+            for edge in face.inner_components:
+                if edge.incident_face != face:
+                    raise Exception(f"Malformed DCEL: Unexpected incident face ({edge.incident_face}) \
+                                    of edge {edge} which is inner component of face {face}")
 
     @property
     def start_vertex(self) -> Optional[Vertex]:

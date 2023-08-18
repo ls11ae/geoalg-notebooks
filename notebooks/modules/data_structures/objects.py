@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Iterable, Iterator, Optional, Tuple
+from functools import reduce
 
 from ..geometry import LineSegment, Orientation as ORT, Point
 
@@ -119,14 +120,15 @@ class HalfEdge:
         return f"Edge@{self._origin._point}->{self.destination._point}"
     
 class Face:
-    """ Simple face without inner components """
-    #TODO: add inner components (and corresponding methods: innercomponents, innerhalfedges, innerpolygons, ...)
+    """ Simple face with inner components """
+    # TODO: maybe add additional methods (see ruler of the plane): polygon, polygonwithoutholes, innerpolygons, area, bounding-box
     def __init__(self, outer_component: HalfEdge):
-        self._outer_component: HalfEdge = outer_component # TODO maybe check this for the outer face
+        self._outer_component: HalfEdge = outer_component
         self._is_outer = False
+        self._inner_components: list[HalfEdge] = []
     
     @property
-    def outer_component(self):
+    def outer_component(self) -> HalfEdge:
         return self._outer_component
     
     @outer_component.setter
@@ -134,8 +136,16 @@ class Face:
         self._outer_component = edge
     
     @property
-    def is_outer(self):
+    def is_outer(self) -> bool:
         return self._is_outer
+    
+    @property
+    def inner_components(self) -> list[HalfEdge]:
+        return self._inner_components
+    
+    @inner_components.setter
+    def inner_components(self, inner_components: Iterable[HalfEdge]):
+        self._inner_components = list(inner_components)
     
     def outer_points(self) -> Iterable[Point]:
         return [edge.origin.point for edge in self.outer_half_edges()]
@@ -153,6 +163,12 @@ class Face:
             current_edge = current_edge.next
         return outer_edges
     
+    def inner_half_edges(self) -> Iterable[HalfEdge]:
+        inner_half_edges = []
+        for component in self.inner_components:
+            inner_half_edges.extend(component.cycle())
+        return inner_half_edges
+
     def contains(self, search_point: Point) -> bool:
         # import here because of circular imports
         from .dcsp import DoublyConnectedSimplePolygon
@@ -197,5 +213,9 @@ class Face:
             if edge.next.destination.point.orientation(edge.origin.point, edge.destination.point) == ORT.RIGHT:
                 return False
         return True
-
-    # TODO maybe add additional methods (see ruler of the plane): polygon, polygonwithourholes, area, contains, boundingbox, tostring
+    
+    def __repr__(self) -> str:
+        if self.is_outer:
+            return f"Outer face with inner components {self.inner_components}"
+        else:
+            return f"Face with outer cycle {self.outer_component.cycle()} and inner components {self.inner_components}"
