@@ -219,12 +219,14 @@ class DoublyConnectedEdgeList:
         new_face = Face(inner_edge)
         self._faces.append(new_face)
 
-        if DoublyConnectedEdgeList._is_cycle_clockwise(inner_edge.twin):
+        if not DoublyConnectedEdgeList._is_cycle_clockwise(inner_edge.twin):
             # Two new inner cycles formed from old one
             face.outer_component = inner_edge.twin
         
         DoublyConnectedEdgeList._update_face_in_cycle(inner_edge, new_face)
-        DoublyConnectedEdgeList._update_face_in_cycle(inner_edge.twin, face)
+        
+        #TODO: is this update (sometimes) necessary??
+        # DoublyConnectedEdgeList._update_face_in_cycle(inner_edge.twin, face)
 
         return new_face
 
@@ -286,6 +288,10 @@ class DoublyConnectedEdgeList:
                 raise Exception(f"Malformed DCEL: edge ({edge}) face mismatch with face components")
             
         for face in self.faces():
+            # Check is outer face
+            if face.is_outer and face.outer_component != None:
+                raise Exception(f"Malformed DCEL: outer face has an outer component")
+
             # Check for single outer face
             if face.is_outer and face != self.outer_face:
                 raise Exception(f"Malformed DCEL: More than one outer face: {face}")
