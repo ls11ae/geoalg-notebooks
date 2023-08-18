@@ -94,6 +94,10 @@ class HalfEdge:
     @property
     def incident_face(self) -> Face:
         return self._incident_face
+    
+    @property
+    def length(self) -> float:
+        return self.origin.point.distance(self.destination.point)
 
     @incident_face.setter
     def incident_face(self, incident_face):

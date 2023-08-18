@@ -13,13 +13,15 @@ class DoublyConnectedEdgeList:
     # TODO: Add additional methods (see ruler of the plane):
     # boundingbox, (init with boundingbox, init with linesegments and bounding box,)
     # addsegment, addline, # IMPROVE: addedge
-    # PRIVATE: (addvertexinedgechain -> inside of add_edge), fixinnercomponents, assertwellformed
+    # PRIVATE: (addvertexinedgechain -> inside of add_edge), fixinnercomponents
     def __init__(self, points: Iterable[Point] = [], edges: Iterable[Tuple[int, int]] = []):
         self.clear()
         for point in points:
             self.add_vertex(point)
         for edge in edges:
             self.add_edge(edge)
+
+        self._assert_well_formed()
 
     def add_vertex(self, point: Point) -> Vertex:
         # Check for correct insertion
@@ -248,6 +250,53 @@ class DoublyConnectedEdgeList:
             return (False, None)
         else: # num_of_found_edges is even and >=2, if greater than 2 than it is on a vertex.
             return (True, found_edges[0])
+
+    def _assert_well_formed(self, epsilon = EPSILON):
+        # Check empty DCEL
+        if self.number_of_vertices == 0:
+            if len(self.vertices()) != 0 or len(self.edges()) != 0 or len(self.faces()) != 0:
+                raise Exception(f"Malformed DCEL: Should be empty.")
+            return
+
+        for edge in self.edges():
+            # Check previous and next connections
+            if edge.prev.next != edge:
+                raise Exception(f"Malformed DCEL: prev-next connection error in edge {edge}")
+            if edge.next.prev != edge:
+                raise Exception(f"Malformed DCEL: next-prev connection error in edge {edge}")
+    
+            # Check point position of adjacent edges
+            if edge.prev.destination.point != edge.origin.point:
+                raise Exception(f"Malformed DCEL: prev.destination-origin error in edge {edge}")
+            if edge.next.origin.point != edge.destination.point:
+                raise Exception(f"Malformed DCEL: next.origin-destination error in edge {edge}")
+            
+            # Check zero-length edges
+            if edge.length <= epsilon:
+                raise Exception(f"Malformed DCEL: edge of length zero: {edge}")
+
+            # Check twin references
+            if edge.twin.twin != edge:
+                raise Exception(f"Malformed DCEL: invalid twin refernce in edge {edge}")
+            if edge.origin.point != edge.twin.destination.point or edge.destination.point != edge.twin.origin.point:
+                raise Exception(f"Malformed DCEL: Invalid twin point positions")
+
+            # Check edge faces
+            if not edge.incident_face.is_outer and edge not in edge.incident_face.outer_half_edges(): #TODO add inner half edges
+                raise Exception(f"Malformed DCEL: edge ({edge}) face mismatch with face components")
+            
+        for face in self.faces():
+            # Check for single outer face
+            if face.is_outer and face != self.outer_face:
+                raise Exception(f"Malformed DCEL: More than one outer face: {face}")
+            
+            # Check cycle around outer component of face
+            for edge in face.outer_half_edges():
+                if edge.incident_face != face:
+                    raise Exception(f"Malformed DCEL: Unexpected incident face of edge {edge}")
+                
+            # Check cycle around inner components
+            # TODO: add inner component check
 
     @property
     def start_vertex(self) -> Optional[Vertex]:
