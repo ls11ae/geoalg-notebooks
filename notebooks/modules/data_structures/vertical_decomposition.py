@@ -13,6 +13,11 @@ class PointLocation:
         initial_face = self._vertical_decomposition.trapezoids[0]
         self._search_structure = VDSearchStructure(initial_face)
 
+    def insert(self, line_segment: LineSegment) -> None:
+        left_point_face = self._search_structure._root.search(line_segment.left)
+        self._vertical_decomposition.update(line_segment, left_point_face)
+
+
     # @classmethod
     # def build_vertical_decomposition(cls, segments: set[LineSegment]) -> VerticalDecomposition:
     #    # randomized incremental construction
@@ -38,6 +43,27 @@ class VerticalDecomposition:
     @property
     def trapezoids(self):
         return self._trapezoids
+    
+    def update(self, line_segment: LineSegment, left_point_face: VDFace) -> None:
+        # Find all k intersected trapezoids (via neighbors) in O(k) time
+        intersected_trapezoids = []
+        intersected_face = left_point_face
+        left, right = line_segment.left, line_segment.right
+        while not intersected_face.contains(line_segment.right): 
+            # Easier: rightp above/below line_segment
+            intersection_y = line_segment.left.y + (intersected_face.right_point.x-left.x) / (right.x-left.x) * (right.y-left.y)
+            if intersection_y > intersected_face.right_point.y:
+                intersected_face = intersected_face.upper_right_neighbor
+            else:
+                intersected_face = intersected_face.lower_right_neighbor
+            intersected_trapezoids.append(intersected_face)
+            
+        # update VD (also in O(k) time): new faces, neighbors 
+
+        # Split first and last trapezoid into three trapezoids
+
+        # Shorten vertical extensions abut on the LS. => Merge trapezoids along the line-segment.
+
 
 
 class VDNode(ABC):
@@ -146,7 +172,28 @@ class VDFace:  # the trapezoid
     @property
     def right_point(self):
         return self.right_point
-
+    
+    @property
+    def upper_right_neighbor(self):
+        return self._neighbors[0]
+    
+    @property
+    def upper_left_neighbor(self):
+        return self._neighbors[1]
+    
+    @property
+    def lower_left_neighbor(self):
+        return self._neighbors[2]
+    
+    @property
+    def lower_right_neighbor(self):
+        return self._neighbors[3]
+    
+    def contains(self, point: Point) -> bool:
+        return self.left_point.x < point.x < self._right_point.x \
+                and point.orientation(self._top_line_segment.left, self._top_line_segment.right) == ORT.RIGHT \
+                and point.orientation(self._bottom_line_segment.left, self._bottom_line_segment.right) == ORT.LEFT
+            
 
 class VDLineSegment(LineSegment):
     def __init__(self, p: Point, q: Point):
