@@ -168,6 +168,14 @@ class LineSegment:
     @property
     def lower(self) -> Point:
         return self._lower
+    
+    @property
+    def left(self) -> Point:
+        return self._upper if self._upper.x < self._lower.x or (self._upper.x == self._lower.x and self._upper.y > self._lower.y) else self._lower
+
+    @property
+    def right(self) -> Point:
+        return self._upper if self._upper.x > self._lower.x or (self._upper.x == self._lower.x and self._upper.y < self._lower.y) else self._lower
 
     ## Operation(s)
 
