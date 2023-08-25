@@ -1,24 +1,20 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-import copy
-from itertools import chain
-from typing import Any, Iterable, Iterator, Optional
-import numpy as np
+from typing import Optional
 
 from ..geometry import LineSegment, Point, Orientation as ORT, Rectangle
 from .objects import Face
-from .binary_tree import BinaryTree
 from .dcel import DoublyConnectedEdgeList
 
 
 class PointLocation:
     def __init__(self, bounding_box: Rectangle, segments: set[LineSegment] = []) -> None:
         self._vertical_decomposition = VerticalDecomposition(bounding_box)
-        initial_face = self._vertical_decomposition._trapezoids[0]
+        initial_face = self._vertical_decomposition.trapezoids[0]
         self._search_structure = VDSearchStructure(initial_face)
 
-    #@classmethod
-    #def build_vertical_decomposition(cls, segments: set[LineSegment]) -> VerticalDecomposition:
+    # @classmethod
+    # def build_vertical_decomposition(cls, segments: set[LineSegment]) -> VerticalDecomposition:
     #    # randomized incremental construction
     #    pass
 
@@ -26,7 +22,7 @@ class PointLocation:
 class VerticalDecomposition:
     def __init__(self, bounding_box: Rectangle) -> None:
         self._bounding_box = bounding_box
-        self._trapezoids: list(VDFace) = []
+        self._trapezoids: list[VDFace] = []
         # bounding box points
         upper_left = Point(bounding_box.left, bounding_box.upper)
         upper_right = Point(bounding_box.right, bounding_box.upper)
@@ -38,6 +34,10 @@ class VerticalDecomposition:
         bottom._above_dcel_face = dcel.outer_face
         initial_trapezoid = VDFace(top, bottom, upper_left, upper_right)
         self._trapezoids.append(initial_trapezoid)
+
+    @property
+    def trapezoids(self):
+        return self._trapezoids
 
 
 class VDNode(ABC):
@@ -110,26 +110,42 @@ class VDSearchStructure:
 
     def search(self, point: Point) -> Face:
         vd_face = self._root.search(point)
-        dcel_face = vd_face._bottom_line_segment.above_face
+        dcel_face = vd_face.bottom_line_segment.above_face
         return dcel_face
 
 
 class VDFace:  # the trapezoid
-    def __init__(self, top_ls: VDLineSegment, bottom_ls: VDLineSegment, leftp: Point, rightp: Point) -> None:
+    def __init__(self, top_ls: VDLineSegment, bottom_ls: VDLineSegment, left_point: Point, right_point: Point) -> None:
         self._top_line_segment: VDLineSegment = top_ls
         self._bottom_line_segment: VDLineSegment = bottom_ls
-        self._left_point: Point = leftp
-        self._right_point: Point = rightp
+        self._left_point: Point = left_point
+        self._right_point: Point = right_point
         self._search_leaf = None
+        self._neighbors = [None, None, None, None]  # Up to four neighbors for each face
 
     @property
     def search_leaf(self):
         return self._search_leaf
-    
+
     @search_leaf.setter
     def search_leaf(self, search_leaf):
         self._search_leaf = search_leaf
 
+    @property
+    def bottom_line_segment(self):
+        return self._bottom_line_segment
+
+    @property
+    def top_line_segment(self):
+        return self._top_line_segment
+
+    @property
+    def left_point(self):
+        return self._left_point
+
+    @property
+    def right_point(self):
+        return self.right_point
 
 
 class VDLineSegment(LineSegment):
