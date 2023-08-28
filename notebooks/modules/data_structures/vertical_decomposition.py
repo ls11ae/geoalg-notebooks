@@ -44,9 +44,9 @@ class VerticalDecomposition:
     def trapezoids(self):
         return self._trapezoids
     
-    def update(self, line_segment: LineSegment, left_point_face: VDFace) -> None:
-        # Find all k intersected trapezoids (via neighbors) in O(k) time
-        intersected_trapezoids = []
+    def update(self, line_segment: LineSegment, left_point_face: VDFace) -> list[VDFace]: # Maybe return intersected and created trapezoids
+        # Find all other k intersected trapezoids (via neighbors) in O(k) time
+        intersected_trapezoids: list[VDFace] = []
         intersected_face = left_point_face
         left, right = line_segment.left, line_segment.right
         while not intersected_face.contains(line_segment.right): 
@@ -58,13 +58,51 @@ class VerticalDecomposition:
                 intersected_face = intersected_face.lower_right_neighbor
             intersected_trapezoids.append(intersected_face)
             
+        if intersected_trapezoids == []:  # TODO: edge case: both points lie in the same trapezoid. replace it by four new trapezoids
+            pass
+
         # update VD (also in O(k) time): new faces, neighbors 
 
-        # Split first and last trapezoid into three trapezoids
+        # Split first and last trapezoid into three trapezoids TODO: Use neighbor properties
+        # left endpoint:
+        above_face_l = VDFace(left_point_face.top_line_segment, line_segment, line_segment.left, left_point_face.right_point)
+        below_face_l = VDFace(line_segment, left_point_face.bottom_line_segment, line_segment.left, left_point_face.right_point)
+        above_face_l._neighbors = [left_point_face.upper_right_neighbor, left_point_face, None, left_point_face.lower_right_neighbor]
+        below_face_l._neighbors = [left_point_face.upper_right_neighbor, None, left_point_face, left_point_face.lower_right_neighbor]
+        left_point_face.right_point = line_segment.left
+        left_point_face._neighbors = [above_face_l, left_point_face.upper_left_neighbor, left_point_face.lower_left_neighbor, below_face_l]
+
+        # right endpoint
+        right_point_face = intersected_trapezoids.pop()
+        above_face_r = VDFace(right_point_face.top_line_segment, line_segment, right_point_face.left_point, line_segment.right)
+        below_face_r = VDFace(line_segment, right_point_face.bottom_line_segment, right_point_face.left_point, line_segment.right)
+        above_face_r._neighbors = [right_point_face, right_point_face.upper_left_neighbor, right_point_face.lower_left_neighbor, None]
+        below_face_r._neighbors = [None, right_point_face.upper_left_neighbor, right_point_face.lower_left_neighbor, right_point_face]
+        right_point_face._left_point = line_segment.right
+        right_point_face._neighbors = [right_point_face.upper_right_neighbor, above_face_r, below_face_r, right_point_face.lower_right_neighbor]
 
         # Shorten vertical extensions abut on the LS. => Merge trapezoids along the line-segment.
+        # TODO: Update the neighbors and merge with last face
+        top_left_trapezoid = above_face_l
+        bottom_left_trapezoid = below_face_l
+        for trapezoid in intersected_trapezoids:
+            if trapezoid.left_point.orientation(line_segment.left, line_segment.right) == ORT.LEFT:
+                # Merge below LS
+                bottom_left_trapezoid.right_point = trapezoid.right_point
 
+                trapezoid.bottom_line_segment = line_segment
+                top_left_trapezoid = trapezoid
+            elif trapezoid.left_point.orientation(line_segment.left, line_segment.right) == ORT.RIGHT:
+                # Merge above LS
+                top_left_trapezoid.right_point = trapezoid.right_point
 
+                trapezoid.top_line_segment = line_segment
+                bottom_left_trapezoid = trapezoid
+            else:
+                raise RuntimeError(f"Point {trapezoid.left_point} must not lie on line induced by the line segment {line_segment}")
+            
+        return intersected_trapezoids
+            
 
 class VDNode(ABC):
     def __init__(self) -> None:
@@ -174,20 +212,44 @@ class VDFace:  # the trapezoid
         return self.right_point
     
     @property
+    def neighbors(self):
+        return self._neighbors
+    
+    @property
     def upper_right_neighbor(self):
         return self._neighbors[0]
     
+    @upper_right_neighbor.setter
+    def upper_right_neighbor(self, new_neighbor: VDFace):
+        self._neighbors[0] = new_neighbor
+        new_neighbor._neighbors[1] = self
+
     @property
     def upper_left_neighbor(self):
         return self._neighbors[1]
+    
+    @upper_left_neighbor.setter
+    def upper_left_neighbor(self, new_neighbor: VDFace):
+        self._neighbors[1] = new_neighbor
+        new_neighbor._neighbors[0] = self
     
     @property
     def lower_left_neighbor(self):
         return self._neighbors[2]
     
+    @lower_left_neighbor.setter
+    def lower_left_neighbor(self, new_neighbor: VDFace):
+        self._neighbors[2] = new_neighbor
+        new_neighbor._neighbors[3] = self
+    
     @property
     def lower_right_neighbor(self):
         return self._neighbors[3]
+    
+    @lower_right_neighbor.setter
+    def lower_right_neighbor(self, new_neighbor: VDFace):
+        self._neighbors[3] = new_neighbor
+        new_neighbor._neighbors[2] = self
     
     def contains(self, point: Point) -> bool:
         return self.left_point.x < point.x < self._right_point.x \
