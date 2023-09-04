@@ -8,8 +8,16 @@ from .dcel import DoublyConnectedEdgeList
 
 
 class PointLocation:
-    def __init__(self, bounding_box: Rectangle, segments: set[LineSegment] = []) -> None:
+    def __init__(self, bounding_box: Rectangle = Rectangle(Point(0, 0), Point(400, 400)), segments: set[LineSegment] = []) -> None:
+        self._bounding_box = bounding_box
         self._vertical_decomposition = VerticalDecomposition(bounding_box)
+        initial_face = self._vertical_decomposition.trapezoids[0]
+        self._search_structure = VDSearchStructure(initial_face)
+        for segment in segments:
+            self.insert(segment)
+
+    def clear(self):
+        self._vertical_decomposition = VerticalDecomposition(self._bounding_box)
         initial_face = self._vertical_decomposition.trapezoids[0]
         self._search_structure = VDSearchStructure(initial_face)
 
@@ -17,9 +25,10 @@ class PointLocation:
         left_point_face = self._search_structure._root.search(line_segment.left)
 
         vd_line_segment = VDLineSegment.from_line_segment(line_segment)  # TODO: preprocessing of the DCEL
+        self._vertical_decomposition.line_segments.append(vd_line_segment)
         unvalid_trapezoids, new_trapezoids = self._vertical_decomposition.update(vd_line_segment, left_point_face)
         unvalid_leafs = [trapezoid.search_leaf for trapezoid in unvalid_trapezoids]
-        new_leafs = [VDLeaf(trapezoid) for trapezoid in new_trapezoids]
+        new_leafs = [VDLeaf(trapezoid) for trapezoid in new_trapezoids]  # TODO FIX bug where trapezoid is None
 
         if len(unvalid_leafs) == 1:  # line segment is completely in one face
             tree = VDXNode(line_segment.left)
@@ -118,6 +127,7 @@ class VerticalDecomposition:
     def __init__(self, bounding_box: Rectangle) -> None:
         self._bounding_box = bounding_box
         self._trapezoids: list[VDFace] = []
+        self._line_segments: list[VDLineSegment] = []
         # bounding box points
         upper_left = Point(bounding_box.left, bounding_box.upper)
         upper_right = Point(bounding_box.right, bounding_box.upper)
@@ -133,6 +143,10 @@ class VerticalDecomposition:
     @property
     def trapezoids(self):
         return self._trapezoids
+    
+    @property
+    def line_segments(self):
+        return self._line_segments
     
     def update(self, line_segment: VDLineSegment, left_point_face: VDFace) -> tuple[list[VDFace], list[VDFace]]:
         # Find all other k intersected trapezoids (via neighbors) in O(k) time
@@ -351,35 +365,43 @@ class VDFace:  # the trapezoid
         return self._search_leaf
 
     @search_leaf.setter
-    def search_leaf(self, search_leaf):
+    def search_leaf(self, search_leaf: VDLeaf):
         self._search_leaf = search_leaf
 
     @property
-    def bottom_line_segment(self):
+    def bottom_line_segment(self) -> VDLineSegment:
         return self._bottom_line_segment
+    
+    @bottom_line_segment.setter
+    def bottom_line_segment(self, bottom_line_segment: VDLineSegment):
+        self._bottom_line_segment = bottom_line_segment
 
     @property
-    def top_line_segment(self):
+    def top_line_segment(self) -> VDLineSegment:
         return self._top_line_segment
+    
+    @top_line_segment.setter
+    def top_line_segment(self, top_line_segment: VDLineSegment):
+        self._top_line_segment = top_line_segment
 
     @property
-    def left_point(self):
+    def left_point(self) -> Point:
         return self._left_point
 
     @left_point.setter
-    def left_point(self, point):
+    def left_point(self, point: Point):
         self._left_point = point
 
     @property
-    def right_point(self):
+    def right_point(self) -> Point:
         return self._right_point
     
     @right_point.setter
-    def right_point(self, point):
+    def right_point(self, point: Point):
         self._right_point = point
     
     @property
-    def neighbors(self):
+    def neighbors(self) -> list[VDFace]:
         return self._neighbors
     
     @neighbors.setter

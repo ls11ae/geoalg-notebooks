@@ -291,23 +291,18 @@ class DCELMode(DrawingMode):
         self._vertex_radius = vertex_radius
         self._highlight_radius = highlight_radius
 
-    def draw(self, drawer: Drawer, points: Iterable[Point]):
+    def draw(self, drawer: Drawer, points: Iterable[PointReference]):
         vertex_queue = drawer._get_drawing_mode_state(default = [])
         vertex_queue.extend(points)
         #drawer.main_canvas.clear()
-        point_queue: Iterable[PointReference] = points
-        drawer.main_canvas.draw_points(point_queue, self._vertex_radius)
-        for point in point_queue:
-            if not isinstance(point, PointReference):
-                continue
-            for i, neighbor in enumerate(point.container):
-                if i != point.position:
-                    pair = [point, neighbor]
-                    drawer.main_canvas.draw_path(pair)
-                    
-        #drawer._set_drawing_mode_state(vertex_queue)
+        drawer.main_canvas.draw_points(points, self._vertex_radius)
+        with drawer.main_canvas.hold():
+            for point in points:
+                for i, neighbor in enumerate(point.container):
+                    if i != point.position:
+                        drawer.main_canvas.draw_path([point, neighbor])
 
-    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
+    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float): # TODO
         pass
 
 class ChansHullMode(PolygonMode):
@@ -435,6 +430,44 @@ class LineSegmentsMode(FixedVertexNumberPathsMode):
     def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS,
     highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
         super().__init__(2, vertex_radius, highlight_radius)
+
+class PointLocationMode(DrawingMode):
+    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
+        self._vertex_radius = vertex_radius
+        self._highlight_radius = highlight_radius
+
+    def draw(self, drawer: Drawer, points: Iterable[PointReference]):
+        point_queue: list[Point] = drawer._get_drawing_mode_state(default=[])
+        point_queue.extend(points)
+
+        drawer.main_canvas.clear()
+        
+        with drawer.main_canvas.hold():
+
+            # draw segments
+            i, j = 0, 2
+            while j <= len(point_queue):
+                segement = point_queue[i:j]
+                drawer.main_canvas.draw_points(segement, self._vertex_radius)
+                drawer.main_canvas.draw_path(segement)
+                i, j = j, j + 2
+            # draw left over point
+            subpath = point_queue[i:]
+            drawer.main_canvas.draw_points(subpath, self._vertex_radius, transparent = True)
+            drawer.main_canvas.draw_path(subpath, transparent = True)
+        
+            # draw vertical extensions
+            for point in point_queue:
+                if not isinstance(point, PointReference):
+                    continue
+                for i, ext_point in enumerate(point.container):
+                    if i != point.position:
+                        drawer.main_canvas.draw_path([point, ext_point], transparent = True)
+
+        drawer._set_drawing_mode_state(point_queue)
+
+    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float): # TODO
+        pass
 
 class SlabDecompositionMode(FixedVertexNumberPathsMode):
     def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS,

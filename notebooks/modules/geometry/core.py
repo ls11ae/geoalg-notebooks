@@ -217,6 +217,11 @@ class LineSegment:
 
         return None
 
+    def y_from_x(self, x):
+        if self.upper.x == self.lower.x:
+            raise Exception(f"Can not give y coordinate for vertical segment")
+        return (x - self.upper.x) / (self.lower.x - self.upper.x) * (self.lower.y - self.upper.y) + self.upper.y
+
     ## Magic methods
 
     def __eq__(self, other: Any) -> bool:
