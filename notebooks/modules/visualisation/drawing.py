@@ -3,9 +3,10 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from itertools import islice
 import time
+import copy
 from typing import Any, Iterable, Iterator, Optional
 
-from ..geometry.core import AnimationEvent, AppendEvent, ClearEvent, Point, PointReference, PopEvent, SetEvent
+from ..geometry.core import AnimationEvent, AppendEvent, ClearEvent, Point, PointReference, LineSegment, PopEvent, SetEvent
 
 from ipycanvas import Canvas, hold_canvas
 
@@ -436,35 +437,63 @@ class PointLocationMode(DrawingMode):
         self._vertex_radius = vertex_radius
         self._highlight_radius = highlight_radius
 
-    def draw(self, drawer: Drawer, points: Iterable[PointReference]):
-        point_queue: list[Point] = drawer._get_drawing_mode_state(default=[])
-        point_queue.extend(points)
+    def draw(self, drawer: Drawer, points: Iterable[Point]):
+        single_point, extensions = drawer._get_drawing_mode_state(default=(None, []))
+        # point_queue.extend(points)
 
-        drawer.main_canvas.clear()
-        
+        # draw segments
+        drawn_segments: list[LineSegment] = []
         with drawer.main_canvas.hold():
-
-            # draw segments
+            point_queue = ([single_point] if single_point is not None else []) + list(points)
             i, j = 0, 2
             while j <= len(point_queue):
-                segement = point_queue[i:j]
-                drawer.main_canvas.draw_points(segement, self._vertex_radius)
-                drawer.main_canvas.draw_path(segement)
+                segment = point_queue[i:j]
+                drawer.main_canvas.draw_points(segment, self._vertex_radius)
+                drawer.main_canvas.draw_path(segment)
+                drawn_segments.append(LineSegment(segment[0], segment[1]))
                 i, j = j, j + 2
             # draw left over point
             subpath = point_queue[i:]
             drawer.main_canvas.draw_points(subpath, self._vertex_radius, transparent = True)
             drawer.main_canvas.draw_path(subpath, transparent = True)
+            if subpath == []:
+                single_point = None
+            else:
+                single_point = subpath[0]
         
-            # draw vertical extensions
-            for point in point_queue:
+        # draw vertical extensions
+        with drawer.back_canvas.hold():
+            drawer.back_canvas.clear()
+            extensions.extend(copy.deepcopy(points))
+            for point in extensions:
                 if not isinstance(point, PointReference):
                     continue
-                for i, ext_point in enumerate(point.container):
-                    if i != point.position:
-                        drawer.main_canvas.draw_path([point, ext_point], transparent = True)
+                if len(point.container) != 3 or point.position != 0:
+                    raise Exception(f"Wrong format of the PointReference {point} for drawing vertical extensions.")
+                
+                for segment in drawn_segments:  # Shorten vertical extensions if necessary
+                    if point == segment.left or point == segment.right:
+                        continue
+                    upper_extension = LineSegment(point, point.container[1])
+                    intersection = segment.intersection(upper_extension)
+                    if intersection is None:
+                        continue
+                    elif isinstance(intersection, LineSegment):
+                        raise Exception(f"Drawn segment {segment} can not be vertical")
+                    else:  # intersection is a point
+                        point.container[1] = intersection
+                    lower_extension  = LineSegment(point, point.container[2])
+                    intersection = segment.intersection(lower_extension)
+                    if intersection is None:
+                        continue
+                    elif isinstance(intersection, LineSegment):
+                        raise Exception(f"Drawn segment {segment} can not be vertical")
+                    else:  # intersection is a point
+                        point.container[2] = intersection
 
-        drawer._set_drawing_mode_state(point_queue)
+                drawer.back_canvas.draw_path([point.container[1], point.container[2]], transparent = True)
+
+        drawer._set_drawing_mode_state((single_point, extensions))
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float): # TODO
         pass
