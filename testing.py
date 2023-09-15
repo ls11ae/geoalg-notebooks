@@ -16,11 +16,12 @@ def main():
     #    print(edge)
     #print("------")
 
-    ls_list = [LineSegment(Point(2,6), Point(15,4)), LineSegment(Point(4,1), Point(7,3)), LineSegment(Point(12,2), Point(18,2))]
-    pl = PointLocation(Rectangle(Point(0,0), Point(20,20)))
+    ls_list = [LineSegment(Point(2,6), Point(15,4)), LineSegment(Point(12,2), Point(18,2))]
+    pl = PointLocation(Rectangle(Point(0,0), Point(40,40)), ls_list)
 
-    for ls in ls_list:
-        pl.insert(ls)
+    pl.insert(LineSegment(Point(8,8), Point(20,8)))
+
+    pl.insert(LineSegment(Point(17,12), Point(19,12)))
 
     print("hello")
 
