@@ -299,6 +299,8 @@ class DCELMode(DrawingMode):
         drawer.main_canvas.draw_points(points, self._vertex_radius)
         with drawer.main_canvas.hold():
             for point in points:
+                if not isinstance(point, PointReference):
+                    continue
                 for i, neighbor in enumerate(point.container):
                     if i != point.position:
                         drawer.main_canvas.draw_path([point, neighbor])

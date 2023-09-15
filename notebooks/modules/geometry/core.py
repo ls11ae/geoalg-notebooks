@@ -16,6 +16,12 @@ class Orientation(Enum):
     BEHIND_TARGET = auto()
 
 
+class VerticalOrientation(Enum):
+    ON = auto()
+    ABOVE = auto()
+    BELOW = auto()
+
+
 class GeometricObject(ABC):     # TODO: Rename, move and export this.
     @abstractmethod
     def points(self) -> Iterator[Point]:
@@ -73,6 +79,14 @@ class Point:
                 return Orientation.BEHIND_TARGET
             else:
                 return Orientation.BETWEEN
+            
+    def vertical_orientation(self, line_segment: LineSegment, epsilon: float = EPSILON) -> VerticalOrientation:
+        y = line_segment.y_from_x(self._x)
+        if y - self._y < -epsilon:
+            return VerticalOrientation.ABOVE
+        if y - self._y > epsilon:
+            return VerticalOrientation.BELOW
+        return VerticalOrientation.ON
 
     ## Magic methods
         

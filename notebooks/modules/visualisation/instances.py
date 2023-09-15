@@ -237,7 +237,7 @@ class PointLocationInstance(InstanceHandle[PointLocation]):
         if self._cached_point is None:
             self._cached_point = point
             return True
-        elif self._cached_point == point:
+        if self._cached_point == point:
             return False
         
         line_segment = LineSegment(self._cached_point, point)
