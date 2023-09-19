@@ -33,7 +33,7 @@ class PointLocation:
 
         # 2. Update the search structure
         unvalid_leafs = [trapezoid.search_leaf for trapezoid in unvalid_trapezoids]
-        new_leafs = [VDLeaf(trapezoid) for trapezoid in new_trapezoids]
+        new_leafs = [VDLeaf(trapezoid) if trapezoid is not None else None for trapezoid in new_trapezoids]
         self._search_structure.update(line_segment, unvalid_leafs, new_leafs)
 
     @classmethod
@@ -82,22 +82,21 @@ class VerticalDecomposition:
     
     # endregion
     
-    def update(self, line_segment: VDLineSegment, left_point_face: VDFace) -> tuple[list[VDFace], list[VDFace]]:
+    def update(self, line_segment: VDLineSegment, left_point_face: VDFace) -> tuple[list[VDFace], list[Optional[VDFace]]]:
         """Update the vertical decomposition with a given line_segment
         
         Returns both the now unvalid trapezoids and the newly created / changed trapezoids
         (a trapzoid may be in both lists)        
-        TODO: line-segment may share endpoints with other line-segments
         """
         self.line_segments.append(line_segment)
 
         # Find all other k intersected trapezoids (via neighbors) in O(k) time (see [1], page 130)
         intersected_trapezoids: list[VDFace] = []  # Does not include the left_point_face
         last_intersected = left_point_face
-        while not last_intersected.contains(line_segment.right):
+        while line_segment.right.x > last_intersected.right_point.x:  # ls extends to the right of the last added trapezoid
             if last_intersected.right_point.vertical_orientation(line_segment) == VORT.BELOW:
                 last_intersected = last_intersected.upper_right_neighbor
-            elif last_intersected.right_point.vertical_orientation(line_segment) == VORT.ABOVE:
+            else:  # vertical_orientation == VORT.ABOVE:
                 last_intersected = last_intersected.lower_right_neighbor
 
             intersected_trapezoids.append(last_intersected)
@@ -107,17 +106,25 @@ class VerticalDecomposition:
             # The trapezoid is replaced by four new trapezoids (see [1], page 131)
             trapezoid_top = VDFace(left_point_face.top_line_segment, line_segment, line_segment.left, line_segment.right)
             trapezoid_bottom = VDFace(line_segment, left_point_face.bottom_line_segment, line_segment.left, line_segment.right)
-            trapezoid_left = VDFace(left_point_face.top_line_segment, left_point_face.bottom_line_segment, left_point_face.left_point, line_segment.left)
-            trapezoid_right = VDFace(left_point_face.top_line_segment, left_point_face.bottom_line_segment, line_segment.right, left_point_face.right_point)
-            trapezoid_left.neighbors = [trapezoid_top, left_point_face.upper_left_neighbor, left_point_face.lower_left_neighbor, trapezoid_bottom]
-            trapezoid_right.neighbors = [left_point_face.upper_right_neighbor, trapezoid_top, trapezoid_bottom, left_point_face.lower_right_neighbor]
-            
+            if line_segment.left != left_point_face.left_point:  # Case where the new linesegment shares and enpoint with an already existing endpoint.
+                trapezoid_left = VDFace(left_point_face.top_line_segment, left_point_face.bottom_line_segment, left_point_face.left_point, line_segment.left)
+                trapezoid_left.neighbors = [trapezoid_top, left_point_face.upper_left_neighbor, left_point_face.lower_left_neighbor, trapezoid_bottom]
+            else:
+                trapezoid_left = None
+                trapezoid_top.upper_left_neighbor = left_point_face.upper_left_neighbor
+                trapezoid_bottom.lower_left_neighbor = left_point_face.lower_left_neighbor
+            if line_segment.right != left_point_face.right_point:
+                trapezoid_right = VDFace(left_point_face.top_line_segment, left_point_face.bottom_line_segment, line_segment.right, left_point_face.right_point)
+                trapezoid_right.neighbors = [left_point_face.upper_right_neighbor, trapezoid_top, trapezoid_bottom, left_point_face.lower_right_neighbor]
+            else:
+                trapezoid_right = None
+                trapezoid_top.upper_right_neighbor = left_point_face.upper_right_neighbor
+                trapezoid_bottom.lower_right_neighbor = left_point_face.lower_right_neighbor
             self._trapezoids.remove(left_point_face)
-            self._trapezoids.extend([trapezoid_left, trapezoid_top, trapezoid_bottom, trapezoid_right])
+            self._trapezoids.extend(list(filter(None.__ne__, [trapezoid_left, trapezoid_top, trapezoid_bottom, trapezoid_right])))
             return [left_point_face], [trapezoid_left, trapezoid_top, trapezoid_bottom, trapezoid_right]
 
         # Other (more complicated) case: the "line_segment" intersects two or more trapezoids (Update in O(k) time)
-
         right_point_face = intersected_trapezoids.pop()
         
         # Partition the first and last trapezoid into three new trapezoids each
@@ -127,16 +134,30 @@ class VerticalDecomposition:
         # Partition the first trapezoid (containing the left endpoint)
         left_face_above = VDFace(left_point_face.top_line_segment, line_segment, line_segment.left, left_point_face.right_point)
         left_face_below = VDFace(line_segment, left_point_face.bottom_line_segment, line_segment.left, left_point_face.right_point)
-        left_face_above.neighbors = [upper_right, left_point_face, None, lower_right]
-        left_face_below.neighbors = [upper_right, None, left_point_face, lower_right]
-        left_point_face.right_point = line_segment.left  # shrink the trapezoid up to the left endpoint
+        if line_segment.left != left_point_face.left_point:  # Case where the new linesegment shares and enpoint with an already existing endpoint.
+            left_face = left_point_face
+            left_face_above.neighbors = [upper_right, left_point_face, None, lower_right]
+            left_face_below.neighbors = [upper_right, None, left_point_face, lower_right]
+            left_point_face.right_point = line_segment.left  # shrink the trapezoid up to the left endpoint
+        else:
+            left_face = None
+            self.trapezoids.remove(left_point_face)  # TODO Check runtime when removing elements from the list
+            left_face_above.upper_left_neighbor = left_point_face.upper_left_neighbor
+            left_face_below.lower_left_neighbor = left_point_face.lower_left_neighbor
 
         # Partition the last trapezoid (containing the right endpoint)
         right_face_above = VDFace(right_point_face.top_line_segment, line_segment, right_point_face.left_point, line_segment.right)
         right_face_below = VDFace(line_segment, right_point_face.bottom_line_segment, right_point_face.left_point, line_segment.right)
-        right_face_above.neighbors = [right_point_face, upper_left, None, None]
-        right_face_below.neighbors = [None, None, lower_left, right_point_face]
-        right_point_face.left_point = line_segment.right
+        if line_segment.right != right_point_face.right_point:
+            right_face = right_point_face
+            right_face_above.neighbors = [right_point_face, upper_left, None, None]
+            right_face_below.neighbors = [None, None, lower_left, right_point_face]
+            right_point_face.left_point = line_segment.right
+        else:
+            right_face = None
+            self._trapezoids.remove(right_point_face)
+            right_face_above.upper_right_neighbor = right_point_face.upper_right_neighbor
+            right_face_below.lower_right_neighbor = right_point_face.lower_right_neighbor
 
         # Shorten vertical extensions that abut on the LS. => Merge trapezoids along the line-segment. (see [1], page 132)
         last_face_above = left_face_above
@@ -162,17 +183,17 @@ class VerticalDecomposition:
                 raise RuntimeError(f"Point {trapezoid.left_point} must not lie on line induced by the line segment {line_segment}")
 
         # Merge with (already split) last trapezoid
-        if right_face_above.left_point.vertical_orientation(line_segment) == VORT.ABOVE:  # point is the original leftp of right_point_face (= in right_face_below)
+        if right_face_above.left_point.vertical_orientation(line_segment) == VORT.ABOVE:  # point is the original leftp of right_point_face (equal in right_face_below)
             # Merge trapezoids below the LS and discard right_face_below
             last_face_below.right_point = line_segment.right
-            last_face_below.lower_right_neighbor = right_point_face
+            last_face_below.lower_right_neighbor = right_face_below.lower_right_neighbor  # the right_point_face if the right endpoint of the linesegment is new and its old lower_right_neighbor otherwise
             
             last_face_above.lower_right_neighbor = right_face_above  # Connect neighboring trapezoids above the LS
             kept_face = right_face_above
         elif right_face_above.left_point.vertical_orientation(line_segment) == VORT.BELOW:
             # Merge trapezoids above the LS and discard right_face_above
             last_face_above.right_point = line_segment.right
-            last_face_above.upper_right_neighbor = right_point_face
+            last_face_above.upper_right_neighbor = right_face_above.upper_right_neighbor
             
             last_face_below.upper_right_neighbor = right_face_below  # Connect neighboring trapezoids below the LS
             kept_face = right_face_below
@@ -180,7 +201,8 @@ class VerticalDecomposition:
             raise RuntimeError(f"Point {trapezoid.left_point} must not lie on line induced by the line segment {line_segment}")
 
         self._trapezoids.extend([left_face_above, left_face_below, kept_face])
-        return [left_point_face] + intersected_trapezoids + [right_point_face], [left_point_face, left_face_above, left_face_below, kept_face, right_point_face]
+        return [left_point_face] + intersected_trapezoids + [right_point_face], [left_face, left_face_above, left_face_below, kept_face, right_face]
+
             
 
 class VDNode(ABC):
@@ -268,7 +290,7 @@ class VDXNode(VDNode):
     def search(self, point: Point) -> VDFace:  # TODO: Make Robust using symbolic shear transform
         if point.x < self._point.x:
             return self._left.search(point)
-        else:  # equality not possible in general position
+        else:  # To the right or on the vertical extension of the point. Then we decide to continue to the right ([1], page 130 last paragraph) When inserting: trapezoid of 0 width
             return self._right.search(point)
 
 
@@ -307,7 +329,9 @@ class VDYNode(VDNode):
             return self.upper.search(point)
         elif cr == VORT.BELOW:
             return self.lower.search(point)
-        else:
+        else:  # VORT.ON 
+            # When inserting: Can only happen if the line segment to be inserted shares its left endpoint with "line_segment"
+            # TODO: Check slopes of the two line-segments
             raise RuntimeError(f"Point {point} must not lie on line induced by the line segment {self._line_segment}")
 
 
@@ -338,21 +362,25 @@ class VDSearchStructure:
         dcel_face = vd_face.bottom_line_segment.above_face
         return dcel_face
     
-    def update(self, line_segment: VDLineSegment, unvalid_leafs: list[VDLeaf], new_leafs: list[VDLeaf]):
-        """Update the search structure using known leafs from updating the vertical decomposition
-        TODO: line-segment may share endpoints with other line-segments
-        """
+    def update(self, line_segment: VDLineSegment, unvalid_leafs: list[Optional[VDLeaf]], new_leafs: list[Optional[VDLeaf]]):
+        """Update the search structure using known leafs from updating the vertical decomposition"""
         if len(unvalid_leafs) == 1:
             # Simple case: the "line_segment" is completely contained in the trapezoid "left_point_face"
             # The leaf is replaced by a small tree composed of two x-nodes and a y-node
-            tree = VDXNode(line_segment.left)
-            tree.left = new_leafs[0]
-            tree.right = VDXNode(line_segment.right)
-            tree.right.left = VDYNode(line_segment)
-            tree.right.left.upper = new_leafs[1]
-            tree.right.left.lower = new_leafs[2]
-            tree.right.right = new_leafs[3]
-            
+            tree = VDYNode(line_segment)
+            tree.upper = new_leafs[1]
+            tree.lower = new_leafs[2]
+            if new_leafs[3] is not None:  # Case where the new ls shares its endpoint with an already existing one.
+                child = tree
+                tree = VDXNode(line_segment.right)
+                tree.left = child
+                tree.right = new_leafs[3]
+            if new_leafs[0] is not None:
+                child = tree
+                tree = VDXNode(line_segment.left)
+                tree.left = new_leafs[0]
+                tree.right = child
+
             success = unvalid_leafs[0].replace_with(tree)
             if not success:  # root element
                 self._root = tree
@@ -363,11 +391,15 @@ class VDSearchStructure:
 
         # Replace the leaf containing the left endpoint
         left_endpoint_leaf = unvalid_leafs.pop(0)
-        tree = VDXNode(line_segment.left)
-        tree.left = new_leafs[0]
-        tree.right = VDYNode(line_segment)
-        tree.right.upper = new_leafs[1]
-        tree.right.lower = new_leafs[2]
+        tree = VDYNode(line_segment)
+        tree.upper = new_leafs[1]
+        tree.lower = new_leafs[2]
+        if new_leafs[0] is not None:
+            child = tree
+            tree = VDXNode(line_segment.left)
+            tree.left = new_leafs[0]
+            tree.right = child
+        
         left_endpoint_leaf.replace_with(tree)  # checking for success is not necessary. The leaf node "left_endpoint_leaf" cannot be the root as there are >= 2 total unvalid leafs
 
         right_endpoint_leaf = unvalid_leafs.pop()  # leaf containing the right endpoint, filled after treatment of intersected trapezoids
@@ -416,24 +448,27 @@ class VDSearchStructure:
                     opposite_leaf = unvalid_leafs[-1]
 
         # Replace the leaf containing the right endpoint
-        tree = VDXNode(line_segment.right)
-        tree.right = new_leafs[-1]
-        tree.left = VDYNode(line_segment)
+        tree = VDYNode(line_segment)
         if new_leafs[-2]._face.bottom_line_segment is line_segment:  # kept_face is either right_face_above or right_face_below
-            tree.left.upper = new_leafs[-2]
+            tree.upper = new_leafs[-2]
             if opposite_leaf != None:
-                tree.left.lower = opposite_leaf
+                tree.lower = opposite_leaf
             else:
-                tree.left.lower = new_leafs[2]
+                tree.lower = new_leafs[2]
         elif new_leafs[-2]._face.top_line_segment is line_segment:
-            tree.left.lower = new_leafs[-2]
+            tree.lower = new_leafs[-2]
             if opposite_leaf != None:
-                tree.left.upper = opposite_leaf
+                tree.upper = opposite_leaf
             else:
-                tree.left.upper = new_leafs[2]
+                tree.upper = new_leafs[2]
         else:
-            raise RuntimeError(f"face {new_leafs[-2]._face} needs to be directly above or below of line segment {line_segment}")
-            
+            raise RuntimeError(f"face {new_leafs[-2]._face} needs to be directly above or below of line segment {line_segment}")            
+        if new_leafs[-1] is not None:
+            child = tree
+            tree = VDXNode(line_segment.right)
+            tree.right = new_leafs[-1]
+            tree.left = child
+
         right_endpoint_leaf.replace_with(tree)
 
 
