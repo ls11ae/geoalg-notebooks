@@ -8,13 +8,15 @@ from .dcel import DoublyConnectedEdgeList
 
 
 class PointLocation:
-    def __init__(self, bounding_box: Rectangle = Rectangle(Point(0, 0), Point(400, 400)), segments: set[LineSegment] = []) -> None:
+    def __init__(self, bounding_box: Rectangle = Rectangle(Point(0, 0), Point(400, 400)), dcel: Optional[DoublyConnectedEdgeList] = None) -> None:
+        if dcel is None:
+            dcel = DoublyConnectedEdgeList()
         self._bounding_box = bounding_box
-        self._vertical_decomposition = VerticalDecomposition(bounding_box)
+        self._vertical_decomposition = VerticalDecomposition(bounding_box, dcel)
         initial_face = self._vertical_decomposition.trapezoids[0]
         self._search_structure = VDSearchStructure(initial_face)
         # Non-Randomized Incremental Construction
-        for segment in segments:
+        for segment in PointLocation.dcel_prepocessing(dcel):
             self.insert(segment)
 
     def clear(self):
@@ -22,18 +24,28 @@ class PointLocation:
         initial_face = self._vertical_decomposition.trapezoids[0]
         self._search_structure = VDSearchStructure(initial_face)
 
-    def insert(self, line_segment: LineSegment) -> None:
+    def insert(self, line_segment: VDLineSegment) -> None:
         # Get necessary information
-        vd_line_segment = VDLineSegment.from_line_segment(line_segment)  # TODO: preprocessing of the DCEL
         left_point_face = self._search_structure.root.search(line_segment.left)
 
         # 1. Update the vertical decomposition
-        unvalid_trapezoids, new_trapezoids = self._vertical_decomposition.update(vd_line_segment, left_point_face)
+        unvalid_trapezoids, new_trapezoids = self._vertical_decomposition.update(line_segment, left_point_face)
 
         # 2. Update the search structure
         unvalid_leafs = [trapezoid.search_leaf for trapezoid in unvalid_trapezoids]
         new_leafs = [VDLeaf(trapezoid) for trapezoid in new_trapezoids]
-        self._search_structure.update(vd_line_segment, unvalid_leafs, new_leafs)
+        self._search_structure.update(line_segment, unvalid_leafs, new_leafs)
+
+    @classmethod
+    def dcel_prepocessing(cls, dcel: DoublyConnectedEdgeList) -> Iterable[VDLineSegment]:
+        segments: list[VDLineSegment] = []
+        for edge in dcel.edges():
+            if edge.origin is edge.left_and_right[0]:  # Make sure only of of each Halfedges is used
+                ls = VDLineSegment(edge.origin.point, edge.destination.point)
+                ls.above_face = edge.incident_face
+                segments.append(ls)
+        return segments
+                
 
     # @classmethod
     # def build_vertical_decomposition(cls, segments: set[LineSegment]) -> VerticalDecomposition:
@@ -42,7 +54,7 @@ class PointLocation:
 
 
 class VerticalDecomposition:
-    def __init__(self, bounding_box: Rectangle) -> None:
+    def __init__(self, bounding_box: Rectangle, dcel: DoublyConnectedEdgeList) -> None:
         self._bounding_box = bounding_box
         self._trapezoids: list[VDFace] = []
         self._line_segments: list[VDLineSegment] = []
@@ -54,7 +66,6 @@ class VerticalDecomposition:
 
         top = VDLineSegment(upper_left, upper_right)
         bottom = VDLineSegment(lower_left, lower_right)
-        dcel = DoublyConnectedEdgeList()  # TODO: DCEL preprocessing
         bottom._above_dcel_face = dcel.outer_face
         initial_trapezoid = VDFace(top, bottom, upper_left, upper_right)
         self._trapezoids.append(initial_trapezoid)
