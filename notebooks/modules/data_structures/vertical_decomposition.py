@@ -1,8 +1,8 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Optional, Iterable
+from typing import Optional, Iterable, Union
 
-from ..geometry import LineSegment, Point, VerticalOrientation as VORT, Rectangle
+from ..geometry import LineSegment, Point, VerticalOrientation as VORT, HorizontalOrientation as HORT, Rectangle
 from .objects import Face
 from .dcel import DoublyConnectedEdgeList
 
@@ -26,7 +26,7 @@ class PointLocation:
 
     def insert(self, line_segment: VDLineSegment) -> None:
         # Get necessary information
-        left_point_face = self._search_structure.root.search(line_segment.left)
+        left_point_face = self._search_structure.root.search(line_segment.left, line_segment=line_segment)
 
         # 1. Update the vertical decomposition
         unvalid_trapezoids, new_trapezoids = self._vertical_decomposition.update(line_segment, left_point_face)
@@ -93,17 +93,17 @@ class VerticalDecomposition:
         # Find all other k intersected trapezoids (via neighbors) in O(k) time (see [1], page 130)
         intersected_trapezoids: list[VDFace] = []  # Does not include the left_point_face
         last_intersected = left_point_face
-        while line_segment.right.x > last_intersected.right_point.x:  # ls extends to the right of the last added trapezoid
-            if last_intersected.right_point.vertical_orientation(line_segment) == VORT.BELOW:
+        while line_segment.right.horizontal_orientation(last_intersected.right_point) == HORT.RIGHT:  # ls extends to the right of the last added trapezoid
+            if last_intersected.right_point.vertical_orientation(line_segment) == VORT.BELOW:  # Tests for vertical orientation is the same for the transformed instance using the shear transform phi
                 last_intersected = last_intersected.upper_right_neighbor
-            else:  # vertical_orientation == VORT.ABOVE:
+            else:  # vertical_orientation == VORT.ABOVE, VORT.ON is impossible
                 last_intersected = last_intersected.lower_right_neighbor
 
             intersected_trapezoids.append(last_intersected)
             
         if intersected_trapezoids == []:
             # Simple case: the "line_segment" is completely contained in the trapezoid "left_point_face"
-            # The trapezoid is replaced by four new trapezoids (see [1], page 131)
+            # The trapezoid is replaced by up to four new trapezoids (see [1], page 131)
             trapezoid_top = VDFace(left_point_face.top_line_segment, line_segment, line_segment.left, line_segment.right)
             trapezoid_bottom = VDFace(line_segment, left_point_face.bottom_line_segment, line_segment.left, line_segment.right)
             if line_segment.left != left_point_face.left_point:  # Case where the new linesegment shares and enpoint with an already existing endpoint.
@@ -204,7 +204,6 @@ class VerticalDecomposition:
         return [left_point_face] + intersected_trapezoids + [right_point_face], [left_face, left_face_above, left_face_below, kept_face, right_face]
 
             
-
 class VDNode(ABC):
     __id = 0
 
@@ -236,7 +235,16 @@ class VDNode(ABC):
     # endregion
 
     @abstractmethod
-    def search(self, point: Point) -> VDFace:
+    def search(self, point: Point, query: bool = False, line_segment: Optional[VDLineSegment] = None) -> Union[VDFace, str]:
+        """Search/Query method for the search structure of the vertical decompostion.
+        
+        Parameters
+        ----------
+        query : bool
+            If the parameter query is True, then the method will return if the query point coincides with a point at an x-node or lies on the line-segment at a y-node
+        line_segment : Optional[VDLineSegment]
+            Used by a y-node when the searched point lies on the line-segment (=> shared left endpoint) to compare the slope of both line segments
+        """
         pass
 
     def replace_with(self, new_node: VDNode) -> bool:
@@ -287,11 +295,14 @@ class VDXNode(VDNode):
 
     # endregion
 
-    def search(self, point: Point) -> VDFace:  # TODO: Make Robust using symbolic shear transform
-        if point.x < self._point.x:
-            return self._left.search(point)
-        else:  # To the right or on the vertical extension of the point. Then we decide to continue to the right ([1], page 130 last paragraph) When inserting: trapezoid of 0 width
-            return self._right.search(point)
+    def search(self, point: Point, query: bool = False, line_segment: Optional[VDLineSegment] = None) -> Union[VDFace, str]:
+        if query and point.horizontal_orientation(self._point) == HORT.EQUAL:
+            return f"Query point {point} coincides with the endpoint of one of the segments"
+        
+        if point.horizontal_orientation(self._point) == HORT.LEFT:  # Using symbolic shear transform
+            return self._left.search(point, query, line_segment)
+        else:  # The point lies to the right or coincides with the point of the node. Then we decide to continue to the right ([1], page 130 last paragraph) When inserting this results in a trapezoid of 0 width
+            return self._right.search(point, query, line_segment)
 
 
 class VDYNode(VDNode):
@@ -323,16 +334,18 @@ class VDYNode(VDNode):
 
     # endregion
 
-    def search(self, point: Point) -> VDFace:
+    def search(self, point: Point, query: bool = False, line_segment: Optional[VDLineSegment] = None) -> Union[VDFace, str]:
         cr = point.vertical_orientation(self._line_segment)
-        if cr == VORT.ABOVE:
-            return self.upper.search(point)
-        elif cr == VORT.BELOW:
-            return self.lower.search(point)
-        else:  # VORT.ON 
-            # When inserting: Can only happen if the line segment to be inserted shares its left endpoint with "line_segment"
-            # TODO: Check slopes of the two line-segments
-            raise RuntimeError(f"Point {point} must not lie on line induced by the line segment {self._line_segment}")
+
+        if query and cr == VORT.ON:
+            return f"Query point {point} lies on the line-segment {self._line_segment}"
+        
+        if cr == VORT.ABOVE or (cr == VORT.ON and line_segment.slope() > self._line_segment.slope()):  # During insertion: cr == VORT.ON can only happen when the new line segment shares its left endpoint with the ls stored at this node
+            return self.upper.search(point, query, line_segment)
+        elif cr == VORT.BELOW or (cr == VORT.ON and line_segment.slope() < self._line_segment.slope()):
+            return self.lower.search(point, query, line_segment)
+        else:
+            raise AttributeError(f"The line segment {line_segment} cannot be inserted because it is already in the vertical decomposition")
 
 
 class VDLeaf(VDNode):
@@ -341,7 +354,7 @@ class VDLeaf(VDNode):
         self._face: VDFace = face
         self._face.search_leaf = self
 
-    def search(self, point: Point) -> VDFace:
+    def search(self, point: Point, query: bool = False, line_segment: Optional[VDLineSegment] = None) -> VDFace:
         return self._face
 
 
@@ -357,8 +370,10 @@ class VDSearchStructure:
     
     # endregion
 
-    def search(self, point: Point) -> Face:
-        vd_face = self._root.search(point)
+    def query(self, point: Point) -> Union[Face, str]:
+        vd_face = self._root.search(point, query = True)
+        if isinstance(vd_face, str):
+            return vd_face
         dcel_face = vd_face.bottom_line_segment.above_face
         return dcel_face
     
@@ -581,11 +596,6 @@ class VDFace:
             new_neighbor._neighbors[2] = self
     
     # endregion
-
-    def contains(self, point: Point) -> bool:
-        return self.left_point.x < point.x < self._right_point.x \
-                and point.vertical_orientation(self._top_line_segment) == VORT.BELOW \
-                and point.vertical_orientation(self._bottom_line_segment) == VORT.ABOVE
             
     def __repr__(self) -> str:
         return f"ID: F{self._id} || Top-LS: {self._top_line_segment} | Bottom-LS: {self._bottom_line_segment} | Left-P: {self._left_point} | Right-P: {self._right_point}"

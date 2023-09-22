@@ -21,6 +21,10 @@ class VerticalOrientation(Enum):
     ABOVE = auto()
     BELOW = auto()
 
+class HorizontalOrientation(Enum):
+    LEFT = auto()
+    RIGHT = auto()
+    EQUAL = auto()
 
 class GeometricObject(ABC):     # TODO: Rename, move and export this.
     @abstractmethod
@@ -88,6 +92,14 @@ class Point:
             return VerticalOrientation.BELOW
         return VerticalOrientation.ON
 
+    def horizontal_orientation(self, other_point: Point) -> HorizontalOrientation:  # Using symbolic shear transform -> lexicographical order
+        if self == other_point:
+            return HorizontalOrientation.EQUAL
+        elif self.x < other_point.x or (self.x == other_point.x and self.y < other_point.y):
+            return HorizontalOrientation.LEFT
+        else:
+            return HorizontalOrientation.RIGHT
+        
     ## Magic methods
         
     def __eq__(self, other: Any) -> bool:
@@ -235,6 +247,11 @@ class LineSegment:
         if self.upper.x == self.lower.x:
             raise Exception(f"Can not give y coordinate for vertical segment")
         return (x - self.upper.x) / (self.lower.x - self.upper.x) * (self.lower.y - self.upper.y) + self.upper.y
+    
+    def slope(self) -> SupportsFloat:
+        if self.left.x - self.right.x == 0:
+            return float("inf")  # vertical segment
+        return (self.left.y - self.right.y) / (self.left.x - self.right.x)
 
     ## Magic methods
 
