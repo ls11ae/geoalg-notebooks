@@ -475,7 +475,7 @@ class VDSearchStructure:
             if opposite_leaf != None:
                 tree.upper = opposite_leaf
             else:
-                tree.upper = new_leafs[2]
+                tree.upper = new_leafs[1]
         else:
             raise RuntimeError(f"face {new_leafs[-2]._face} needs to be directly above or below of line segment {line_segment}")            
         if new_leafs[-1] is not None:
