@@ -18,6 +18,64 @@ class PointLocation:
         # Non-Randomized Incremental Construction
         for segment in PointLocation.dcel_prepocessing(dcel):
             self.insert(segment)
+            self.check_structure()
+            # print(f"Check successful after insertion of LS {segment}")
+
+    def check_structure(self):
+        # --- Vertical Decompostion ---
+        for trapezoid in self._vertical_decomposition.trapezoids:
+            # Neighbors:
+            # Wrongly None
+            if trapezoid.left_point is not trapezoid.top_line_segment.left and trapezoid.left_point.x > self._bounding_box.left and trapezoid.upper_left_neighbor is None:
+                raise RuntimeError(f"Upper left neighbor necessary in trapezoid {trapezoid}")
+            if trapezoid.left_point is not trapezoid.bottom_line_segment.left and trapezoid.left_point.x > self._bounding_box.left and trapezoid.lower_left_neighbor is None:
+                raise RuntimeError(f"Lower left neighbor necessary in trapezoid {trapezoid}")
+            if trapezoid.right_point is not trapezoid.top_line_segment.right and trapezoid.right_point.x < self._bounding_box.right and trapezoid.upper_right_neighbor is None:
+                raise RuntimeError(f"Upper right neighbor necessary in trapezoid {trapezoid}")
+            if trapezoid.right_point is not trapezoid.bottom_line_segment.right and trapezoid.right_point.x < self._bounding_box.right and trapezoid.lower_right_neighbor is None:
+                raise RuntimeError(f"Lower right neighbor necessary in trapezoid {trapezoid}")
+
+            # Wrongly not None
+            if trapezoid.left_point is trapezoid.top_line_segment.left and trapezoid.upper_left_neighbor is not None:
+                raise RuntimeError(f"Not allowed upper left neighbor in trapezoid {trapezoid}")
+            if trapezoid.left_point is trapezoid.bottom_line_segment.left and trapezoid.lower_left_neighbor is not None:
+                raise RuntimeError(f"Not allowed lower left neighbor in trapezoid {trapezoid}")
+            if trapezoid.right_point is trapezoid.top_line_segment.right and trapezoid.upper_right_neighbor is not None:
+                raise RuntimeError(f"Not allowed upper right neighbor in trapezoid {trapezoid}")
+            if trapezoid.right_point is trapezoid.bottom_line_segment.right and trapezoid.lower_right_neighbor is not None:
+                raise RuntimeError(f"Not allowed lower right neighbor in trapezoid {trapezoid}")
+
+            # Pairwise connection
+            if trapezoid.upper_right_neighbor is not None and trapezoid.upper_right_neighbor.upper_left_neighbor is not trapezoid:
+                raise RuntimeError(f"Issue with upper right neighbor in trapezoid {trapezoid}")
+            if trapezoid.upper_left_neighbor is not None and trapezoid.upper_left_neighbor.upper_right_neighbor is not trapezoid:
+                raise RuntimeError(f"Issue with upper left neighbor in trapezoid {trapezoid}")
+            if trapezoid.lower_right_neighbor is not None and trapezoid.lower_right_neighbor.lower_left_neighbor is not trapezoid:
+                raise RuntimeError(f"Issue with lower right neighbor in trapezoid {trapezoid}")
+            if trapezoid.lower_left_neighbor is not None and trapezoid.lower_left_neighbor.lower_right_neighbor is not trapezoid:
+                raise RuntimeError(f"Issue with lower left neighbor {trapezoid.lower_left_neighbor} in trapezoid {trapezoid}")
+            
+            # Pairwise neighbors: "connection" points
+            if trapezoid.upper_right_neighbor is not None and trapezoid.upper_right_neighbor.left_point is not trapezoid.right_point:
+                raise RuntimeError(f"Issue in the pair of right point of {trapezoid} and the left point of its upper right neighbor")
+            if trapezoid.lower_right_neighbor is not None and trapezoid.lower_right_neighbor.left_point is not trapezoid.right_point:
+                raise RuntimeError(f"Issue in the pair of right point of {trapezoid} and the left point of its lower right neighbor")
+            if trapezoid.upper_left_neighbor is not None and trapezoid.upper_left_neighbor.right_point is not trapezoid.left_point:
+                raise RuntimeError(f"Issue in the pair of left point of {trapezoid} and the right point of its upper left neighbor")
+            if trapezoid.lower_left_neighbor is not None and trapezoid.lower_left_neighbor.right_point is not trapezoid.left_point:
+                raise RuntimeError(f"Issue in the pair of left point of {trapezoid} and the right point of its lower left neighbor")
+
+            # Search Leaf:
+            if trapezoid.search_leaf is None:
+                raise RuntimeError(f"Search Leaf of trapezoid {trapezoid} is None")
+            if trapezoid.search_leaf._face is not trapezoid:
+                raise RuntimeError(f"Wrong connection of search leaf in trapezoid {trapezoid}")
+        
+        # --- Search Structure ---
+        if len(self._search_structure._root.parents) != 0:
+            raise RuntimeError(f"Root of search structure has parents")
+        self._search_structure._root.check_structure()
+
 
     def clear(self):
         self._vertical_decomposition = VerticalDecomposition(self._bounding_box)
@@ -134,24 +192,33 @@ class VerticalDecomposition:
         # Partition the first trapezoid (containing the left endpoint)
         left_face_above = VDFace(left_point_face.top_line_segment, line_segment, line_segment.left, left_point_face.right_point)
         left_face_below = VDFace(line_segment, left_point_face.bottom_line_segment, line_segment.left, left_point_face.right_point)
-        if line_segment.left != left_point_face.left_point:  # Case where the new linesegment shares and enpoint with an already existing endpoint.
+        if line_segment.left != left_point_face.left_point:  
             left_face = left_point_face
-            left_face_above.neighbors = [upper_right, left_point_face, None, lower_right]
-            left_face_below.neighbors = [upper_right, None, left_point_face, lower_right]
-            left_point_face.right_point = line_segment.left  # shrink the trapezoid up to the left endpoint
-        else:
+            left_face_above.upper_left_neighbor = left_point_face
+            left_face_below.lower_left_neighbor = left_point_face
+        else:  # Case where the new linesegment shares and endpoint with an already existing endpoint.
             left_face = None
             self.trapezoids.remove(left_point_face)  # TODO Check runtime when removing elements from the list
             left_face_above.upper_left_neighbor = left_point_face.upper_left_neighbor
             left_face_below.lower_left_neighbor = left_point_face.lower_left_neighbor
+
+        if left_point_face.right_point.vertical_orientation(line_segment) == VORT.ABOVE:  # Setting the top/bottom most neighbor
+            left_face_above.upper_right_neighbor = upper_right
+        elif left_point_face.right_point.vertical_orientation(line_segment) ==  VORT.BELOW:
+            left_face_below.lower_right_neighbor = lower_right
+        else:
+            raise RuntimeError(f"Point {left_point_face.right_point} must not lie on line induced by the line segment {line_segment}")
+
+        left_point_face.right_point = line_segment.left  # shrink the trapezoid up to the left endpoint (only necessary for the case where left point face is kept but needs to be after the tests above)
+        
 
         # Partition the last trapezoid (containing the right endpoint)
         right_face_above = VDFace(right_point_face.top_line_segment, line_segment, right_point_face.left_point, line_segment.right)
         right_face_below = VDFace(line_segment, right_point_face.bottom_line_segment, right_point_face.left_point, line_segment.right)
         if line_segment.right != right_point_face.right_point:
             right_face = right_point_face
-            right_face_above.neighbors = [right_point_face, upper_left, None, None]
-            right_face_below.neighbors = [None, None, lower_left, right_point_face]
+            right_face_above.upper_right_neighbor = right_point_face
+            right_face_below.lower_right_neighbor = right_point_face
             right_point_face.left_point = line_segment.right
         else:
             right_face = None
@@ -165,6 +232,9 @@ class VerticalDecomposition:
         for trapezoid in intersected_trapezoids:
             if trapezoid.left_point.vertical_orientation(line_segment) == VORT.ABOVE:
                 # Merge trapezoids below the LS
+                if trapezoid.right_point.vertical_orientation(line_segment) == VORT.BELOW:  # Next one is on the other side, new neighbors are correct and final
+                    last_face_below.lower_right_neighbor = trapezoid.lower_right_neighbor
+                    last_face_below.upper_right_neighbor = trapezoid.upper_right_neighbor
                 last_face_below.right_point = trapezoid.right_point
 
                 # Shrink the intersected trapezoid to be above the LS
@@ -173,6 +243,9 @@ class VerticalDecomposition:
                 last_face_above = trapezoid
             elif trapezoid.left_point.vertical_orientation(line_segment) == VORT.BELOW:
                 # Merge trapezoids above the LS
+                if trapezoid.right_point.vertical_orientation(line_segment) == VORT.ABOVE:
+                    last_face_above.lower_right_neighbor = trapezoid.lower_right_neighbor
+                    last_face_above.upper_right_neighbor = trapezoid.upper_right_neighbor
                 last_face_above.right_point = trapezoid.right_point
 
                 # Shrink the intersected trapezoids to be below the LS
@@ -189,6 +262,7 @@ class VerticalDecomposition:
             last_face_below.lower_right_neighbor = right_face_below.lower_right_neighbor  # the right_point_face if the right endpoint of the linesegment is new and its old lower_right_neighbor otherwise
             
             last_face_above.lower_right_neighbor = right_face_above  # Connect neighboring trapezoids above the LS
+            right_face_above.upper_left_neighbor = upper_left  # Connect even higher neighbor
             kept_face = right_face_above
         elif right_face_above.left_point.vertical_orientation(line_segment) == VORT.BELOW:
             # Merge trapezoids above the LS and discard right_face_above
@@ -196,6 +270,7 @@ class VerticalDecomposition:
             last_face_above.upper_right_neighbor = right_face_above.upper_right_neighbor
             
             last_face_below.upper_right_neighbor = right_face_below  # Connect neighboring trapezoids below the LS
+            right_face_below.lower_left_neighbor = lower_left
             kept_face = right_face_below
         else:
             raise RuntimeError(f"Point {trapezoid.left_point} must not lie on line induced by the line segment {line_segment}")
@@ -233,6 +308,31 @@ class VDNode(ABC):
         self._parents.append(parent)        
 
     # endregion
+
+    def check_structure(self):
+        if isinstance(self, VDLeaf):
+            if self._left is not None or self._right is not None:
+                raise RuntimeError(f"Leaf is not supposed to have children")
+            if self._face is None:
+                raise RuntimeError(f"Leaf {self} needs to have an associated trapezoid")
+            if self._face.search_leaf is not self:
+                raise RuntimeError(f"Wrong connection in Leaf {self} with the search leaf")
+        
+        if isinstance(self, VDXNode) and self._point is None:
+            raise RuntimeError(f"X-Node needs to have a point")
+        if isinstance(self, VDYNode) and self._line_segment is None:
+            raise RuntimeError(f"Y-Nodes needs to have a LS")
+        
+        if isinstance(self, VDXNode) or isinstance(self, VDYNode):
+            if self._left is None or self._right is None:
+                raise RuntimeError(f"Inner node {self} is supposed to have children")
+            if self not in self._left.parents:
+                raise RuntimeError(f"Inner node {self} needs to be a parent of its left child")
+            if self not in self._right.parents:
+                raise RuntimeError(f"Inner node {self} needs to be a parent of its right child")
+            self._left.check_structure()
+            self._right.check_structure()
+
 
     @abstractmethod
     def search(self, point: Point, query: bool = False, line_segment: Optional[VDLineSegment] = None) -> Union[VDFace, str]:
