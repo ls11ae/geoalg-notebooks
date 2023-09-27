@@ -260,6 +260,7 @@ class VerticalDecomposition:
             # Merge trapezoids below the LS and discard right_face_below
             last_face_below.right_point = line_segment.right
             last_face_below.lower_right_neighbor = right_face_below.lower_right_neighbor  # the right_point_face if the right endpoint of the linesegment is new and its old lower_right_neighbor otherwise
+            last_face_below.upper_right_neighbor = None
             
             last_face_above.lower_right_neighbor = right_face_above  # Connect neighboring trapezoids above the LS
             right_face_above.upper_left_neighbor = upper_left  # Connect even higher neighbor
@@ -267,6 +268,7 @@ class VerticalDecomposition:
         elif right_face_above.left_point.vertical_orientation(line_segment) == VORT.BELOW:
             # Merge trapezoids above the LS and discard right_face_above
             last_face_above.right_point = line_segment.right
+            last_face_above.lower_right_neighbor = None
             last_face_above.upper_right_neighbor = right_face_above.upper_right_neighbor
             
             last_face_below.upper_right_neighbor = right_face_below  # Connect neighboring trapezoids below the LS
