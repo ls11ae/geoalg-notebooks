@@ -61,6 +61,7 @@ class DoublyConnectedEdgeList:
         
         The edge is given by two points.
         If either of the points is not in the DCEL an exception is raised.
+        If the edge is already in the DCEL nothing happens
         """
         vertex_0, vertex_1 = None, None
         for vertex in self.vertices:
@@ -70,6 +71,9 @@ class DoublyConnectedEdgeList:
                 vertex_1 = vertex
             if vertex_0 is not None and vertex_1 is not None:
                 break
+        for edge in self.edges:
+            if edge.origin.point == point and edge.destination.point == other_point:
+                return
         if vertex_0 is None or vertex_1 is None:
             raise ValueError(f"Both points {point} and {other_point} need to be part of the DCEL to insert as an edge")
         self._add_edge(vertex_0, vertex_1)
@@ -78,12 +82,12 @@ class DoublyConnectedEdgeList:
     def _add_edge(self, vertex_0: Vertex, vertex_1: Vertex):
         half_edge_0 = None
         half_edge_1 = None
-        if vertex_0.edge == vertex_0.edge.twin: #single vertex
+        if vertex_0.edge == vertex_0.edge.twin:  # single vertex
             half_edge_0 = vertex_0.edge
         else:
             half_edge_0 = HalfEdge(vertex_0)
             self._edges.append(half_edge_0)
-        if vertex_1.edge == vertex_1.edge.twin: #single vertex
+        if vertex_1.edge == vertex_1.edge.twin:  # single vertex
             half_edge_1 = vertex_1.edge
         else:
             half_edge_1 = HalfEdge(vertex_1)
@@ -121,7 +125,7 @@ class DoublyConnectedEdgeList:
             raise RuntimeError(f"Vertices {vertex_0} and {vertex_1} do not lie in the same face. Faces: {face_0} and {face_1}")
 
         half_edge_0.incident_face = face_0
-        half_edge_1.incident_face = face_0 # face_0 == face_1
+        half_edge_1.incident_face = face_0  # face_0 == face_1
 
         # Find correct order around vertex_1
         search_edge = vertex_0.edge.twin
@@ -140,7 +144,7 @@ class DoublyConnectedEdgeList:
                     raise Exception(f"Could not find a suitable edge while inserting edge between vertices {vertex_0} and {vertex_1}")
                 
         # Set edge pointers
-        half_edge_0._incident_face = face_0
+        half_edge_0._incident_face = face_0  # TODO: Remove?
         half_edge_1._incident_face = face_0
 
         half_edge_0._set_twin(half_edge_1)

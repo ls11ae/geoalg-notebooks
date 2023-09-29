@@ -57,6 +57,11 @@ class VisualisationTool(Generic[I]):
         self._init_canvases()
         self._init_ui()
 
+    def handle_click_on_multi_canvas(self, x: float, y: float):  # TODO: Remove this copy
+        if self.add_point(Point(x, self._height - y)):
+            self.clear_algorithm_drawings()
+            self.clear_algorithm_messages()
+
     def _init_canvases(self):
         for i in range(0, 6):
             self._multi_canvas[i].translate(0, self._height)
@@ -184,7 +189,14 @@ class VisualisationTool(Generic[I]):
             return False
 
         was_point_added = self._instance.add_point(point)
-        if was_point_added:
+        if not isinstance(was_point_added, bool):  # TODO this is not very clean
+            # Changed the point or bonus information (-> PointReference) was added, so the new point is also returned
+            was_point_added, point = was_point_added
+            self._instance_drawer.draw((point,))
+            if was_point_added:
+                self._number_of_points += 1
+            self._update_instance_size_info()
+        elif was_point_added:
             self._instance_drawer.draw((point,))
             self._number_of_points += 1
             self._update_instance_size_info()

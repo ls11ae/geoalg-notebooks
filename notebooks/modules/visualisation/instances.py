@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from itertools import chain
 import time
-from typing import Callable, Generic, Optional, TypeVar
+from typing import Callable, Generic, Optional, TypeVar, Union
 
 from ..geometry.core import GeometricObject, LineSegment, Point, PointReference
 from ..data_structures import DoublyConnectedSimplePolygon, DoublyConnectedEdgeList, PointLocation
@@ -37,7 +37,7 @@ class InstanceHandle(ABC, Generic[I]):
         return algorithm_output, 1000 * (end_time - start_time)
 
     @abstractmethod
-    def add_point(self, point: Point) -> bool:
+    def add_point(self, point: Point) -> Union[bool, tuple[bool, Point]]:
         pass
 
     @abstractmethod
@@ -197,46 +197,49 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
         super().__init__(DoublyConnectedEdgeList(), drawing_mode)
 
     def add_point(self, point: Point) -> bool:
-        if isinstance(point, PointReference):
-            self._instance.add_vertex(point.container[point.position])
-            for i, neighbor in enumerate(point.container):
-                if i == point.position:
-                    continue
-                neighbor_present = False
-                if neighbor not in [vertex.point for vertex in self._instance.vertices]:
-                    continue
-                found = False
-                for edge in self._instance.edges:
-                    if edge.origin == point and edge.destination == neighbor:
-                        found = True
-                        break
-                if not found:
-                    self._instance.add_edge_by_points(point, neighbor)
-            return True
-        else:
-            old_point = None
-            for instance_point in self._instance.points:
-                if instance_point.close_to(point, epsilon = self._drawing_epsilon):
-                    old_point = instance_point
-                    self._last_added_point = old_point
-                    return
+        # Check if point is already in the DCEL
+        is_new_point = True
+        for instance_point in self._instance.points:
+            if instance_point.close_to(point, epsilon = self._drawing_epsilon):
+                print("old point")
+                is_new_point = False
+                point = instance_point
+                break
 
-            if old_point is None:
-                try:
-                    self._instance.add_vertex(point)
-                except Exception:
-                    return False
-                if self._last_added_point is not None:
-                    print("Hey")
-                    self._instance.add_edge_by_points(self._last_added_point, point)
-                    self._last_added_point = None 
-                return True
+        # Add point (if necessary)
+        if is_new_point:
+            if isinstance(point, PointReference):
+                self._instance.add_vertex(point.container[point.position])
+                # Add edges from Point-Reference-Container
+                for i, neighbor in enumerate(point.container):
+                    if i == point.position:
+                        continue
+                    if neighbor not in [vertex.point for vertex in self._instance.vertices]:
+                        continue
+                    found = False
+                    for edge in self._instance.edges:
+                        if edge.origin == point and edge.destination == neighbor:
+                            found = True
+                            break
+                    if not found:
+                        self._instance.add_edge_by_points(point, neighbor)
             else:
-                
-                return False
+                self._instance.add_vertex(point)
+
+        # Add edge from last clicked point
+        if self._last_added_point is not None and self._last_added_point != point:
+            self._instance.add_edge_by_points(self._last_added_point, point)
+            point = PointReference([point, self._last_added_point], 0)
+            self._last_added_point = None
+        elif not is_new_point:
+            print("Jup")
+            self._last_added_point = point
+
+        return is_new_point, point
 
     def clear(self):
         self._instance.clear()
+        self._last_added_point = None
 
     def size(self) -> int:
         return self._instance.number_of_vertices

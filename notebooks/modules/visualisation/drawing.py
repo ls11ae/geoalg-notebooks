@@ -292,32 +292,21 @@ class DCELMode(DrawingMode):
         self._vertex_radius = vertex_radius
         self._highlight_radius = highlight_radius
 
-    def draw(self, drawer: Drawer, points: Iterable[PointReference]):
-        point_queue, last_added = drawer._get_drawing_mode_state(default = ([], None))
-        for point in point_queue:
-            if point == points[0]:
-                last_added = point
-                return
-        if last_added is not None:
-            if isinstance(last_added, PointReference):
-                last_added.container.append(points[0])
-            else:
-                last_added = PointReference([last_added, points[0]], 0)
-            if isinstance(points[0], PointReference):
-                points[0].container.append(points[0])
-            else:
-                points[0] = PointReference([points[0], last_added], 0)
-
-        point_queue.extend(points)
-        #drawer.main_canvas.clear()
-        drawer.main_canvas.draw_points(points, self._vertex_radius)
+    def draw(self, drawer: Drawer, points: Iterable[Point]):
+        point_queue: list[Point] = drawer._get_drawing_mode_state(default = [])
         with drawer.main_canvas.hold():
             for point in points:
+                # Draw point
+                if point not in point_queue:
+                    drawer.main_canvas.draw_point(point, self._vertex_radius)
+                # Draw connections of the point
                 if not isinstance(point, PointReference):
                     continue
                 for i, neighbor in enumerate(point.container):
                     if i != point.position:
                         drawer.main_canvas.draw_path([point, neighbor])
+        
+        point_queue.extend(points)  # Keep track of already drawn points
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float): # TODO
         pass

@@ -12,9 +12,9 @@ class Vertex:
     def outgoing_edges(self) -> Iterable[HalfEdge]:
         outgoing_edges = []
         outgoing_edge = self.edge
-        if outgoing_edge.destination == self: #single vertex
+        if outgoing_edge.destination == self:  # single vertex
             return []
-        outgoing_edges.append(outgoing_edge) #at least one outgoing edge
+        outgoing_edges.append(outgoing_edge)  # at least one outgoing edge
         outgoing_edge = outgoing_edge.twin.next
         while outgoing_edge != self.edge:
             outgoing_edges.append(outgoing_edge)
