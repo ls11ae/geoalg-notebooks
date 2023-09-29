@@ -293,8 +293,22 @@ class DCELMode(DrawingMode):
         self._highlight_radius = highlight_radius
 
     def draw(self, drawer: Drawer, points: Iterable[PointReference]):
-        vertex_queue = drawer._get_drawing_mode_state(default = [])
-        vertex_queue.extend(points)
+        point_queue, last_added = drawer._get_drawing_mode_state(default = ([], None))
+        for point in point_queue:
+            if point == points[0]:
+                last_added = point
+                return
+        if last_added is not None:
+            if isinstance(last_added, PointReference):
+                last_added.container.append(points[0])
+            else:
+                last_added = PointReference([last_added, points[0]], 0)
+            if isinstance(points[0], PointReference):
+                points[0].container.append(points[0])
+            else:
+                points[0] = PointReference([points[0], last_added], 0)
+
+        point_queue.extend(points)
         #drawer.main_canvas.clear()
         drawer.main_canvas.draw_points(points, self._vertex_radius)
         with drawer.main_canvas.hold():
@@ -478,11 +492,9 @@ class PointLocationMode(DrawingMode):
                         continue
                     upper_extension = LineSegment(point, point.container[1])
                     intersection = segment.intersection(upper_extension)
-                    if intersection is None:
-                        continue
-                    elif isinstance(intersection, LineSegment):
+                    if isinstance(intersection, LineSegment):
                         raise Exception(f"Drawn segment {segment} can not be vertical")
-                    else:  # intersection is a point
+                    elif intersection is not None:  # intersection is a point
                         point.container[1] = intersection
                     lower_extension  = LineSegment(point, point.container[2])
                     intersection = segment.intersection(lower_extension)
@@ -569,3 +581,25 @@ class MonotonePartitioningMode(DrawingMode):    # TODO: If possible, this could 
 
         drawer.clear()
         self.draw(drawer, points)
+
+class VerticalExtensionMode(DrawingMode):
+    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
+        self._vertex_radius = vertex_radius
+        self._highlight_radius = highlight_radius
+
+    def draw(self, drawer: Drawer, points: Iterable[Point]):
+        point_list = []
+        point_list.extend(points)
+        for point in point_list:
+            with drawer.main_canvas.hold():
+                if not isinstance(point, PointReference):
+                    drawer.main_canvas.draw_point(point)
+                elif len(point.container) != 3 or point.position != 0:
+                    raise Exception(f"Wrong format of the PointReference {point} for drawing vertical extensions.")
+                else:
+                    drawer.main_canvas.draw_point(point, self._vertex_radius)
+                    drawer.main_canvas.draw_path([point.container[1], point.container[2]])
+
+
+    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float): # TODO
+        pass

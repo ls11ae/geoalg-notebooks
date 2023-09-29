@@ -54,8 +54,28 @@ class DoublyConnectedEdgeList:
         if (edge[0] >= self.number_of_vertices or edge[0] < 0
             or edge[1] >= self.number_of_vertices or edge[1] < 0): # Impossible indicies
             return
-        vertex_0 = self._vertices[edge[0]]
-        vertex_1 = self._vertices[edge[1]]
+        self._add_edge(self._vertices[edge[0]], self._vertices[edge[1]])
+
+    def add_edge_by_points(self, point: Point, other_point: Point):
+        """Adds a new edge to the DCEL. 
+        
+        The edge is given by two points.
+        If either of the points is not in the DCEL an exception is raised.
+        """
+        vertex_0, vertex_1 = None, None
+        for vertex in self.vertices:
+            if vertex.point == point:
+                vertex_0 = vertex
+            if vertex.point == other_point:
+                vertex_1 = vertex
+            if vertex_0 is not None and vertex_1 is not None:
+                break
+        if vertex_0 is None or vertex_1 is None:
+            raise ValueError(f"Both points {point} and {other_point} need to be part of the DCEL to insert as an edge")
+        self._add_edge(vertex_0, vertex_1)
+
+
+    def _add_edge(self, vertex_0: Vertex, vertex_1: Vertex):
         half_edge_0 = None
         half_edge_1 = None
         if vertex_0.edge == vertex_0.edge.twin: #single vertex
@@ -109,7 +129,7 @@ class DoublyConnectedEdgeList:
             while not DoublyConnectedEdgeList._point_between_edge_and_next(vertex_1.point, search_edge):
                 search_edge = search_edge.next.twin
                 if search_edge == vertex_0.edge.twin:
-                    raise Exception(f"Could not find a suitable edge while inserting {edge}")
+                    raise Exception(f"Could not find a suitable edge while inserting edge between vertices {vertex_0} and {vertex_1}")
         
         # Find correct order around vertex_2
         search_edge2 = vertex_1.edge.twin
@@ -117,7 +137,7 @@ class DoublyConnectedEdgeList:
             while not DoublyConnectedEdgeList._point_between_edge_and_next(vertex_0.point, search_edge2):
                 search_edge2 = search_edge2.next.twin
                 if search_edge2 == vertex_1.edge.twin:
-                    raise Exception(f"Could not find a suitable edge while inserting {edge}")
+                    raise Exception(f"Could not find a suitable edge while inserting edge between vertices {vertex_0} and {vertex_1}")
                 
         # Set edge pointers
         half_edge_0._incident_face = face_0
@@ -166,7 +186,7 @@ class DoublyConnectedEdgeList:
     def add_vertex_in_edge(self, edge: HalfEdge, point: Point) -> Vertex:
         """ Adds a vertex on an existing edge by splitting it. """
         # Checks for correct insertion
-        if not edge in self.edges():
+        if not edge in self.edges:
             raise Exception(f"Edge {edge} should already be part of the DCEL to add point {point} in it.")
         if not edge.origin.point != edge.destination.point and point.orientation(edge.origin.point, edge.destination.point) == ORT.BETWEEN:
             raise Exception(f"Point {point} should lie on the edge {edge}")
@@ -288,7 +308,7 @@ class DoublyConnectedEdgeList:
 
 
     def _on_edge(self, point: Point):
-        found_edges = list(filter(lambda edge: edge.origin.point != edge.destination.point and point.orientation(edge.origin.point, edge.destination.point) == ORT.BETWEEN, self.edges()))
+        found_edges = list(filter(lambda edge: edge.origin.point != edge.destination.point and point.orientation(edge.origin.point, edge.destination.point) == ORT.BETWEEN, self.edges))
         num_of_found_edges = len(found_edges)
         if num_of_found_edges < 0 or num_of_found_edges % 2 == 1:
             raise Exception(f"Point {point} lies on a non-possible amount of edges. Something is wrong in the structure of the DCEL.")
@@ -300,11 +320,11 @@ class DoublyConnectedEdgeList:
     def _assert_well_formed(self, epsilon = EPSILON):
         # Check empty DCEL
         if self.number_of_vertices == 0:
-            if len(self.vertices()) != 0 or len(self.edges()) != 0 or len(self.faces()) != 1:
+            if len(self.vertices) != 0 or len(self.edges) != 0 or len(self.faces) != 1:
                 raise Exception(f"Malformed DCEL: Should be empty.")
             return
 
-        for edge in self.edges():
+        for edge in self.edges:
             # Skip edges of single vertices
             if edge == edge.twin:
                 continue
@@ -336,7 +356,7 @@ class DoublyConnectedEdgeList:
                 and edge not in edge.incident_face.inner_half_edges():
                 raise Exception(f"Malformed DCEL: edge ({edge}) face mismatch with face components")
             
-        for face in self.faces():
+        for face in self.faces:
             # Check is outer face
             if face.is_outer and face.outer_component != None:
                 raise Exception(f"Malformed DCEL: outer face has an outer component")
@@ -360,17 +380,24 @@ class DoublyConnectedEdgeList:
     def start_vertex(self) -> Optional[Vertex]:
         return self._start_vertex
     
+    @property
     def vertices(self) -> Iterable[Vertex]:
         return self._vertices
     
+    @property
+    def points(self) -> Iterable[Point]:
+        return [vertex.point for vertex in self._vertices]
+
+    @property
     def edges(self) -> Iterable[HalfEdge]:
         return self._edges
     
+    @property
     def faces(self) -> Iterable[Face]:
         return self._faces
     
     def inner_faces(self) -> Iterable[Face]:
-        return list(filter(lambda face: not face.is_outer, self.faces()))
+        return list(filter(lambda face: not face.is_outer, self.faces))
     
     @property
     def number_of_vertices(self) -> int:

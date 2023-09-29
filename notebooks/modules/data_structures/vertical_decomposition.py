@@ -78,7 +78,7 @@ class PointLocation:
 
 
     def clear(self):
-        self._vertical_decomposition = VerticalDecomposition(self._bounding_box)
+        self._vertical_decomposition = VerticalDecomposition(self._bounding_box, DoublyConnectedEdgeList())
         initial_face = self._vertical_decomposition.trapezoids[0]
         self._search_structure = VDSearchStructure(initial_face)
 
@@ -97,8 +97,8 @@ class PointLocation:
     @classmethod
     def dcel_prepocessing(cls, dcel: DoublyConnectedEdgeList) -> Iterable[VDLineSegment]:
         segments: list[VDLineSegment] = []
-        for edge in dcel.edges():
-            if edge.origin is edge.left_and_right[0]:  # Make sure only of of each Halfedges is used
+        for edge in dcel.edges:
+            if edge.origin is edge.left_and_right[0]:  # Make sure only one of each Halfedges is used
                 ls = VDLineSegment(edge.origin.point, edge.destination.point)
                 ls.above_face = edge.incident_face
                 segments.append(ls)

@@ -99,7 +99,10 @@ class Point:
             return HorizontalOrientation.LEFT
         else:
             return HorizontalOrientation.RIGHT
-        
+    
+    def close_to(self, other_point: Point, epsilon: float = EPSILON) -> bool:
+        return self.distance(other_point) < epsilon
+
     ## Magic methods
         
     def __eq__(self, other: Any) -> bool:

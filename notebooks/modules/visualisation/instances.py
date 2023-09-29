@@ -189,18 +189,51 @@ class SimplePolygonInstance(InstanceHandle[DoublyConnectedSimplePolygon]):
             return self.extract_points_from_raw_instance(polygon)
 
 class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
-    def __init__(self, drawing_mode: Optional[DrawingMode] = None):
+    def __init__(self, drawing_mode: Optional[DrawingMode] = None, drawing_epsilon: float = 5):
         if drawing_mode is None:
             drawing_mode = DCELMode(vertex_radius = 3)
+        self._drawing_epsilon = drawing_epsilon
+        self._last_added_point = None
         super().__init__(DoublyConnectedEdgeList(), drawing_mode)
 
     def add_point(self, point: Point) -> bool:
-        try:
-            self._instance.add_vertex(point)
-        except Exception:
-            return False
+        if isinstance(point, PointReference):
+            self._instance.add_vertex(point.container[point.position])
+            for i, neighbor in enumerate(point.container):
+                if i == point.position:
+                    continue
+                neighbor_present = False
+                if neighbor not in [vertex.point for vertex in self._instance.vertices]:
+                    continue
+                found = False
+                for edge in self._instance.edges:
+                    if edge.origin == point and edge.destination == neighbor:
+                        found = True
+                        break
+                if not found:
+                    self._instance.add_edge_by_points(point, neighbor)
+            return True
+        else:
+            old_point = None
+            for instance_point in self._instance.points:
+                if instance_point.close_to(point, epsilon = self._drawing_epsilon):
+                    old_point = instance_point
+                    self._last_added_point = old_point
+                    return
 
-        return True
+            if old_point is None:
+                try:
+                    self._instance.add_vertex(point)
+                except Exception:
+                    return False
+                if self._last_added_point is not None:
+                    print("Hey")
+                    self._instance.add_edge_by_points(self._last_added_point, point)
+                    self._last_added_point = None 
+                return True
+            else:
+                
+                return False
 
     def clear(self):
         self._instance.clear()
@@ -211,12 +244,12 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
     @staticmethod
     def extract_points_from_raw_instance(instance: DoublyConnectedEdgeList) -> list[PointReference]:
         point_list: list[PointReference] = []
-        for vertex in instance.vertices():
-            neighbors: list[Point] = [vertex.point] #start with the point itself in the list
-            if vertex.edge.destination != vertex: #at least one neighbor
+        for vertex in instance.vertices:
+            neighbors: list[Point] = [vertex.point]  # start with the point itself in the list
+            if vertex.edge.destination != vertex:  # at least one neighbor
                 neighbors.append(vertex.edge.destination.point)
                 edge = vertex.edge.twin.next
-                while edge != vertex.edge: #iterate over all neighbors
+                while edge != vertex.edge:  # iterate over all neighbors
                     neighbors.append(edge.destination.point)
                     edge = edge.twin.next
             point_list.append(PointReference(neighbors, 0))
