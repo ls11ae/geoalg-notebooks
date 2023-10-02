@@ -32,7 +32,7 @@ class DoublyConnectedEdgeList:
             
         on_edge, edge = self._on_edge(point)
         if on_edge:
-            self.add_vertex_in_edge(edge, point)
+            newVertex = self.add_vertex_in_edge(edge, point)
         else:
             # Create vertex
             newVertex: Vertex = Vertex(point)
@@ -45,16 +45,21 @@ class DoublyConnectedEdgeList:
             self._start_vertex = self._vertices[0]
         return newVertex
 
-    def add_edge(self, edge: Tuple[int, int]) -> None:
+    def add_edge(self, edge: Tuple[int, int], check_edge: bool = False) -> bool:
         """Adds a new edge to the DCEL. 
         
         The edge is given by the indicies of the vertices.
-        It is assumed, that the given edge can be inserted and does not cross other edges or vertices.
+        As a default, it is assumed, that the given edge can be inserted and does not cross other edges or vertices.
+        In that case it is always returned True.
+        If the potential edge is checked it is returned whether the edge could be added.
         """
         if (edge[0] >= self.number_of_vertices or edge[0] < 0
             or edge[1] >= self.number_of_vertices or edge[1] < 0): # Impossible indicies
             return
+        if check_edge and not self._possible_edge(self._vertices[edge[0]], self._vertices[edge[1]]):
+            return False
         self._add_edge(self._vertices[edge[0]], self._vertices[edge[1]])
+        return True
 
     def add_edge_by_points(self, point: Point, other_point: Point):
         """Adds a new edge to the DCEL. 
@@ -222,6 +227,38 @@ class DoublyConnectedEdgeList:
 
         return newVertex
         
+    def _possible_edge(self, vertex: Vertex, other_vertex: Vertex) -> bool:
+        # Vertices are not part to the same face
+        num_out_edges_0 = len(vertex.outgoing_edges())
+        num_out_edges_1 = len(other_vertex.outgoing_edges())
+        if num_out_edges_0 != 0 and num_out_edges_1 != 0:
+            face_0 = self.find_splitting_face(vertex, other_vertex.point)
+            face_1 = self.find_splitting_face(other_vertex, vertex.point)
+        elif num_out_edges_0 != 0:
+            face_0 = self.find_splitting_face(vertex, other_vertex.point)
+            face_1 = self.find_containing_face(other_vertex.point)
+        elif num_out_edges_1 != 0:
+            face_0 = self.find_containing_face(vertex.point)
+            face_1 = self.find_splitting_face(other_vertex, vertex.point)
+        else:
+            face_0 = self.find_containing_face(vertex.point)
+            face_1 = self.find_containing_face(other_vertex.point)            
+        if face_0 != face_1:
+            return False
+
+        # Another edge crosses the potential edge
+        potential_edge = LineSegment(vertex.point, other_vertex.point)
+        if face_0.outer_component is not None:
+            for cycle_edge in face_0.outer_component.cycle():
+                intersection = potential_edge.intersection(LineSegment(cycle_edge.origin.point, cycle_edge.destination.point))
+                if intersection is not None and intersection != vertex.point and intersection != other_vertex.point:
+                    return False
+        for inner_component in face_0.inner_components:
+            for cycle_edge in inner_component.cycle():
+                if potential_edge.intersection(LineSegment(cycle_edge.origin.point, cycle_edge.destination.point)) is not None:
+                    return False
+        return True
+    
     def find_containing_face(self, point: Point) -> Face:
         """ Returns the faces which contains the given point. """
         for face in self.inner_faces():
@@ -233,7 +270,7 @@ class DoublyConnectedEdgeList:
         """ Return the face that is split by a line segment between the given vertex and point and is closest to the vertex. """
         out_edges = vertex.outgoing_edges()
         if len(out_edges) == 0:
-            raise Exception("Vertex should be connected to face boundary")
+            raise Exception(f"Vertex {vertex} should be connected to face boundary")
         for edge in out_edges:
             if DoublyConnectedEdgeList._point_between_edge_and_next(point, edge.twin):
                 return edge.twin.incident_face

@@ -201,7 +201,6 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
         is_new_point = True
         for instance_point in self._instance.points:
             if instance_point.close_to(point, epsilon = self._drawing_epsilon):
-                print("old point")
                 is_new_point = False
                 point = instance_point
                 break
@@ -232,7 +231,6 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
             point = PointReference([point, self._last_added_point], 0)
             self._last_added_point = None
         elif not is_new_point:
-            print("Jup")
             self._last_added_point = point
 
         return is_new_point, point
@@ -261,6 +259,58 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
     @property
     def default_number_of_random_points(self) -> int:
         return 20
+    
+    def generate_random_points(self, max_x: float, max_y: float, number: int, min_distance = None) -> list[PointReference]:
+        while True:
+            # grid pattern with min distance up/down and left/right = 1
+            if min_distance is None:
+                min_distance = self._drawing_epsilon
+            points = super().generate_random_points(max_x/min_distance, max_y/min_distance, number)
+
+            points = [Point(np.round(point.x, 0), np.round(point.y, 0)) for point in points]
+            points = [Point(point.x*min_distance, point.y*min_distance) for point in points]
+
+            if len(points) != len(set(points)):  # Duplicate point(s)
+                continue
+
+            # 2-OPT path as in DCSP
+            path = list(points)
+            n = len(path)
+            found_improvement = True
+            while found_improvement:
+                found_improvement = False
+                for i in range(0, n - 1):
+                    for j in range(i + 1, n):
+                        subpath_distances = path[i].distance(path[j]) + path[i + 1].distance(path[(j + 1) % n])
+                        neighbour_distances = path[i].distance(path[i + 1]) + path[j].distance(path[(j + 1) % n])
+                        if subpath_distances < neighbour_distances:
+                            path[i + 1:j + 1] = reversed(path[i + 1:j + 1])
+                            found_improvement = True
+                        #print("loop end")
+            
+            circle = [(i, i + 1) for i in range(n - 1)]
+            circle.append((0, n - 1))
+            try:
+                dcel = DoublyConnectedEdgeList(path, circle)
+            except Exception():
+                continue
+
+            # Add some more edges:
+            count = 0
+            first  = np.int32(np.random.uniform(0, dcel.number_of_vertices, 1000))
+            second = np.int32(np.random.uniform(0, dcel.number_of_vertices, 1000))
+            tuple = zip(first, second)
+            for tuple in zip(first, second):
+                try:
+                    if dcel.add_edge(tuple, True):
+                        count = count + 1
+                        if count >= number / 5:
+                            break
+                except (RuntimeError, Exception):
+                    continue
+
+            return self.extract_points_from_raw_instance(dcel)
+
 
 class PointLocationInstance(InstanceHandle[PointLocation]):
     def __init__(self, drawing_mode: Optional[DrawingMode] = None):
