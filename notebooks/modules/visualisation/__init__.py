@@ -1,7 +1,7 @@
 from .drawing import (
-    PointsMode, SweepLineMode, ArtGalleryMode, PathMode, PolygonMode, DCELMode, ChansHullMode,
-    FixedVertexNumberPathsMode, LineSegmentsMode, SlabDecompositionMode, MonotonePartitioningMode,
-    PointLocationMode, VerticalExtensionMode
+    PointsMode, SweepLineMode, ArtGalleryMode, PathMode, PolygonMode, ChansHullMode,
+    FixedVertexNumberPathsMode, LineSegmentsMode, MonotonePartitioningMode, DCELMode,
+    SlabDecompositionMode, VerticalExtensionMode
 )
-from .instances import PointSetInstance, LineSegmentSetInstance, SimplePolygonInstance, DCELInstance, PointLocationInstance
+from .instances import PointSetInstance, LineSegmentSetInstance, SimplePolygonInstance, DCELInstance
 from .tool import VisualisationTool

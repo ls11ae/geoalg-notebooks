@@ -4,8 +4,8 @@ import time
 from typing import Callable, Generic, Optional, TypeVar, Union
 
 from ..geometry.core import GeometricObject, LineSegment, Point, PointReference
-from ..data_structures import DoublyConnectedSimplePolygon, DoublyConnectedEdgeList, PointLocation
-from .drawing import DrawingMode, LineSegmentsMode, PointsMode, PolygonMode, DCELMode, PointLocationMode
+from ..data_structures import DoublyConnectedSimplePolygon, DoublyConnectedEdgeList
+from .drawing import DrawingMode, LineSegmentsMode, PointsMode, PolygonMode, DCELMode
 
 import numpy as np
 
@@ -188,6 +188,7 @@ class SimplePolygonInstance(InstanceHandle[DoublyConnectedSimplePolygon]):
 
             return self.extract_points_from_raw_instance(polygon)
 
+
 class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
     def __init__(self, drawing_mode: Optional[DrawingMode] = None, drawing_epsilon: float = 5):
         if drawing_mode is None:
@@ -310,59 +311,3 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
                     continue
 
             return self.extract_points_from_raw_instance(dcel)
-
-
-class PointLocationInstance(InstanceHandle[PointLocation]):
-    def __init__(self, drawing_mode: Optional[DrawingMode] = None):
-        if drawing_mode is None:
-            drawing_mode = PointLocationMode(vertex_radius = 3)
-        super().__init__(PointLocation(), drawing_mode)
-        self._cached_point: Optional[Point] = None
-
-    def add_point(self, point: Point) -> bool:
-        if self._cached_point is None:
-            self._cached_point = point
-            return True
-        if self._cached_point == point:
-            return False
-        
-        line_segment = LineSegment(self._cached_point, point)
-        if line_segment in self._instance._vertical_decomposition.line_segments:
-            return False
-        self._instance.insert(line_segment)
-        self._cached_point = None
-
-        return True
-    
-    def clear(self):
-        self._instance.clear()
-        self._cached_point = None
-    
-    def size(self) -> int:
-        return len(self._instance._vertical_decomposition.line_segments)
-    
-    @staticmethod
-    def extract_points_from_raw_instance(instance: PointLocation) -> list[PointReference]:
-        point_list: list[PointReference] = []
-        for line_segment in instance._vertical_decomposition.line_segments:
-            point_list.append(PointReference([line_segment.left], 0))
-            point_list.append(PointReference([line_segment.right], 0))
-
-        for trapezoid in instance._vertical_decomposition.trapezoids:
-            for point in point_list:
-                if point == trapezoid.left_point or point == trapezoid.right_point:
-                    point_above = Point(point.x, trapezoid.top_line_segment.y_from_x(point.x))
-                    point_below = Point(point.x, trapezoid.bottom_line_segment.y_from_x(point.x))
-                    if len(point.container) == 1:
-                        point.container.append(point_above)
-                    elif point.container[1].y < point_above.y:
-                        point.container[1] = point_above
-                    if len(point.container) == 2:
-                        point.container.append(point_below)
-                    elif point.container[2].y > point_below.y:
-                        point.container[2] = point_below
-        return point_list
-
-    @property
-    def default_number_of_random_points(self) -> int:
-        return 20
