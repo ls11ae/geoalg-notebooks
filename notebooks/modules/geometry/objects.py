@@ -1,6 +1,7 @@
 from __future__ import annotations
 from collections import OrderedDict
 from typing import Any, Iterable, Iterator, Union
+from copy import deepcopy
 
 from .core import *
 
@@ -20,7 +21,7 @@ class PointSequence(GeometricObject):
 
     def append(self, point: Point):
         self._points.append(point)
-        self._animation_events.append(AppendEvent(point))
+        self._animation_events.append(AppendEvent(deepcopy(point)))
 
     def pop(self) -> Point:
         point = self._points.pop()
@@ -37,6 +38,12 @@ class PointSequence(GeometricObject):
 
     def reset_animations(self):
         self._animation_events = list(super().animation_events())
+
+    def get_key(self, point) -> Optional(int):
+        for i, seq_point in enumerate(self._points):
+            if seq_point == point:
+                return i
+        return None
 
     def __repr__(self) -> str:
         return self._points.__repr__()
@@ -63,6 +70,12 @@ class PointSequence(GeometricObject):
             return result
         else:
             raise ValueError("Parameter 'key' needs to be an integer or a slice with step 1.")
+
+    def __setitem__(self, key: Any, new_Point: Point):
+        if not isinstance(key, int):
+            raise ValueError("Parameter 'key' needs to be an integer.")
+        self._points[key] = new_Point
+        self._animation_events.append(SetEvent(key, deepcopy(new_Point)))
 
     def __delitem__(self, key: Any):
         if not isinstance(key, int) or key >= 0:

@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Optional, Iterable, Union
 
-from ..geometry import LineSegment, Point, VerticalOrientation as VORT, HorizontalOrientation as HORT, Rectangle
+from ..geometry import LineSegment, Point, PointReference, VerticalOrientation as VORT, HorizontalOrientation as HORT, Rectangle, PointSequence
 from .objects import Face
 from .dcel import DoublyConnectedEdgeList
 
@@ -76,7 +76,6 @@ class PointLocation:
             raise RuntimeError(f"Root of search structure has parents")
         self._search_structure._root.check_structure()
 
-
     def clear(self):
         self._vertical_decomposition = VerticalDecomposition(self._bounding_box, DoublyConnectedEdgeList())
         initial_face = self._vertical_decomposition.trapezoids[0]
@@ -127,6 +126,7 @@ class VerticalDecomposition:
         bottom._above_dcel_face = dcel.outer_face
         initial_trapezoid = VDFace(top, bottom, upper_left, upper_right)
         self._trapezoids.append(initial_trapezoid)
+        self._point_sequence: PointSequence = PointSequence()
 
     # region properties
 
@@ -164,20 +164,28 @@ class VerticalDecomposition:
             # The trapezoid is replaced by up to four new trapezoids (see [1], page 131)
             trapezoid_top = VDFace(left_point_face.top_line_segment, line_segment, line_segment.left, line_segment.right)
             trapezoid_bottom = VDFace(line_segment, left_point_face.bottom_line_segment, line_segment.left, line_segment.right)
-            if line_segment.left != left_point_face.left_point:  # Case where the new linesegment shares and enpoint with an already existing endpoint.
+            if line_segment.left != left_point_face.left_point:
                 trapezoid_left = VDFace(left_point_face.top_line_segment, left_point_face.bottom_line_segment, left_point_face.left_point, line_segment.left)
                 trapezoid_left.neighbors = [trapezoid_top, left_point_face.upper_left_neighbor, left_point_face.lower_left_neighbor, trapezoid_bottom]
-            else:
+                point_above = Point(line_segment.left.x, left_point_face.top_line_segment.y_from_x(line_segment.left.x))
+                point_below = Point(line_segment.left.x, left_point_face.bottom_line_segment.y_from_x(line_segment.left.x))
+                self._point_sequence.append(PointReference([line_segment.left, point_above, point_below], 0))
+            else:  # Case where the new linesegment shares and enpoint with an already existing endpoint.
                 trapezoid_left = None
                 trapezoid_top.upper_left_neighbor = left_point_face.upper_left_neighbor
                 trapezoid_bottom.lower_left_neighbor = left_point_face.lower_left_neighbor
+                self._point_sequence.animate(line_segment.left)
             if line_segment.right != left_point_face.right_point:
                 trapezoid_right = VDFace(left_point_face.top_line_segment, left_point_face.bottom_line_segment, line_segment.right, left_point_face.right_point)
                 trapezoid_right.neighbors = [left_point_face.upper_right_neighbor, trapezoid_top, trapezoid_bottom, left_point_face.lower_right_neighbor]
+                point_above = Point(line_segment.right.x, left_point_face.top_line_segment.y_from_x(line_segment.right.x))
+                point_below = Point(line_segment.right.x, left_point_face.bottom_line_segment.y_from_x(line_segment.right.x))
+                self._point_sequence.append(PointReference([line_segment.right, point_above, point_below], 0))
             else:
                 trapezoid_right = None
                 trapezoid_top.upper_right_neighbor = left_point_face.upper_right_neighbor
                 trapezoid_bottom.lower_right_neighbor = left_point_face.lower_right_neighbor
+                self._point_sequence.animate(line_segment.right)
             self._trapezoids.remove(left_point_face)
             self._trapezoids.extend(list(filter(None.__ne__, [trapezoid_left, trapezoid_top, trapezoid_bottom, trapezoid_right])))
             return [left_point_face], [trapezoid_left, trapezoid_top, trapezoid_bottom, trapezoid_right]
@@ -196,11 +204,15 @@ class VerticalDecomposition:
             left_face = left_point_face
             left_face_above.upper_left_neighbor = left_point_face
             left_face_below.lower_left_neighbor = left_point_face
+            point_above = Point(line_segment.left.x, left_point_face.top_line_segment.y_from_x(line_segment.left.x))
+            point_below = Point(line_segment.left.x, left_point_face.bottom_line_segment.y_from_x(line_segment.left.x))
+            self._point_sequence.append(PointReference([line_segment.left, point_above, point_below], 0))
         else:  # Case where the new linesegment shares and endpoint with an already existing endpoint.
             left_face = None
             self.trapezoids.remove(left_point_face)  # TODO Check runtime when removing elements from the list
             left_face_above.upper_left_neighbor = left_point_face.upper_left_neighbor
             left_face_below.lower_left_neighbor = left_point_face.lower_left_neighbor
+            self._point_sequence.animate(line_segment.left)
 
         if left_point_face.right_point.vertical_orientation(line_segment) == VORT.ABOVE:  # Setting the top/bottom most neighbor
             left_face_above.upper_right_neighbor = upper_right
@@ -220,16 +232,23 @@ class VerticalDecomposition:
             right_face_above.upper_right_neighbor = right_point_face
             right_face_below.lower_right_neighbor = right_point_face
             right_point_face.left_point = line_segment.right
+            point_above = Point(line_segment.right.x, right_point_face.top_line_segment.y_from_x(line_segment.right.x))
+            point_below = Point(line_segment.right.x, right_point_face.bottom_line_segment.y_from_x(line_segment.right.x))
+            self._point_sequence.append(PointReference([line_segment.right, point_above, point_below], 0))
         else:
             right_face = None
             self._trapezoids.remove(right_point_face)
             right_face_above.upper_right_neighbor = right_point_face.upper_right_neighbor
             right_face_below.lower_right_neighbor = right_point_face.lower_right_neighbor
+            self._point_sequence.animate(line_segment.right)
 
         # Shorten vertical extensions that abut on the LS. => Merge trapezoids along the line-segment. (see [1], page 132)
         last_face_above = left_face_above
         last_face_below = left_face_below
         for trapezoid in intersected_trapezoids:
+            key = self._point_sequence.get_key(trapezoid.left_point)
+            self._point_sequence.animate(trapezoid.left_point)
+            point_ref = self._point_sequence[key]
             if trapezoid.left_point.vertical_orientation(line_segment) == VORT.ABOVE:
                 # Merge trapezoids below the LS
                 if trapezoid.right_point.vertical_orientation(line_segment) == VORT.BELOW:  # Next one is on the other side, new neighbors are correct and final
@@ -241,6 +260,8 @@ class VerticalDecomposition:
                 trapezoid.bottom_line_segment = line_segment
                 trapezoid.lower_left_neighbor = last_face_above
                 last_face_above = trapezoid
+                if isinstance(point_ref, PointReference):
+                    point_ref.container[2] = Point(trapezoid.left_point.x, line_segment.y_from_x(trapezoid.left_point.x))
             elif trapezoid.left_point.vertical_orientation(line_segment) == VORT.BELOW:
                 # Merge trapezoids above the LS
                 if trapezoid.right_point.vertical_orientation(line_segment) == VORT.ABOVE:
@@ -248,13 +269,20 @@ class VerticalDecomposition:
                     last_face_above.upper_right_neighbor = trapezoid.upper_right_neighbor
                 last_face_above.right_point = trapezoid.right_point
 
-                # Shrink the intersected trapezoids to be below the LS
+                # Shrink the intersected trapezoid to be below the LS
                 trapezoid.top_line_segment = line_segment
                 trapezoid.upper_left_neighbor = last_face_below
                 last_face_below = trapezoid
+                if isinstance(point_ref, PointReference):
+                    point_ref.container[1] = Point(trapezoid.left_point.x, line_segment.y_from_x(trapezoid.left_point.x))
             else:
                 raise RuntimeError(f"Point {trapezoid.left_point} must not lie on line induced by the line segment {line_segment}")
+            self._point_sequence[key] = point_ref
 
+
+        key = self._point_sequence.get_key(right_face_above.left_point)
+        self._point_sequence.animate(right_face_above.left_point)
+        point_ref = self._point_sequence[key]
         # Merge with (already split) last trapezoid
         if right_face_above.left_point.vertical_orientation(line_segment) == VORT.ABOVE:  # point is the original leftp of right_point_face (equal in right_face_below)
             # Merge trapezoids below the LS and discard right_face_below
@@ -265,6 +293,8 @@ class VerticalDecomposition:
             last_face_above.lower_right_neighbor = right_face_above  # Connect neighboring trapezoids above the LS
             right_face_above.upper_left_neighbor = upper_left  # Connect even higher neighbor
             kept_face = right_face_above
+            if isinstance(point_ref, PointReference):
+                point_ref.container[2] = Point(right_face_above.left_point.x, line_segment.y_from_x(right_face_above.left_point.x))
         elif right_face_above.left_point.vertical_orientation(line_segment) == VORT.BELOW:
             # Merge trapezoids above the LS and discard right_face_above
             last_face_above.right_point = line_segment.right
@@ -274,8 +304,14 @@ class VerticalDecomposition:
             last_face_below.upper_right_neighbor = right_face_below  # Connect neighboring trapezoids below the LS
             right_face_below.lower_left_neighbor = lower_left
             kept_face = right_face_below
+            if isinstance(point_ref, PointReference):
+                point_ref.container[1] = Point(right_face_above.left_point.x, line_segment.y_from_x(right_face_above.left_point.x))
         else:
             raise RuntimeError(f"Point {trapezoid.left_point} must not lie on line induced by the line segment {line_segment}")
+        
+        self._point_sequence[key] = point_ref
+        
+        #del self._point_sequence[point_sequence_length]
 
         self._trapezoids.extend([left_face_above, left_face_below, kept_face])
         return [left_point_face] + intersected_trapezoids + [right_point_face], [left_face, left_face_above, left_face_below, kept_face, right_face]

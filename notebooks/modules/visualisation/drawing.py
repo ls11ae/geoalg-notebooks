@@ -522,18 +522,61 @@ class VerticalExtensionMode(DrawingMode):
         self._highlight_radius = highlight_radius
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
-        point_list = []
-        point_list.extend(points)
-        for point in point_list:
+        for point in points:
             with drawer.main_canvas.hold():
-                if not isinstance(point, PointReference):
-                    drawer.main_canvas.draw_point(point)
+                if not isinstance(point, PointReference) or len(point.container) == 1:
+                    drawer.main_canvas.draw_point(point, self._vertex_radius)
                 elif len(point.container) != 3 or point.position != 0:
-                    raise Exception(f"Wrong format of the PointReference {point} for drawing vertical extensions.")
+                    continue
+                    #raise Exception(f"Wrong format of the PointReference {point} for drawing vertical extensions.")
                 else:
                     drawer.main_canvas.draw_point(point, self._vertex_radius)
                     drawer.main_canvas.draw_path([point.container[1], point.container[2]])
 
+    def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
+        with drawer.main_canvas.hold():
+            drawer.main_canvas.clear()
+            if not points:
+                return
+            else:
+                drawer.main_canvas.draw_point(points[-1], self._highlight_radius, transparent = True)
+            for point in points:
+                if not isinstance(point, PointReference) or len(point.container) == 1:
+                    drawer.main_canvas.draw_point(point, self._vertex_radius)
+                elif len(point.container) != 3 or point.position != 0:
+                    continue
+                    #raise Exception(f"Wrong format of the PointReference {point} for drawing vertical extensions.")
+                else:
+                    drawer.main_canvas.draw_point(point, self._vertex_radius)
+                    drawer.main_canvas.draw_path([point.container[1], point.container[2]])
 
-    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float): # TODO
-        pass
+    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
+        points: list[Point] = []
+        
+        event_iterator = iter(animation_events)
+        next_event = next(event_iterator, None)
+
+        while next_event is not None:
+            event = next_event
+            next_event = next(event_iterator, None)
+
+            if points:
+                if isinstance(event, PopEvent) and isinstance(next_event, AppendEvent):
+                    event = SetEvent(-1, next_event.point)
+                    next_event = next(event_iterator, None)
+
+            event.execute_on(points)
+
+            if isinstance(event, PopEvent) and isinstance(next_event, SetEvent) \
+                or isinstance(event, SetEvent) and event.key != -1 and isinstance(next_event, AppendEvent):
+                continue
+
+            if isinstance(event, PopEvent) and next_event is None:
+                break
+
+            self._draw_animation_step(drawer, points)
+            time.sleep(animation_time_step)
+
+        drawer.clear()
+        self.draw(drawer, points)
+
