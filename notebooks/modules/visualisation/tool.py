@@ -68,8 +68,6 @@ class VisualisationTool(Generic[I]):
             self._multi_canvas[i].scale(1, -1)
             self._multi_canvas[i].line_cap = "round"
             self._multi_canvas[i].line_join = "round"
-            if i != 5:
-                self._multi_canvas[i].line_width = 3        # TODO: This could be a parameter of CanvasDrawingHandle.draw_path(...).
 
         ib_canvas = CanvasDrawingHandle(self._multi_canvas[self._INSTANCE_BACK])
         im_canvas = CanvasDrawingHandle(self._multi_canvas[self._INSTANCE_MAIN])

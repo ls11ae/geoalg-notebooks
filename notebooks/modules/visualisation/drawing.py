@@ -51,11 +51,12 @@ class CanvasDrawingHandle:
             self._canvas.fill_style = self.opaque_style
 
     def draw_path(self, points: Iterable[Point], close: bool = False, stroke: bool = True,
-    fill: bool = False, transparent: bool = False):
+    fill: bool = False, transparent: bool = False, line_width: float = 3):
         points_iterator = iter(points)
         first_point = next(points_iterator, None)
         if first_point is None:
             return
+        self._canvas.line_width = abs(line_width)
 
         self._canvas.begin_path()
         self._canvas.move_to(first_point.x, first_point.y)
@@ -76,8 +77,8 @@ class CanvasDrawingHandle:
             self._canvas.fill_style  = self.opaque_style
 
     def draw_polygon(self, points: Iterable[Point], stroke: bool = True,
-    fill: bool = False, transparent: bool = False):
-        self.draw_path(points, close = True, stroke = stroke, fill = fill, transparent = transparent)
+    fill: bool = False, transparent: bool = False, line_width = 3):
+        self.draw_path(points, close = True, stroke = stroke, fill = fill, transparent = transparent, line_width = line_width)
 
     @property
     def width(self) -> float:
@@ -181,7 +182,7 @@ class SweepLineMode(PointsMode):
                 drawer.main_canvas.draw_point(points[-1], self._highlight_radius, transparent = True)
                 left_sweep_line_point = Point(0, points[-1].y)
                 right_sweep_line_point = Point(drawer.front_canvas.width, points[-1].y)
-                drawer.front_canvas.draw_path((left_sweep_line_point, right_sweep_line_point))
+                drawer.front_canvas.draw_path((left_sweep_line_point, right_sweep_line_point), line_width = 1)
 
 
 class ArtGalleryMode(PointsMode):
@@ -321,7 +322,7 @@ class ChansHullMode(PolygonMode):
                         container = event.point.container
                         with drawer.front_canvas.hold():
                             drawer.front_canvas.clear()
-                            drawer.front_canvas.draw_polygon(container)
+                            drawer.front_canvas.draw_polygon(container, line_width = 1)
                         time.sleep(animation_time_step)
 
             event.execute_on(self._animation_path)
@@ -454,7 +455,7 @@ class MonotonePartitioningMode(DrawingMode):    # TODO: If possible, this could 
             if self._animate_sweep_line:
                 left_sweep_line_point = Point(0, event_point.y)
                 right_sweep_line_point = Point(drawer.front_canvas.width, event_point.y)
-                drawer.front_canvas.draw_path((left_sweep_line_point, right_sweep_line_point))
+                drawer.front_canvas.draw_path((left_sweep_line_point, right_sweep_line_point), line_width = 1)
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
         points: list[Point] = []
