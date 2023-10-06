@@ -521,6 +521,7 @@ class VerticalExtensionMode(DrawingMode):
     def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
         self._vertex_radius = vertex_radius
         self._highlight_radius = highlight_radius
+        self._marked_edge = None
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         for point in points:
@@ -535,23 +536,29 @@ class VerticalExtensionMode(DrawingMode):
                     drawer.main_canvas.draw_path([point.container[1], point.container[2]])
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
-        with drawer.main_canvas.hold():
+        with drawer.main_canvas.hold(), drawer.front_canvas.hold():
             drawer.main_canvas.clear()
+            drawer.front_canvas.clear()
             if not points:
                 return
             else:
-                drawer.main_canvas.draw_point(points[-1], self._highlight_radius, transparent = True)
+                drawer.front_canvas.draw_point(points[-1], self._highlight_radius, transparent = True)
             for point in points:
                 if not isinstance(point, PointReference) or len(point.container) == 1:
-                    drawer.main_canvas.draw_point(point, self._vertex_radius)
+                    drawer.front_canvas.draw_point(point, self._vertex_radius)
+                elif len(point.container) == 2:
+                    self._marked_edge = point.container
                 elif len(point.container) != 3 or point.position != 0:
-                    continue
-                    #raise Exception(f"Wrong format of the PointReference {point} for drawing vertical extensions.")
+                    raise Exception(f"Wrong format of the PointReference {point} for drawing vertical extensions.")
                 else:
-                    drawer.main_canvas.draw_point(point, self._vertex_radius)
-                    drawer.main_canvas.draw_path([point.container[1], point.container[2]])
+                    drawer.front_canvas.draw_point(point, self._vertex_radius)
+                    drawer.front_canvas.draw_path([point.container[1], point.container[2]])
+            if self._marked_edge is not None:
+                drawer.main_canvas.draw_path(self._marked_edge)
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
+        drawer.main_canvas.set_colour(0, 165, 0)
+        drawer.front_canvas.set_colour(0, 0, 255)
         points: list[Point] = []
         
         event_iterator = iter(animation_events)
@@ -578,6 +585,8 @@ class VerticalExtensionMode(DrawingMode):
             self._draw_animation_step(drawer, points)
             time.sleep(animation_time_step)
 
+        drawer.main_canvas.set_colour(0, 0, 255)
+        drawer.front_canvas.set_colour(0, 0, 0)
         drawer.clear()
         self.draw(drawer, points)
 

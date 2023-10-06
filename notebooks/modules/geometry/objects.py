@@ -39,9 +39,9 @@ class PointSequence(GeometricObject):
     def reset_animations(self):
         self._animation_events = list(super().animation_events())
 
-    def get_key(self, point) -> Optional(int):
+    def _find(self, point: Point) -> Optional[Point]:
         for i, seq_point in enumerate(self._points):
-            if seq_point == point:
+            if point == seq_point:
                 return i
         return None
 
@@ -60,6 +60,10 @@ class PointSequence(GeometricObject):
         return len(self._points)
 
     def __getitem__(self, key: Any) -> Union[Point, PointSequence]:
+        if isinstance(key, Point):
+            key = self._find(key)
+            if key is None:
+                return None
         if isinstance(key, int):
             return self._points[key]
         elif isinstance(key, slice) and (key.step is None or key.step == 1):
@@ -71,16 +75,17 @@ class PointSequence(GeometricObject):
         else:
             raise ValueError("Parameter 'key' needs to be an integer or a slice with step 1.")
 
-    def __setitem__(self, key: Any, new_Point: Point):
-        if not isinstance(key, int):
-            raise ValueError("Parameter 'key' needs to be an integer.")
-        self._points[key] = new_Point
-        self._animation_events.append(SetEvent(key, deepcopy(new_Point)))
+    def __setitem__(self, key: Any, new_point: Point):
+        if isinstance(key, Point):
+            key = self._find(key)
+        elif not isinstance(key, int):
+            raise ValueError("Parameter 'key' needs to be an integer or a point")
+        self._points[key] = new_point
+        self._animation_events.append(SetEvent(key, deepcopy(new_point)))
 
     def __delitem__(self, key: Any):
-        if not isinstance(key, int) or key >= 0:
-            # This constraint enables an easy implementation of __add__(). TODO: Can probably be changed now.
-            raise ValueError("Parameter 'key' needs to be a negative integer.")
+        if not isinstance(key, int):
+            raise ValueError("Parameter 'key' needs to be an integer.")
         del self._points[key]
         self._animation_events.append(DeleteEvent(key))
 
