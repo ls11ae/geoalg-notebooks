@@ -110,36 +110,3 @@ class PointSequenceDict(GeometricObject):
 
     def __repr__(self) -> str:
         return "\n".join(f"{point}: {segments}" for point, segments in self._intersections.items())
-
-
-class Rectangle:
-    def __init__(self, point_0: Point, point_1: Point) -> None:
-        if point_0.x < point_1.x:
-            self._left = point_0.x
-            self._right = point_1.x
-        else:
-            self._left = point_1.x
-            self._right = point_0.x
-
-        if point_0.y < point_1.y:
-            self._lower = point_0.y
-            self._upper = point_1.y
-        else:
-            self._lower = point_1.y
-            self._upper = point_0.y
-
-    @property
-    def left(self):
-        return self._left
-
-    @property
-    def right(self):
-        return self._right
-
-    @property
-    def upper(self):
-        return self._upper
-
-    @property
-    def lower(self):
-        return self._lower

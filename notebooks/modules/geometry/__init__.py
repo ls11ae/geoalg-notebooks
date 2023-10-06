@@ -1,2 +1,2 @@
-from .core import Orientation, LineSegment, Point, PointReference
+from .core import Orientation, VerticalOrientation, HorizontalOrientation, Point, PointReference, LineSegment, Rectangle
 from .objects import *

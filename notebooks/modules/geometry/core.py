@@ -21,10 +21,12 @@ class VerticalOrientation(Enum):
     ABOVE = auto()
     BELOW = auto()
 
+
 class HorizontalOrientation(Enum):
     LEFT = auto()
     RIGHT = auto()
     EQUAL = auto()
+
 
 class GeometricObject(ABC):     # TODO: Rename, move and export this.
     @abstractmethod
@@ -141,6 +143,7 @@ class Point:
     def __round__(self, ndigits: Optional[int] = None) -> Point:
         return Point(round(self._x, ndigits), round(self._y, ndigits))
 
+
 class PointReference(Point):    # TODO: Make this a generic type for points with attributes.
     def __init__(self, container: list[Point], position: int):
         self._container = container
@@ -176,6 +179,7 @@ class PointReference(Point):    # TODO: Make this a generic type for points with
 
     def __repr__(self) -> str:
         return f"({self._x}, {self._y})+{self.container}"
+
 
 class LineSegment:
     def __init__(self, p: Point, q: Point):
@@ -271,10 +275,44 @@ class LineSegment:
         return f"{self.upper}--{self.lower}"
 
 
+class Rectangle:
+    def __init__(self, point_0: Point, point_1: Point) -> None:
+        if point_0.x < point_1.x:
+            self._left = point_0.x
+            self._right = point_1.x
+        else:
+            self._left = point_1.x
+            self._right = point_0.x
+
+        if point_0.y < point_1.y:
+            self._lower = point_0.y
+            self._upper = point_1.y
+        else:
+            self._lower = point_1.y
+            self._upper = point_0.y
+
+    @property
+    def left(self):
+        return self._left
+
+    @property
+    def right(self):
+        return self._right
+
+    @property
+    def upper(self):
+        return self._upper
+
+    @property
+    def lower(self):
+        return self._lower
+    
+
 class AnimationEvent(ABC):      # TODO: Maybe use an Enum instead...
     @abstractmethod
     def execute_on(self, points: list[Point]):
         pass
+
 
 class AppendEvent(AnimationEvent):
     def __init__(self, point: Point):
@@ -283,9 +321,11 @@ class AppendEvent(AnimationEvent):
     def execute_on(self, points: list[Point]):
         points.append(self.point)
 
+
 class PopEvent(AnimationEvent):
     def execute_on(self, points: list[Point]):
         points.pop()
+
 
 class SetEvent(AnimationEvent):
     def __init__(self, key: int, point: Point):
@@ -295,12 +335,14 @@ class SetEvent(AnimationEvent):
     def execute_on(self, points: list[Point]):
         points[self.key] = self.point
 
+
 class DeleteEvent(AnimationEvent):
     def __init__(self, key: int):
         self.key = key
 
     def execute_on(self, points: list[Point]):
         del points[self.key]
+
 
 class ClearEvent(AnimationEvent):
     def execute_on(self, points: list[Point]):
