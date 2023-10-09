@@ -247,7 +247,7 @@ class VisualisationTool(Generic[I]):
 
         self._example_buttons.append(self._create_button(name, example_instance_callback))
 
-    def register_algorithm(self, name: str, algorithm: Algorithm[I], drawing_mode: DrawingMode):
+    def register_algorithm(self, name: str, algorithm: Algorithm[I], drawing_mode: DrawingMode, preprocessing: Algorithm[I] = None):
         algorithm_drawer = Drawer(drawing_mode, self._ab_canvas, self._am_canvas, self._af_canvas)
         index = len(self._algorithm_messages)
         self._algorithm_messages.append(HTML("<br>"))
@@ -257,7 +257,10 @@ class VisualisationTool(Generic[I]):
             self._algorithm_messages[index].value = "<b>RUNNING</b>"
 
             try:
-                algorithm_output, algorithm_running_time = self._instance.run_algorithm(algorithm)
+                if preprocessing is None:
+                    algorithm_output, algorithm_running_time = self._instance.run_algorithm(algorithm)
+                else:
+                    algorithm_output, algorithm_running_time = self._instance.run_algorithm_with_preprocessing(preprocessing, algorithm)
             except Exception as exception:
                 title = html.escape(str(exception), quote = True)
                 self._algorithm_messages[index].value = f"<b title='{title}'><font color='red'>ERROR</font></b>"

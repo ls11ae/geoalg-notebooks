@@ -12,14 +12,12 @@ class PointLocation:
         if dcel is None:
             dcel = DoublyConnectedEdgeList()
         self._bounding_box = bounding_box
+        self._dcel = dcel
         self._vertical_decomposition = VerticalDecomposition(bounding_box, dcel)
         initial_face = self._vertical_decomposition.trapezoids[0]
         self._search_structure = VDSearchStructure(initial_face)
         # Non-Randomized Incremental Construction
-        for segment in PointLocation.dcel_prepocessing(dcel):
-            self.insert(segment)
-            # self.check_structure()  # Just for testing, takes a considerable amount of time
-            # print(f"Check successful after insertion of LS {segment}")
+        self.build_vertical_decomposition(PointLocation.dcel_prepocessing(self._dcel))
 
     def check_structure(self):
         # --- Vertical Decompostion ---
@@ -77,6 +75,10 @@ class PointLocation:
         self._search_structure._root.check_structure()
 
     def clear(self):
+        self.clear_vertical_decomposition()
+        self._dcel.clear()
+
+    def clear_vertical_decomposition(self):
         self._vertical_decomposition = VerticalDecomposition(self._bounding_box, DoublyConnectedEdgeList())
         initial_face = self._vertical_decomposition.trapezoids[0]
         self._search_structure = VDSearchStructure(initial_face)
@@ -104,10 +106,13 @@ class PointLocation:
         return segments
                 
 
-    # @classmethod
-    # def build_vertical_decomposition(cls, segments: set[LineSegment]) -> VerticalDecomposition:
-    #    # randomized incremental construction
-    #    pass
+    def build_vertical_decomposition(self, segments: set[LineSegment]) -> VerticalDecomposition:  # TODO: Make Randomized
+       self.clear_vertical_decomposition()
+       # Non-randomized incremental construction
+       for segment in segments:
+            self.insert(segment)
+            # self.check_structure()  # Just for testing, takes a considerable amount of time
+            # print(f"Check successful after insertion of LS {segment}")
 
 
 class VerticalDecomposition:

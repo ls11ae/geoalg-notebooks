@@ -3,5 +3,8 @@ from .drawing import (
     FixedVertexNumberPathsMode, LineSegmentsMode, MonotonePartitioningMode, DCELMode,
     SlabDecompositionMode, VerticalExtensionMode
 )
-from .instances import PointSetInstance, LineSegmentSetInstance, SimplePolygonInstance, DCELInstance
+from .instances import (
+    PointSetInstance, LineSegmentSetInstance, SimplePolygonInstance, DCELInstance,
+    PointLocationInstance
+)
 from .tool import VisualisationTool

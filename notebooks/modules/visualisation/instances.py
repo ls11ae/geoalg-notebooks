@@ -4,7 +4,7 @@ import time
 from typing import Callable, Generic, Optional, TypeVar, Union
 
 from ..geometry.core import GeometricObject, LineSegment, Point, PointReference
-from ..data_structures import DoublyConnectedSimplePolygon, DoublyConnectedEdgeList
+from ..data_structures import DoublyConnectedSimplePolygon, DoublyConnectedEdgeList, PointLocation
 from .drawing import DrawingMode, LineSegmentsMode, PointsMode, PolygonMode, DCELMode
 
 import numpy as np
@@ -25,6 +25,21 @@ class InstanceHandle(ABC, Generic[I]):
 
     def run_algorithm(self, algorithm: Algorithm[I]) -> tuple[GeometricObject, float]:
         instance_points = self.extract_points_from_raw_instance(self._instance)
+
+        start_time = time.perf_counter()
+        algorithm_output = algorithm(self._instance)
+        end_time = time.perf_counter()
+
+        self.clear()
+        for point in instance_points:
+            self.add_point(point)
+
+        return algorithm_output, 1000 * (end_time - start_time)
+    
+    def run_algorithm_with_preprocessing(self, preprocessing: Algorithm[I], algorithm: Algorithm[I]) -> tuple[GeometricObject, float]:
+        instance_points = self.extract_points_from_raw_instance(self._instance)
+
+        preprocessing(self._instance)
 
         start_time = time.perf_counter()
         algorithm_output = algorithm(self._instance)
@@ -195,12 +210,13 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
             drawing_mode = DCELMode(vertex_radius = 3)
         self._drawing_epsilon = drawing_epsilon
         self._last_added_point = None
+        self._dcel = self._instance  # This is so that that DCELInstance can be used by the PointLocationInstance where the dcel is not the instance itself
         super().__init__(DoublyConnectedEdgeList(), drawing_mode)
 
     def add_point(self, point: Point) -> bool:
         # Check if point is already in the DCEL
         is_new_point = True
-        for instance_point in self._instance.points:
+        for instance_point in self._dcel.points:
             if instance_point.close_to(point, epsilon = self._drawing_epsilon):
                 is_new_point = False
                 point = instance_point
@@ -209,26 +225,26 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
         # Add point (if necessary)
         if is_new_point:
             if isinstance(point, PointReference):
-                self._instance.add_vertex(point.container[point.position])
+                self._dcel.add_vertex(point.container[point.position])
                 # Add edges from Point-Reference-Container
                 for i, neighbor in enumerate(point.container):
                     if i == point.position:
                         continue
-                    if neighbor not in [vertex.point for vertex in self._instance.vertices]:
+                    if neighbor not in [vertex.point for vertex in self._dcel.vertices]:
                         continue
                     found = False
-                    for edge in self._instance.edges:
+                    for edge in self._dcel.edges:
                         if edge.origin == point and edge.destination == neighbor:
                             found = True
                             break
                     if not found:
-                        self._instance.add_edge_by_points(point, neighbor)
+                        self._dcel.add_edge_by_points(point, neighbor)
             else:
-                self._instance.add_vertex(point)
+                self._dcel.add_vertex(point)
 
         # Add edge from last clicked point
         if self._last_added_point is not None and self._last_added_point != point:
-            self._instance.add_edge_by_points(self._last_added_point, point)
+            self._dcel.add_edge_by_points(self._last_added_point, point)
             point = PointReference([point, self._last_added_point], 0)
             self._last_added_point = None
         elif not is_new_point:
@@ -241,7 +257,7 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
         self._last_added_point = None
 
     def size(self) -> int:
-        return self._instance.number_of_vertices
+        return self._dcel.number_of_vertices
 
     @staticmethod
     def extract_points_from_raw_instance(instance: DoublyConnectedEdgeList) -> list[PointReference]:
@@ -311,3 +327,20 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
                     continue
 
             return self.extract_points_from_raw_instance(dcel)
+
+class PointLocationInstance(DCELInstance, InstanceHandle[PointLocation]):
+    def __init__(self, drawing_mode: Optional[DrawingMode] = None, drawing_epsilon: float = 5):
+        if drawing_mode is None:
+            drawing_mode = DCELMode(vertex_radius = 3)
+        self._drawing_mode = drawing_mode
+        self._drawing_epsilon = drawing_epsilon
+        self._last_added_point = None
+        self._instance = PointLocation()
+        self._dcel = self._instance._dcel
+
+    @staticmethod
+    def extract_points_from_raw_instance(instance: Union[DoublyConnectedEdgeList, PointLocation]) -> list[PointReference]:
+        if isinstance(instance, DoublyConnectedEdgeList):
+            return DCELInstance.extract_points_from_raw_instance(instance)
+        else:
+            return DCELInstance.extract_points_from_raw_instance(instance._dcel)
