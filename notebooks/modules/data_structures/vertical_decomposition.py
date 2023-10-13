@@ -375,7 +375,7 @@ class VDNode(ABC):
 
 
     @abstractmethod
-    def search(self, point: Point, line_segment: Optional[VDLineSegment] = None) -> VDFace:
+    def search(self, point: Point, line_segment: Optional[VDLineSegment] = None, point_sequence = PointSequence()) -> VDFace:
         """Search/Query method for the search structure of the vertical decompostion.
         
         Parameters
@@ -435,11 +435,12 @@ class VDXNode(VDNode):
 
     # endregion
 
-    def search(self, point: Point, line_segment: Optional[VDLineSegment] = None) -> VDFace:
+    def search(self, point: Point, line_segment: Optional[VDLineSegment] = None, point_sequence = PointSequence()) -> VDFace:
+        point_sequence.append(self._point)
         if point.horizontal_orientation(self._point) == HORT.LEFT:  # Using symbolic shear transform
-            return self._left.search(point, line_segment)
+            return self._left.search(point, line_segment, point_sequence)
         else:  # The point lies to the right or coincides with the point of the node. Then we decide to continue to the right ([1], page 130 last paragraph). Durint insertion this results in a trapezoid of 0 width.
-            return self._right.search(point, line_segment)
+            return self._right.search(point, line_segment, point_sequence)
 
 
 class VDYNode(VDNode):
@@ -471,14 +472,15 @@ class VDYNode(VDNode):
 
     # endregion
 
-    def search(self, point: Point, line_segment: Optional[VDLineSegment] = None) -> VDFace:
+    def search(self, point: Point, line_segment: Optional[VDLineSegment] = None, point_sequence = PointSequence()) -> VDFace:
+        point_sequence.append(PointReference([self._line_segment.left, self._line_segment.right], 0))
         cr = point.vertical_orientation(self._line_segment)
 
         # During insertion: cr == VORT.ON can only happen if the new line segment shares its left endpoint with the ls stored at this node
         if cr == VORT.ABOVE or (cr == VORT.ON and (line_segment is None or line_segment.slope() > self._line_segment.slope())):
-            return self.upper.search(point, line_segment)
+            return self.upper.search(point, line_segment, point_sequence)
         elif cr == VORT.BELOW or (cr == VORT.ON and line_segment.slope() < self._line_segment.slope()):
-            return self.lower.search(point, line_segment)
+            return self.lower.search(point, line_segment, point_sequence)
         else:
             raise AttributeError(f"The line segment {line_segment} cannot be inserted because it is already in the vertical decomposition")
 
@@ -489,7 +491,9 @@ class VDLeaf(VDNode):
         self._face: VDFace = face
         self._face.search_leaf = self
 
-    def search(self, point: Point, line_segment: Optional[VDLineSegment] = None) -> VDFace:
+    def search(self, point: Point, line_segment: Optional[VDLineSegment] = None, point_sequence = PointSequence()) -> VDFace:
+        print("leaf animation")
+        point_sequence.animate(point)
         return self._face
 
 
@@ -505,10 +509,18 @@ class VDSearchStructure:
     
     # endregion
 
-    def query(self, point: Point) -> Face:
-        vd_face = self._root.search(point)
+    def query(self, point: Point) -> tuple[Face, PointSequence]:
+        point_sequence = PointSequence()
+        vd_face = self._root.search(point, point_sequence=point_sequence)
         dcel_face = vd_face.bottom_line_segment.above_face
-        return dcel_face
+        point_sequence.clear()
+        
+        point_sequence.append(point)
+        if dcel_face.is_outer:
+            point_sequence.append(Point(5, 5))
+        for vertex in dcel_face.outer_vertices():
+            point_sequence.append(vertex.point)
+        return dcel_face, point_sequence
     
     def update(self, line_segment: VDLineSegment, unvalid_leafs: list[Optional[VDLeaf]], new_leafs: list[Optional[VDLeaf]]):
         """Update the search structure using known leafs from updating the vertical decomposition"""

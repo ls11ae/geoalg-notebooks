@@ -590,3 +590,19 @@ class VerticalExtensionMode(DrawingMode):
         drawer.clear()
         self.draw(drawer, points)
 
+
+class PointLocationMode(PolygonMode):
+    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
+        self._vertex_radius = vertex_radius
+        self._highligh_radius = highlight_radius
+        super().__init__(False, False, vertex_radius, highlight_radius)
+
+    def draw(self, drawer: Drawer, points: Iterable[Point]):
+        points = list(points)
+        if len(points) > 1:
+            super().draw(drawer, points[1:])
+        if len(points) > 0:
+            drawer.main_canvas.draw_point(points[0], self._vertex_radius)
+
+    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):  # TODO
+        print(list(animation_events))
