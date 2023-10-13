@@ -87,6 +87,8 @@ class Point:
                 return Orientation.BETWEEN
             
     def vertical_orientation(self, line_segment: LineSegment, epsilon: float = EPSILON) -> VerticalOrientation:
+        if line_segment.left.x == line_segment.right.x:
+            return VerticalOrientation.ON  # Case x1 = x = x2 (See [1], page 139)
         y = line_segment.y_from_x(self._x)
         if y - self._y < -epsilon:
             return VerticalOrientation.ABOVE
@@ -204,11 +206,11 @@ class LineSegment:
     
     @property
     def left(self) -> Point:
-        return self._upper if self._upper.x < self._lower.x or (self._upper.x == self._lower.x and self._upper.y > self._lower.y) else self._lower
+        return self._upper if self._upper.x < self._lower.x or (self._upper.x == self._lower.x and self._upper.y < self._lower.y) else self._lower
 
     @property
     def right(self) -> Point:
-        return self._upper if self._upper.x > self._lower.x or (self._upper.x == self._lower.x and self._upper.y < self._lower.y) else self._lower
+        return self._upper if self._upper.x > self._lower.x or (self._upper.x == self._lower.x and self._upper.y > self._lower.y) else self._lower
 
     ## Operation(s)
 
@@ -272,7 +274,7 @@ class LineSegment:
         return hash((self.upper, self.lower))
 
     def __repr__(self) -> str:
-        return f"{self.upper}--{self.lower}"
+        return f"{self.left}--{self.right}"
 
 
 class Rectangle:

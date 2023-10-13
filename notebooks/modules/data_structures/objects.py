@@ -82,9 +82,9 @@ class HalfEdge:
             return q, p
     
     @property
-    def left_and_right(self) -> tuple[Vertex, Vertex]:  # TODO: Check wether correct when p.x == q.x
+    def left_and_right(self) -> tuple[Vertex, Vertex]:
         p, q = self._origin, self.destination
-        if p.x < q.x or (p.x == q.x and p.y > p.x):
+        if p.x < q.x or (p.x == q.x and p.y < q.y):
             return p, q
         else:
             return q, p
