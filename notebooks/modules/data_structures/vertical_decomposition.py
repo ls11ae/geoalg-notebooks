@@ -492,8 +492,6 @@ class VDLeaf(VDNode):
         self._face.search_leaf = self
 
     def search(self, point: Point, line_segment: Optional[VDLineSegment] = None, point_sequence = PointSequence()) -> VDFace:
-        print("leaf animation")
-        point_sequence.animate(point)
         return self._face
 
 
@@ -511,13 +509,14 @@ class VDSearchStructure:
 
     def query(self, point: Point) -> tuple[Face, PointSequence]:
         point_sequence = PointSequence()
+        point_sequence.append(point)
         vd_face = self._root.search(point, point_sequence=point_sequence)
         dcel_face = vd_face.bottom_line_segment.above_face
+        
         point_sequence.clear()
         
         point_sequence.append(point)
-        if dcel_face.is_outer:
-            point_sequence.append(Point(5, 5))
+        
         for vertex in dcel_face.outer_vertices():
             point_sequence.append(vertex.point)
         return dcel_face, point_sequence
