@@ -1,6 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Optional, Iterable, Union
+import random
 
 from ..geometry import LineSegment, Point, PointReference, VerticalOrientation as VORT, HorizontalOrientation as HORT, Rectangle, PointSequence
 from .objects import Face
@@ -8,7 +9,7 @@ from .dcel import DoublyConnectedEdgeList
 
 
 class PointLocation:
-    def __init__(self, bounding_box: Rectangle = Rectangle(Point(0, 0), Point(400, 400)), dcel: Optional[DoublyConnectedEdgeList] = None) -> None:
+    def __init__(self, bounding_box: Rectangle = Rectangle(Point(0, 0), Point(400, 400)), dcel: Optional[DoublyConnectedEdgeList] = None, random_seed: Optional[int] = None) -> None:
         if dcel is None:
             dcel = DoublyConnectedEdgeList()
         self._bounding_box = bounding_box
@@ -16,8 +17,8 @@ class PointLocation:
         self._vertical_decomposition = VerticalDecomposition(bounding_box, dcel)
         initial_face = self._vertical_decomposition.trapezoids[0]
         self._search_structure = VDSearchStructure(initial_face)
-        # Non-Randomized Incremental Construction
-        self.build_vertical_decomposition(PointLocation.dcel_prepocessing(self._dcel))
+        # Randomized Incremental Construction
+        self.build_vertical_decomposition(PointLocation.dcel_prepocessing(self._dcel), random_seed)
 
     def check_structure(self):
         # --- Vertical Decompostion ---
@@ -108,10 +109,13 @@ class PointLocation:
         return segments
                 
 
-    def build_vertical_decomposition(self, segments: set[LineSegment]) -> VerticalDecomposition:  # TODO: Make Randomized
-       self.clear_vertical_decomposition()
-       # Non-randomized incremental construction
-       for segment in segments:
+    def build_vertical_decomposition(self, segments: Iterable[LineSegment], random_seed: Optional[int] = None) -> VerticalDecomposition:
+        self.clear_vertical_decomposition()
+        # Randomized incremental construction
+        if random_seed is not None:
+            random.seed(random_seed)
+        random.shuffle(segments)
+        for segment in segments:
             self.insert(segment)
             # self.check_structure()  # Just for testing, takes a considerable amount of time
             # print(f"Check successful after insertion of LS {segment}")
