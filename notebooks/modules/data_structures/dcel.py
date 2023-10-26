@@ -43,6 +43,8 @@ class DoublyConnectedEdgeList:
         # First Vertex inserted is the start vertex
         if len(self._vertices) > 0:
             self._start_vertex = self._vertices[0]
+        # And new vertex is always the last vertex
+        self._last_added_vertex = newVertex
         return newVertex
 
     def add_edge(self, edge: Tuple[int, int], check_edge: bool = False) -> bool:
@@ -175,6 +177,7 @@ class DoublyConnectedEdgeList:
     def clear(self):
         """ Clears the DCEL """
         self._start_vertex: Optional[Vertex] = None
+        self._last_added_vertex: Optional[Vertex] = None
         self._vertices: list[Vertex] = []
         self._edges: list[HalfEdge] = []
         self._faces: list[Face] = []
@@ -275,6 +278,9 @@ class DoublyConnectedEdgeList:
             if DoublyConnectedEdgeList._point_between_edge_and_next(point, edge.twin):
                 return edge.twin.incident_face
         raise Exception(f"Malformed DCEL: point {point} must split a face around vertex {vertex}")
+    
+    def find_edges_of_vertex(self, vertex: Vertex) -> list[HalfEdge]:
+        return [edge for edge in self.edges if edge.origin == vertex]
         
     @staticmethod
     def _point_between_edge_and_next(point: Point, edge: HalfEdge) -> bool:

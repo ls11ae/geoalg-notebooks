@@ -129,7 +129,7 @@ class HalfEdge:
         return f"Edge@{self._origin._point}->{self.destination._point}"
     
 class Face:
-    """ Simple face with inner components """
+    """ Face with inner components """
     # TODO: maybe add additional methods (see ruler of the plane): polygon, polygonwithoutholes, innerpolygons, area, bounding-box
     def __init__(self, outer_component: HalfEdge):
         self._outer_component: HalfEdge = outer_component
@@ -183,13 +183,28 @@ class Face:
         from .dcsp import DoublyConnectedSimplePolygon
         from .triangulation import monotone_triangulation
         if self.is_convex():
-            for edge in self.outer_half_edges():
+            # Filter out "inner spikes"
+            # TODO: Also fix the "spikes" for non convex faces
+            edge_iterator = iter(self.outer_half_edges())
+            outer_edges: list[HalfEdge] = []
+            edge = next(edge_iterator, None)
+            if edge is not None:
+                outer_edges.append(edge)
+                edge = next(edge_iterator, None)
+                while edge is not None:
+                    line_segment = LineSegment(edge.origin.point, edge.destination.point)
+                    if isinstance(line_segment.intersection(LineSegment(outer_edges[-1].origin.point, outer_edges[-1].destination.point)), LineSegment):
+                        outer_edges.pop()
+                    else:
+                        outer_edges.append(edge)
+                    edge = next(edge_iterator, None)
+            for edge in outer_edges:
                 if search_point.orientation(edge.origin.point, edge.destination.point) != ORT.LEFT:
                     return False
             return True
         else:
             # Triangulate
-            dcsp = DoublyConnectedSimplePolygon.try_from_unordered_points(self.outer_points())
+            dcsp = DoublyConnectedSimplePolygon(self.outer_points())
             point_sequence = monotone_triangulation(dcsp)
             points = point_sequence.points()
             first = None
@@ -218,11 +233,25 @@ class Face:
     def is_convex(self) -> bool:
         if len(self.outer_vertices()) < 3:
             raise Exception("Convexitivity is illdefined for polygons of 2 or less vertices.")
-        for edge in self.outer_half_edges():
+        # Filter out "inner spikes"
+        edge_iterator = iter(self.outer_half_edges())
+        outer_edges: list[HalfEdge] = []
+        edge = next(edge_iterator, None)
+        if edge is not None:
+            outer_edges.append(edge)
+            edge = next(edge_iterator, None)
+            while edge is not None:
+                line_segment = LineSegment(edge.origin.point, edge.destination.point)
+                if isinstance(line_segment.intersection(LineSegment(outer_edges[-1].origin.point, outer_edges[-1].destination.point)), LineSegment):
+                    outer_edges.pop()
+                else:
+                    outer_edges.append(edge)
+                edge = next(edge_iterator, None)
+        for edge in outer_edges:
             if edge.next.destination.point.orientation(edge.origin.point, edge.destination.point) == ORT.RIGHT:
                 return False
         return True
-    
+
     def __repr__(self) -> str:
         if self.is_outer:
             return f"Outer face with inner components {self.inner_components}"

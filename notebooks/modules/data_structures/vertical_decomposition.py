@@ -99,6 +99,8 @@ class PointLocation:
     def dcel_prepocessing(cls, dcel: DoublyConnectedEdgeList) -> Iterable[VDLineSegment]:
         segments: list[VDLineSegment] = []
         for edge in dcel.edges:
+            if edge.origin == edge.destination:
+                continue
             if edge.origin is edge.left_and_right[0]:  # Make sure only one of each Halfedges is used
                 ls = VDLineSegment(edge.origin.point, edge.destination.point)
                 ls.above_face = edge.incident_face
