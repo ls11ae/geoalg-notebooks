@@ -306,7 +306,8 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
                         #print("loop end")
             
             circle = [(i, i + 1) for i in range(n - 1)]
-            circle.append((0, n - 1))
+            if len(circle) > 1:
+                circle.append((n - 1, 0))
             try:
                 dcel = DoublyConnectedEdgeList(path, circle)
             except Exception():
