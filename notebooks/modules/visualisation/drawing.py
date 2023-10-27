@@ -13,6 +13,9 @@ from ..geometry.core import (
 
 from ipycanvas import Canvas, hold_canvas
 
+DEFAULT_POINT_RADIUS = 5
+DEFAULT_HIGHLIGHT_RADIUS = 12
+DEFAULT_LINE_WIDTH = 3
 
 class CanvasDrawingHandle:
     def __init__(self, canvas: Canvas):
@@ -53,8 +56,8 @@ class CanvasDrawingHandle:
         if transparent:
             self._canvas.fill_style = self.opaque_style
 
-    def draw_path(self, points: Iterable[Point], close: bool = False, stroke: bool = True,
-    fill: bool = False, transparent: bool = False, line_width: float = 3):
+    def draw_path(self, points: Iterable[Point], line_width: int, close: bool = False, stroke: bool = True,
+    fill: bool = False, transparent: bool = False):
         points_iterator = iter(points)
         first_point = next(points_iterator, None)
         if first_point is None:
@@ -79,9 +82,9 @@ class CanvasDrawingHandle:
             self._canvas.stroke_style = self.opaque_style
             self._canvas.fill_style  = self.opaque_style
 
-    def draw_polygon(self, points: Iterable[Point], stroke: bool = True,
-    fill: bool = False, transparent: bool = False, line_width = 3):
-        self.draw_path(points, close = True, stroke = stroke, fill = fill, transparent = transparent, line_width = line_width)
+    def draw_polygon(self, points: Iterable[Point], line_width: int, stroke: bool = True,
+    fill: bool = False, transparent: bool = False):
+        self.draw_path(points, line_width, close = True, stroke = stroke, fill = fill, transparent = transparent)
 
     @property
     def width(self) -> float:
@@ -118,9 +121,6 @@ class Drawer:
         self.clear()
         self._drawing_mode.animate(self, animation_events, animation_time_step)
 
-
-DEFAULT_POINT_RADIUS = 5
-DEFAULT_HIGHLIGHT_RADIUS = 12
 
 class DrawingMode(ABC):    # TODO: Maybe we can DRY this file after all...
     @abstractmethod
@@ -176,6 +176,10 @@ class PointsMode(DrawingMode):
 
 
 class SweepLineMode(PointsMode):
+    def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH / 3):
+        self._line_width = line_width
+        super().__init__(point_radius, highlight_radius)
+        
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         with drawer.main_canvas.hold(), drawer.front_canvas.hold():
             drawer.main_canvas.clear()
@@ -185,10 +189,14 @@ class SweepLineMode(PointsMode):
                 drawer.main_canvas.draw_point(points[-1], self._highlight_radius, transparent = True)
                 left_sweep_line_point = Point(0, points[-1].y)
                 right_sweep_line_point = Point(drawer.front_canvas.width, points[-1].y)
-                drawer.front_canvas.draw_path((left_sweep_line_point, right_sweep_line_point), line_width = 1)
+                drawer.front_canvas.draw_path((left_sweep_line_point, right_sweep_line_point), self._line_width)
 
 
 class ArtGalleryMode(PointsMode):
+    def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
+        self._line_width = line_width
+        super().__init__(point_radius, highlight_radius)
+
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
         diagonal_points: list[Point] = []
 
@@ -201,15 +209,16 @@ class ArtGalleryMode(PointsMode):
 
         with drawer.back_canvas.hold():
             for i in range(0, len(diagonal_points), 2):
-                drawer.back_canvas.draw_path(diagonal_points[i:i + 2], transparent = True)
+                drawer.back_canvas.draw_path(diagonal_points[i:i + 2], self._line_width, transparent = True)
 
         super().animate(drawer, event_iterator, animation_time_step)
 
 
 class PathMode(DrawingMode):
-    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
+    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
         self._vertex_radius = vertex_radius
         self._highlight_radius = highlight_radius
+        self._line_width = line_width
         self._animation_path = []
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
@@ -223,7 +232,7 @@ class PathMode(DrawingMode):
 
         with drawer.main_canvas.hold():
             drawer.main_canvas.draw_points(path, self._vertex_radius)
-            drawer.main_canvas.draw_path(path)
+            drawer.main_canvas.draw_path(path, self._line_width)
 
     def _draw_animation_step(self, drawer: Drawer):
         with drawer.main_canvas.hold():
@@ -231,8 +240,8 @@ class PathMode(DrawingMode):
             if self._animation_path:
                 drawer.main_canvas.draw_points(self._animation_path[:-1], self._vertex_radius)
                 drawer.main_canvas.draw_point(self._animation_path[-1], self._highlight_radius, transparent = True)
-                drawer.main_canvas.draw_path(self._animation_path[:-1])
-                drawer.main_canvas.draw_path(self._animation_path[-2:], transparent = True)
+                drawer.main_canvas.draw_path(self._animation_path[:-1], self._line_width)
+                drawer.main_canvas.draw_path(self._animation_path[-2:], self._line_width, transparent = True)
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
         event_iterator = iter(animation_events)
@@ -262,8 +271,8 @@ class PathMode(DrawingMode):
 
 class PolygonMode(PathMode):           # TODO: If possible, maybe use composition instead of inheritance.
     def __init__(self, mark_closing_edge: bool, draw_interior: bool, vertex_radius: int = DEFAULT_POINT_RADIUS,
-    highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
-        super().__init__(vertex_radius = vertex_radius, highlight_radius = highlight_radius)
+    highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
+        super().__init__(vertex_radius = vertex_radius, highlight_radius = highlight_radius, line_width = line_width)
         self._mark_closing_edge = mark_closing_edge
         self._draw_interior = draw_interior
 
@@ -278,12 +287,12 @@ class PolygonMode(PathMode):           # TODO: If possible, maybe use compositio
         with drawer.main_canvas.hold(), drawer.back_canvas.hold():
             drawer.main_canvas.draw_points(polygon, self._vertex_radius)
             if self._mark_closing_edge and polygon:
-                drawer.main_canvas.draw_path(polygon)
-                drawer.main_canvas.draw_path((polygon[0], polygon[-1]), transparent = True)
+                drawer.main_canvas.draw_path(polygon, self._line_width)
+                drawer.main_canvas.draw_path((polygon[0], polygon[-1]), self._line_width, transparent = True)
             else:
-                drawer.main_canvas.draw_polygon(polygon)
+                drawer.main_canvas.draw_polygon(polygon, self._line_width)
             if self._draw_interior:
-                drawer.back_canvas.draw_polygon(polygon, stroke = False, fill = True, transparent = True)
+                drawer.back_canvas.draw_polygon(polygon, self._line_width, stroke = False, fill = True, transparent = True)
 
     def _polygon_event_iterator(self, animation_events: Iterable[AnimationEvent]) -> Iterator[AnimationEvent]:
         yield from animation_events
@@ -302,7 +311,8 @@ class ChansHullMode(PolygonMode):
             polygon_mode._mark_closing_edge,
             polygon_mode._draw_interior,
             vertex_radius = polygon_mode._vertex_radius,
-            highlight_radius = polygon_mode._highlight_radius
+            highlight_radius = polygon_mode._highlight_radius,
+            line_width = polygon_mode._line_width
         )
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
@@ -325,7 +335,7 @@ class ChansHullMode(PolygonMode):
                         container = event.point.container
                         with drawer.front_canvas.hold():
                             drawer.front_canvas.clear()
-                            drawer.front_canvas.draw_polygon(container, line_width = 1)
+                            drawer.front_canvas.draw_polygon(container, self._line_width / 3)
                         time.sleep(animation_time_step)
 
             event.execute_on(self._animation_path)
@@ -341,12 +351,13 @@ class ChansHullMode(PolygonMode):
 
 class FixedVertexNumberPathsMode(DrawingMode):
     def __init__(self, vertex_number: int, vertex_radius: int = DEFAULT_POINT_RADIUS,
-    highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
+    highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
         if vertex_number < 1:
             raise ValueError("Vertex number needs to be positive.")
         self._vertex_number = vertex_number
         self._vertex_radius = vertex_radius
         self._highlight_radius = highlight_radius
+        self._line_width = line_width
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         vertex_queue: list[Point] = drawer._get_drawing_mode_state(default = [])
@@ -358,7 +369,7 @@ class FixedVertexNumberPathsMode(DrawingMode):
             while j <= len(vertex_queue):
                 path = vertex_queue[i:j]
                 drawer.main_canvas.draw_points(path, self._vertex_radius)
-                drawer.main_canvas.draw_path(path)
+                drawer.main_canvas.draw_path(path, self._line_width)
                 i, j = j, j + self._vertex_number
 
             if i == 0:
@@ -369,7 +380,7 @@ class FixedVertexNumberPathsMode(DrawingMode):
                 subpath = vertex_queue[i:]
                 drawer._set_drawing_mode_state(subpath)
             drawer.main_canvas.draw_points(islice(subpath, offset, None), self._vertex_radius, transparent = True)
-            drawer.main_canvas.draw_path(subpath, transparent = True)
+            drawer.main_canvas.draw_path(subpath, self._line_width, transparent = True)
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         with drawer.main_canvas.hold():
@@ -379,12 +390,12 @@ class FixedVertexNumberPathsMode(DrawingMode):
             while j < len(points):
                 path = points[i:j]
                 drawer.main_canvas.draw_points(path, self._vertex_radius)
-                drawer.main_canvas.draw_path(path)
+                drawer.main_canvas.draw_path(path, self._line_width)
                 i, j = j, j + self._vertex_number
 
             path = points[i:]
             drawer.main_canvas.draw_points(path, self._highlight_radius, transparent = True)
-            drawer.main_canvas.draw_path(path, transparent = True)
+            drawer.main_canvas.draw_path(path, self._line_width, transparent = True)
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
         points: list[Point] = []
@@ -419,23 +430,24 @@ class FixedVertexNumberPathsMode(DrawingMode):
 
 class LineSegmentsMode(FixedVertexNumberPathsMode):
     def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS,
-    highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
-        super().__init__(2, vertex_radius, highlight_radius)
+    highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
+        super().__init__(2, vertex_radius, highlight_radius, line_width)
 
 
 class MonotonePartitioningMode(DrawingMode):    # TODO: If possible, this could maybe make use of composition too.
     def __init__(self, animate_sweep_line: bool, vertex_radius: int = DEFAULT_POINT_RADIUS,
-    highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
+    highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
         self._animate_sweep_line = animate_sweep_line
         self._vertex_radius = vertex_radius
         self._highlight_radius = highlight_radius
+        self._line_width = line_width
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         points: list[Point] = list(points)
         with drawer.main_canvas.hold():
             drawer.main_canvas.draw_points(points, self._vertex_radius)
             for i in range(0, len(points), 2):
-                drawer.main_canvas.draw_path(points[i:i + 2])
+                drawer.main_canvas.draw_path(points[i:i + 2], self._line_width)
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         with drawer.main_canvas.hold(), drawer.front_canvas.hold():
@@ -454,11 +466,11 @@ class MonotonePartitioningMode(DrawingMode):    # TODO: If possible, this could 
             drawer.main_canvas.draw_points(diagonal_points, self._vertex_radius)
             drawer.main_canvas.draw_point(event_point, self._highlight_radius, transparent = True)
             for i in range(0, len(diagonal_points), 2):
-                drawer.main_canvas.draw_path(diagonal_points[i:i + 2])
+                drawer.main_canvas.draw_path(diagonal_points[i:i + 2], self._line_width)
             if self._animate_sweep_line:
                 left_sweep_line_point = Point(0, event_point.y)
                 right_sweep_line_point = Point(drawer.front_canvas.width, event_point.y)
-                drawer.front_canvas.draw_path((left_sweep_line_point, right_sweep_line_point), line_width = 1)
+                drawer.front_canvas.draw_path((left_sweep_line_point, right_sweep_line_point), self._line_width / 3)
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
         points: list[Point] = []
@@ -490,9 +502,10 @@ class MonotonePartitioningMode(DrawingMode):    # TODO: If possible, this could 
 
 
 class DCELMode(DrawingMode):
-    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
+    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
         self._vertex_radius = vertex_radius
         self._highlight_radius = highlight_radius
+        self._line_width = line_width
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         point_queue: list[Point] = drawer._get_drawing_mode_state(default = [])
@@ -506,7 +519,7 @@ class DCELMode(DrawingMode):
                     continue
                 for i, neighbor in enumerate(point.container):
                     if i != point.position:
-                        drawer.main_canvas.draw_path([point, neighbor])
+                        drawer.main_canvas.draw_path([point, neighbor], self._line_width)
         
         point_queue.extend(points)  # Keep track of already drawn points
 
@@ -516,15 +529,17 @@ class DCELMode(DrawingMode):
 
 class SlabDecompositionMode(FixedVertexNumberPathsMode):  # Placeholder
     def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS,
-    highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
-        super().__init__(2, vertex_radius, highlight_radius)
+    highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
+        super().__init__(2, vertex_radius, highlight_radius, line_width)
 
 
 class VerticalExtensionMode(DrawingMode):
-    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
+    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH,
+                 animate_inserted_ls: bool = True):
         self._vertex_radius = vertex_radius
         self._highlight_radius = highlight_radius
-        self._marked_edge = None
+        self._line_width = line_width
+        self._animate_inserted_ls = animate_inserted_ls
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         with drawer.main_canvas.hold():
@@ -535,7 +550,7 @@ class VerticalExtensionMode(DrawingMode):
                     raise Exception(f"Wrong format of the PointReference {point} for drawing vertical extensions.")
                 else:
                     drawer.main_canvas.draw_point(point, self._vertex_radius)
-                    drawer.main_canvas.draw_path([point.container[1], point.container[2]])
+                    drawer.main_canvas.draw_path([point.container[1], point.container[2]], self._line_width)
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         with drawer.main_canvas.hold(), drawer.front_canvas.hold():
@@ -549,18 +564,26 @@ class VerticalExtensionMode(DrawingMode):
                 if not isinstance(point, PointReference) or len(point.container) == 1:
                     drawer.front_canvas.draw_point(point, self._vertex_radius)
                 elif len(point.container) == 2:
-                    self._marked_edge = point.container
+                    line_segment_list: list[Point] = drawer._get_drawing_mode_state(default = [])
+                    line_segment_list.append(point.container)
                 elif len(point.container) != 3 or point.position != 0:
                     raise Exception(f"Wrong format of the PointReference {point} for drawing vertical extensions.")
                 else:
                     drawer.front_canvas.draw_point(point, self._vertex_radius)
-                    drawer.front_canvas.draw_path([point.container[1], point.container[2]])
-            if self._marked_edge is not None:
-                drawer.main_canvas.draw_path(self._marked_edge)
+                    drawer.front_canvas.draw_path([point.container[1], point.container[2]], self._line_width)
+            line_segment_list = drawer._get_drawing_mode_state(default = [])
+            if self._animate_inserted_ls:
+                drawer.main_canvas.set_colour(0, 0, 0)  # black
+                for line_segment in line_segment_list[:-1]:
+                    drawer.main_canvas.draw_path(line_segment, self._line_width / 3)
+                drawer.main_canvas.set_colour(0, 165, 0)  # green
+            if len(line_segment_list) > 0:
+                drawer.main_canvas.draw_path(drawer._get_drawing_mode_state(default = [])[-1], self._line_width)
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
         drawer.main_canvas.set_colour(0, 165, 0)  # green
         drawer.front_canvas.set_colour(0, 0, 255)  # blue
+
         points: list[Point] = []
         
         event_iterator = iter(animation_events)
@@ -594,8 +617,8 @@ class VerticalExtensionMode(DrawingMode):
 
 
 class PointLocationMode(PolygonMode):
-    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS):
-        super().__init__(False, False, vertex_radius, highlight_radius)
+    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
+        super().__init__(False, False, vertex_radius, highlight_radius, line_width)
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         points = list(points)
@@ -622,7 +645,7 @@ class PointLocationMode(PolygonMode):
                     else:
                         self._left_point = point
                 elif len(point.container) == 2:  # y-node
-                    drawer.front_canvas.draw_path(point.container)  # Draw line segment of the y-node
+                    drawer.front_canvas.draw_path(point.container, self._line_width)  # Draw line segment of the y-node
                     ls = LineSegment(point.container[0], point.container[1])
                     if self._search_point.vertical_orientation(ls) == VORT.BELOW:
                         self._top_line_segment = ls
@@ -636,7 +659,7 @@ class PointLocationMode(PolygonMode):
                                                 Point(self._right_point.x, self._top_line_segment.y_from_x(self._right_point.x)),
                                                 Point(self._right_point.x, self._bottom_line_segment.y_from_x(self._right_point.x)),
                                                 Point(self._left_point.x, self._bottom_line_segment.y_from_x(self._left_point.x))],
-                                                stroke = False, fill = True, transparent = True)
+                                                self._line_width, stroke = False, fill = True, transparent = True)
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
         # Drawing parameters
