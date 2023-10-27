@@ -58,7 +58,7 @@ class VisualisationTool(Generic[I]):
         self._init_ui()
 
     def handle_click_on_multi_canvas(self, x: float, y: float):  # TODO: Remove this copy
-        if self.add_point(Point(x, self._height - y)):
+        if self.add_point(Point(x, y)):
             self.clear_algorithm_drawings()
             self.clear_algorithm_messages()
 
