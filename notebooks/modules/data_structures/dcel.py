@@ -57,7 +57,7 @@ class DoublyConnectedEdgeList:
         """
         if (edge[0] >= self.number_of_vertices or edge[0] < 0
             or edge[1] >= self.number_of_vertices or edge[1] < 0): # Impossible indicies
-            return
+            return False
         if check_edge and not self._possible_edge(self._vertices[edge[0]], self._vertices[edge[1]]):
             return False
         self._add_edge(self._vertices[edge[0]], self._vertices[edge[1]])
@@ -111,9 +111,9 @@ class DoublyConnectedEdgeList:
 
             # Check if new edge will create additional face
             # An Inner component with both vertices on the cycle exists
-            new_inner_face = len(list(filter(lambda e: self._on_cycle(e, vertex_0) and self._on_cycle(e, vertex_1), face_0.inner_components))) >= 1
+            new_inner_face = len(list(filter(lambda e: e.vertex_on_cycle(vertex_0) and e.vertex_on_cycle(vertex_1), face_0.inner_components))) >= 1
             # OR outer component (of the face) is split by the new edge
-            outer_component_split = (not face_0.is_outer) and self._on_cycle(face_0.outer_component, vertex_0) and self._on_cycle(face_0.outer_component, vertex_1)
+            outer_component_split = (not face_0.is_outer) and face_0.outer_component.vertex_on_cycle(vertex_0) and face_0.outer_component.vertex_on_cycle(vertex_1)
             new_face = new_inner_face or outer_component_split
 
         elif num_out_edges_0 != 0:
@@ -295,39 +295,22 @@ class DoublyConnectedEdgeList:
             edge_1_destination.orientation(edge_0_origin, edge_0_destination) == ORT.RIGHT) or ( # Case B
             point.orientation(edge_1_origin, edge_1_destination) == ORT.LEFT and edge_0_origin.orientation(edge_1_origin, edge_1_destination) == ORT.RIGHT) # Case C
 
-    @staticmethod
-    def _on_cycle(edge: HalfEdge, vertex: Vertex) -> bool:
-        return vertex in [cycle_edge.origin for cycle_edge in edge.cycle()]
-    
     def _split_face(self, edge: HalfEdge, face: Face) -> Face:
-        inner_edge = edge if not DoublyConnectedEdgeList._is_cycle_clockwise(edge) else edge.twin
+        inner_edge = edge if not edge.is_cycle_clockwise() else edge.twin
 
         new_face = Face(inner_edge)
         self._faces.append(new_face)
 
-        if not DoublyConnectedEdgeList._is_cycle_clockwise(inner_edge.twin):
+        if not inner_edge.twin.is_cycle_clockwise():
             # Two new inner cycles formed from old one
             face.outer_component = inner_edge.twin
         
-        DoublyConnectedEdgeList._update_face_in_cycle(inner_edge, new_face)
+        inner_edge.update_face_in_cycle(new_face)
         
         #TODO: is this update (sometimes) necessary??
-        # DoublyConnectedEdgeList._update_face_in_cycle(inner_edge.twin, face)
+        # inner_edge.twin.update_face_in_cycle(face)
 
         return new_face
-
-    @staticmethod
-    def _update_face_in_cycle(start_edge: HalfEdge, face: Face):
-        for edge in start_edge.cycle():
-            edge.incident_face = face
-
-    # Determines whether the cycle starting at a given edge is clockwise using the shoelace (trapezoid) formula
-    @staticmethod
-    def _is_cycle_clockwise(start_edge: HalfEdge, epsilon: float = EPSILON) -> bool:
-        a = float(0)
-        for edge in start_edge.cycle():
-            a += (edge.origin.point.y + edge.destination.point.y) * (edge.origin.point.x - edge.destination.point.x)
-        return a < -epsilon
     
     def _fix_inner_components(self, edge_0: HalfEdge, edge_1: HalfEdge, old_face: Face, new_face: Face):
         # remove all inner components that were affected by adding halfedges
@@ -351,7 +334,7 @@ class DoublyConnectedEdgeList:
                 old_face.inner_components.remove(component)
                 new_face.inner_components.append(component)
 
-                self._update_face_in_cycle(component, new_face)
+                component.update_face_in_cycle(new_face)
 
 
     def _on_edge(self, point: Point):

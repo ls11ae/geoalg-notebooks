@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Iterable, Iterator, Optional, Tuple
 
-from ..geometry import LineSegment, Orientation as ORT, Point
+from ..geometry import LineSegment, Orientation as ORT, Point, EPSILON
 
 class Vertex:
     """ A vertex for the DCEL """
@@ -64,6 +64,20 @@ class HalfEdge:
             cycle.append(next_edge)
             next_edge = next_edge.next
         return cycle
+    
+    def vertex_on_cycle(self, vertex: Vertex) -> bool:
+        return vertex in [edge.origin for edge in self.cycle()]
+    
+    def update_face_in_cycle(self, face: Face):
+        for edge in self.cycle():
+            edge.incident_face = face
+
+    # Determines whether the cycle starting at a given edge is clockwise using the shoelace (trapezoid) formula
+    def is_cycle_clockwise(self, epsilon: float = EPSILON) -> bool:
+        a = float(0)
+        for edge in self.cycle():
+            a += (edge.origin.point.y + edge.destination.point.y) * (edge.origin.point.x - edge.destination.point.x)
+        return a < -epsilon
 
     @property
     def origin(self) -> Vertex:
