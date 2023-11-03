@@ -143,7 +143,7 @@ class HalfEdge:
         return f"Edge@{self._origin._point}->{self.destination._point}"
     
 class Face:
-    """ Simple Face with inner components """
+    """ Face with inner components """
     # TODO: maybe add additional methods (see ruler of the plane): polygon, polygonwithoutholes, innerpolygons, area, bounding-box
     def __init__(self, outer_component: HalfEdge):
         self._outer_component: HalfEdge = outer_component
@@ -186,22 +186,6 @@ class Face:
             current_edge = current_edge.next
         return outer_edges
     
-    def _outer_half_edges_without_inner_spikes(self) -> Iterable[HalfEdge]:
-        edge_iterator = iter(self.outer_half_edges())
-        outer_edges: list[HalfEdge] = []
-        edge = next(edge_iterator, None)
-        if edge is not None:
-            outer_edges.append(edge)
-            edge = next(edge_iterator, None)
-            while edge is not None:
-                line_segment = LineSegment(edge.origin.point, edge.destination.point)
-                if isinstance(line_segment.intersection(LineSegment(outer_edges[-1].origin.point, outer_edges[-1].destination.point)), LineSegment):
-                    outer_edges.pop()
-                else:
-                    outer_edges.append(edge)
-                edge = next(edge_iterator, None)
-        return outer_edges
-    
     def inner_half_edges(self) -> Iterable[HalfEdge]:
         inner_half_edges = []
         for component in self.inner_components:
@@ -209,49 +193,23 @@ class Face:
         return inner_half_edges
 
     def contains(self, search_point: Point) -> bool:
-        # import here because of circular imports
-        from .dcsp import DoublyConnectedSimplePolygon
-        from .triangulation import monotone_triangulation
-
-        outer_edges = self._outer_half_edges_without_inner_spikes()        
-        if self.is_convex():
-            for edge in outer_edges:
-                if search_point.orientation(edge.origin.point, edge.destination.point) != ORT.LEFT:
-                    return False
-            return True
-        else:
-            # Triangulate
-            dcsp = DoublyConnectedSimplePolygon(edge.origin.point for edge in outer_edges)
-            point_sequence = monotone_triangulation(dcsp)
-            points = point_sequence.points()
-            first = None
-            for point in points:
-                if first == None:
-                    first = point
-                else:
-                    added_edge = dcsp.find_edge(first, point)
-                    first = None
-                    inside = True
-                    for edge in added_edge.cycle():
-                        if search_point.orientation(edge.origin.point, edge.destination.point) != ORT.LEFT:
-                            inside = False
-                            break
-                    if inside:
-                        return True
-                    inside = True
-                    for edge in added_edge.twin.cycle():
-                        if search_point.orientation(edge.origin.point, edge.destination.point) != ORT.LEFT:
-                            inside = False
-                            break
-                    if inside:
-                        return True
-            return False
+        # Ray Casting Algorithm
+        inside = False
+        ray = LineSegment(Point(-EPSILON, search_point.y), search_point)
+        for edge in self.outer_half_edges():
+            ls = LineSegment(edge.origin.point, edge.destination.point)
+            intersection = ls.intersection(ray)
+            if isinstance(intersection, Point) and \
+                    (intersection != edge.origin.point or edge.destination.point.y < search_point.y) and \
+                    (intersection != edge.destination.point or edge.origin.point.y < search_point.y):
+                inside = not inside
+        return inside
 
     def is_convex(self) -> bool:
         if len(self.outer_vertices()) < 3:
             raise Exception("Convexitivity is illdefined for polygons of 2 or less vertices.")
 
-        for edge in self._outer_half_edges_without_inner_spikes():
+        for edge in self.outer_half_edges():
             if edge.next.destination.point.orientation(edge.origin.point, edge.destination.point) == ORT.RIGHT:
                 return False
         return True
