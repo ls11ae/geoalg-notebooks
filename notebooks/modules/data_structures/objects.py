@@ -104,6 +104,14 @@ class HalfEdge:
             return q, p
 
     @property
+    def left(self) -> Vertex:
+        return self.left_and_right[0]
+
+    @property
+    def right(self) -> Vertex:
+        return self.left_and_right[1]    
+
+    @property
     def twin(self) -> HalfEdge:
         return self._twin
 
