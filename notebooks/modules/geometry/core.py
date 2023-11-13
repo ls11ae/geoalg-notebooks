@@ -42,6 +42,9 @@ class Point:
         self._x = float(x)
         self._y = float(y)
 
+    def copy(self) -> Point:
+        return Point(self._x, self._y)
+
     ## Properties
 
     @property
@@ -150,6 +153,9 @@ class PointReference(Point):    # TODO: Make this a generic type for points with
     def __init__(self, container: list[Point], position: int):
         self._container = container
         self._position = position
+
+    def copy(self) -> PointReference:
+        return PointReference([point.copy() for point in self.container], self._position)
 
     @property
     def container(self) -> list[Point]:
