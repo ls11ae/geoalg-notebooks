@@ -1,4 +1,6 @@
-from .binary_tree import ComparisonResult, Comparator, BinaryTree, BinaryTreeDict
+from .binary_tree import (
+    ComparisonResult, Comparator, BinaryTree, BinaryTreeDict, AnimationBinaryTree, AnimationBinaryTreeDict
+)
 from .dcsp import DoublyConnectedSimplePolygon
 from .dcel import DoublyConnectedEdgeList
 from .objects import HalfEdge, Vertex, Face

@@ -4,11 +4,14 @@ from enum import Enum
 from itertools import chain
 from abc import ABC, abstractmethod
 
+from ..geometry import Point, PointSequence
 
 K = TypeVar("K")
 V = TypeVar("V")
 
 Updater = Callable[[Optional[V]], V]
+
+PointMapper = Callable[[K], Point]
 
 class ComparisonResult(Enum):
     BEFORE = -1
@@ -88,6 +91,43 @@ class BinaryTreeDict(Generic[K, V]):
 
     def __repr__(self) -> str:          # TODO: Delete this? Or can it stay?
         return self._root.__repr__()
+
+class AnimationBinaryTree(BinaryTree[K]):
+    def __init__(self, comparator: Comparator[K], point_mapper: PointMapper[K]):
+        self._point_mapper = point_mapper
+        super().__init__(comparator)
+
+    def search_matching(self, item: Any) -> tuple[list[K], PointSequence]:
+        point_sequence = PointSequence()
+        return [match[0] for match in self._root.search_matching(item, self._comparator, point_sequence = point_sequence, point_mapper = self._point_mapper)], point_sequence
+    
+    def search_predecessor(self, item: Any) -> tuple[Optional[K], PointSequence]:
+        point_sequence = PointSequence()
+        predecessor = self._root.search_predecessor(item, self._comparator, point_sequence = point_sequence, point_mapper = self._point_mapper)
+        return predecessor[0] if predecessor is not None else None, point_sequence
+    
+    def search_successor(self, item: Any) -> tuple[Optional[K], PointSequence]:
+        point_sequence = PointSequence()
+        successor = self._root.search_successor(item, self._comparator, point_sequence = point_sequence, point_mapper = self._point_mapper)
+        return successor[0] if successor is not None else None, point_sequence
+
+
+class AnimationBinaryTreeDict(BinaryTreeDict[K, V]):
+    def __init__(self, comparator: Comparator[K], point_mapper: PointMapper[K]):
+        self._point_mapper = point_mapper
+        super().__init__(comparator)
+
+    def search_matching(self, item: Any) -> tuple[list[tuple[K, V]], PointSequence]:
+        point_sequence = PointSequence()
+        return  list(self._root.search_matching(item, self._comparator, point_sequence = point_sequence, point_mapper = self._point_mapper)), point_sequence
+
+    def search_predecessor(self, item: Any) -> tuple[Optional[tuple[K, V]], PointSequence]:
+        point_sequence = PointSequence()
+        return self._root.search_predecessor(item, self._comparator, point_sequence = point_sequence, point_mapper = self._point_mapper), point_sequence
+    
+    def search_successor(self, item: Any) -> tuple[Optional[tuple[K, V]], PointSequence]:
+        point_sequence = PointSequence()
+        return self._root.search_successor(item, self._comparator, point_sequence = point_sequence, point_mapper = self._point_mapper), point_sequence
 
 class Node(Generic[K, V]):
     def __init__(self):
@@ -240,41 +280,51 @@ class Node(Generic[K, V]):
 
         return key, value
 
-    def search_matching(self, item: Any, comparator: Comparator[K]) -> Iterator[tuple[K, V]]:
+    def search_matching(self, item: Any, comparator: Comparator[K], point_sequence:
+    PointSequence = None, point_mapper: PointMapper[K] = None) -> Iterator[tuple[K, V]]:
         if self.is_empty():
             return iter(())
 
+        if point_sequence is not None and point_mapper is not None:
+            point_sequence.append(point_mapper(self._key))
+
         cr = comparator.compare(item, self._key)
         if cr is ComparisonResult.BEFORE:
-            return self._left.search_matching(item, comparator)
+            return self._left.search_matching(item, comparator, point_sequence, point_mapper)
         elif cr is ComparisonResult.AFTER:
-            return self._right.search_matching(item, comparator)
+            return self._right.search_matching(item, comparator, point_sequence, point_mapper)
         else:
             return chain(
-                self._left.search_matching(item, comparator),
+                self._left.search_matching(item, comparator, point_sequence, point_mapper),
                 ((self._key, self._value),),
-                self._right.search_matching(item, comparator)
+                self._right.search_matching(item, comparator, point_sequence, point_mapper)
             )
 
     def search_predecessor(self, item: Any, comparator: Comparator[K], candidate:
-    Optional[tuple[K, V]] = None) -> Optional[tuple[K, V]]:
+    Optional[tuple[K, V]] = None, point_sequence: PointSequence = None, point_mapper: PointMapper[K] = None) -> Optional[tuple[K, V]]:
         if self.is_empty():
             return candidate
+
+        if point_sequence is not None and point_mapper is not None:
+            point_sequence.append(point_mapper(self._key))
 
         if comparator.compare(item, self._key) is ComparisonResult.AFTER:
-            return self._right.search_predecessor(item, comparator, (self._key, self._value))
+            return self._right.search_predecessor(item, comparator, (self._key, self._value), point_sequence, point_mapper)
         else:
-            return self._left.search_predecessor(item, comparator, candidate)
+            return self._left.search_predecessor(item, comparator, candidate, point_sequence, point_mapper)
 
     def search_successor(self, item: Any, comparator: Comparator[K], candidate:
-    Optional[tuple[K, V]] = None) -> Optional[tuple[K, V]]:
+    Optional[tuple[K, V]] = None, point_sequence: PointSequence = None, point_mapper: PointMapper[K] = None) -> Optional[tuple[K, V]]:
         if self.is_empty():
             return candidate
+                
+        if point_sequence is not None and point_mapper is not None:
+            point_sequence.append(point_mapper(self._key))
 
         if comparator.compare(item, self._key) is ComparisonResult.BEFORE:
-            return self._left.search_successor(item, comparator, (self._key, self._value))
+            return self._left.search_successor(item, comparator, (self._key, self._value), point_sequence, point_mapper)
         else:
-            return self._right.search_successor(item, comparator, candidate)
+            return self._right.search_successor(item, comparator, candidate, point_sequence, point_mapper)
 
     def __repr__(self) -> str:
         if self.is_empty():
