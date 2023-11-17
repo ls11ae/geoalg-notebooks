@@ -7,6 +7,9 @@ from ..geometry import LineSegment, Point, PointReference, VerticalOrientation a
 from .objects import Face
 from .dcel import DoublyConnectedEdgeList
 
+class PLSearchStructure(ABC):
+    def query(self, point: Point):
+        pass
 
 class PointLocation:
     def __init__(self, bounding_box: Rectangle = Rectangle(Point(0, 0), Point(400, 400)), dcel: Optional[DoublyConnectedEdgeList] = None, random_seed: Optional[int] = None) -> None:
@@ -16,7 +19,7 @@ class PointLocation:
         self._dcel = dcel
         self._vertical_decomposition = VerticalDecomposition(bounding_box, dcel)
         initial_face = self._vertical_decomposition._trapezoids[0]
-        self._search_structure = VDSearchStructure(initial_face)
+        self._search_structure: PLSearchStructure = VDSearchStructure(initial_face)
         # Randomized Incremental Construction
         self.build_vertical_decomposition(PointLocation.dcel_prepocessing(self._dcel), random_seed)
 
@@ -501,7 +504,7 @@ class VDLeaf(VDNode):
         return self._face
 
 
-class VDSearchStructure:
+class VDSearchStructure(PLSearchStructure):
     def __init__(self, initial_face: VDFace) -> None:
         self._root: VDNode = VDLeaf(initial_face)
 
