@@ -90,16 +90,25 @@ class Point:
                 return Orientation.BETWEEN
             
     def vertical_orientation(self, line_segment: LineSegment, epsilon: float = EPSILON) -> VerticalOrientation:
-        if line_segment.left.x == line_segment.right.x:
+        """ Checks whether the point lies on the given line segment or one the line induced by it.
+        """
+        if line_segment.left.x == line_segment.right.x:  # Vertical line segment. This could be simplified if just used for the point location in notebook 04, because it ensures the point is always between the endpoints of the line segment in horizontal order.
+            if self.x < line_segment.left.x:
+                return VerticalOrientation.ABOVE
+            elif self.x > line_segment.left.x:
+                return VerticalOrientation.BELOW
             return VerticalOrientation.ON  # Case x1 = x = x2 (See [1], page 139)
-        y = line_segment.y_from_x(self._x)
-        if y - self._y < -epsilon:
+        y = line_segment.y_from_x(self.x)
+        if y - self.y < -epsilon:
             return VerticalOrientation.ABOVE
-        if y - self._y > epsilon:
+        if y - self.y > epsilon:
             return VerticalOrientation.BELOW
         return VerticalOrientation.ON
 
-    def horizontal_orientation(self, other_point: Point) -> HorizontalOrientation:  # Using symbolic shear transform -> lexicographical order
+    def horizontal_orientation(self, other_point: Point) -> HorizontalOrientation:
+        """ Checks whether the point lies to the left or the right of the given point.
+        It uses a symbolic shear transform, i.e. lexicographical order.
+        """
         if self == other_point:
             return HorizontalOrientation.EQUAL
         elif self.x < other_point.x or (self.x == other_point.x and self.y < other_point.y):
