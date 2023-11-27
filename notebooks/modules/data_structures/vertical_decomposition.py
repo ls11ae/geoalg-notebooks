@@ -523,42 +523,18 @@ class VDSearchStructure(PLSearchStructure):
     
     def update(self, line_segment: VDLineSegment, unvalid_leafs: list[Optional[VDLeaf]], new_leafs: list[Optional[VDLeaf]]):
         """Update the search structure using known leafs from updating the vertical decomposition"""
-        if len(unvalid_leafs) == 1:
-            # Simple case: the "line_segment" is completely contained in the trapezoid "left_point_face"
-            # The leaf is replaced by a small tree composed of two x-nodes and a y-node
-            tree = VDYNode(line_segment)
-            tree.upper = new_leafs[1]
-            tree.lower = new_leafs[2]
-            if new_leafs[3] is not None:  # Case where the new ls shares its endpoint with an already existing one.
-                child = tree
-                tree = VDXNode(line_segment.right)
-                tree.left = child
-                tree.right = new_leafs[3]
-            if new_leafs[0] is not None:
-                child = tree
-                tree = VDXNode(line_segment.left)
-                tree.left = new_leafs[0]
-                tree.right = child
+        if len(unvalid_leafs) == 1:  # Simple case: the "line_segment" is completely contained in the one trapezoid "left_point_face"
+            tree = self._build_subtree(line_segment, new_leafs[0:4])
 
             success = unvalid_leafs[0].replace_with(tree)
             if not success:  # root element
                 self._root = tree
             return
         
-        # Other (more complicated) case: the "line_segment" intersects two or more trapezoids
-        # Replace left and leafs containing the left and right endpoint by small trees composed of an x- and a y-node
-
-        # Replace the leaf containing the left endpoint
+        # Other (more complicated) case: the line segment intersects two or more trapezoids.
+        # Replace the leaf containing the left endpoint by a small tree composed of an x- and a y-node.
         left_endpoint_leaf = unvalid_leafs.pop(0)
-        tree = VDYNode(line_segment)
-        tree.upper = new_leafs[1]
-        tree.lower = new_leafs[2]
-        if new_leafs[0] is not None:
-            child = tree
-            tree = VDXNode(line_segment.left)
-            tree.left = new_leafs[0]
-            tree.right = child
-        
+        tree = self._build_subtree(line_segment, new_leafs[0:3])
         left_endpoint_leaf.replace_with(tree)  # checking for success is not necessary. The leaf node "left_endpoint_leaf" cannot be the root as there are >= 2 total unvalid leafs
 
         right_endpoint_leaf = unvalid_leafs.pop()  # leaf containing the right endpoint, filled after treatment of intersected trapezoids
@@ -566,69 +542,62 @@ class VDSearchStructure(PLSearchStructure):
         opposite_leaf = None  # leaf corresponding to the trapezoid on the other side of the LS
         if not unvalid_leafs == []:  # left and right point do not lie in directly neighboring faces
             # Init opposite_leaf: Either the leaf for left_face_above or left_face_below
-            if unvalid_leafs[0]._face.left_point.vertical_orientation(line_segment) == VORT.ABOVE:
+            if unvalid_leafs[0]._face.bottom_line_segment is line_segment:
                 opposite_leaf = new_leafs[2]
-                other_leaf_orientation = VORT.BELOW
-            elif unvalid_leafs[0]._face.left_point.vertical_orientation(line_segment) == VORT.BELOW:
-                opposite_leaf = new_leafs[1]
-                other_leaf_orientation = VORT.ABOVE
             else:
-                raise RuntimeError(f"Point {unvalid_leafs[0]._face.left_point} must not lie on line induced by the line segment {line_segment}")
+                opposite_leaf = new_leafs[1]
+            opposite_leaf_orientation = opposite_leaf._face.right_point.vertical_orientation(line_segment)
 
-            for i in range(0, len(unvalid_leafs)):
-                # Replace all unvalid leafs (beside first and last) by a single y-node
+            for i in range(0, len(unvalid_leafs)):  # Replace all unvalid leafs (beside first and last) by a single y-node
                 tree = VDYNode(line_segment)
                 unvalid_leafs[i].replace_with(tree)
+                
+                unvalid_leaf_orientation = unvalid_leafs[i]._face.left_point.vertical_orientation(line_segment)
+                if unvalid_leaf_orientation == opposite_leaf_orientation:
+                    opposite_leaf = unvalid_leafs[i-1]
+                    opposite_leaf_orientation = opposite_leaf._face.left_point.vertical_orientation(line_segment)
 
-                if unvalid_leafs[i]._face.left_point.vertical_orientation(line_segment) == VORT.ABOVE:
-                    if other_leaf_orientation == VORT.ABOVE:  # Maintain opposite_leaf and the side it is on
-                        opposite_leaf = unvalid_leafs[i-1]  # No Index out of Bounds, because of initialisation of other_leaf
-                        other_leaf_orientation = VORT.BELOW
-                    # Set childs of the tree
+                if unvalid_leaf_orientation == VORT.ABOVE:
                     tree.upper = unvalid_leafs[i]
                     tree.lower = opposite_leaf
-                    
-                elif unvalid_leafs[i]._face.left_point.vertical_orientation(line_segment) == VORT.BELOW:
-                    if other_leaf_orientation == VORT.BELOW:  # Maintain opposite_leaf and the side it is on
-                        opposite_leaf = unvalid_leafs[i-1]
-                        other_leaf_orientation = VORT.ABOVE
-                    # Set childs of the tree
+                else:  # VORT.BELOW
                     tree.upper = opposite_leaf
                     tree.lower = unvalid_leafs[i]
 
-                else:
-                    raise RuntimeError(f"Point {unvalid_leafs[0]._face.left_point} must not lie on line induced by the line segment {line_segment}")
-                
-            if new_leafs[-2]._face.left_point.vertical_orientation(line_segment) == VORT.ABOVE:  # Maintain opposite leaf one more time
-                if other_leaf_orientation == VORT.ABOVE:
-                    opposite_leaf = unvalid_leafs[-1]
-            elif new_leafs[-2]._face.left_point.vertical_orientation(line_segment) == VORT.BELOW:
-                if other_leaf_orientation == VORT.BELOW:
-                    opposite_leaf = unvalid_leafs[-1]
-
-        # Replace the leaf containing the right endpoint
-        tree = VDYNode(line_segment)
-        if new_leafs[-2]._face.bottom_line_segment is line_segment:  # kept_face is either right_face_above or right_face_below
-            tree.upper = new_leafs[-2]
-            if opposite_leaf != None:
-                tree.lower = opposite_leaf
-            else:
-                tree.lower = new_leafs[2]
-        elif new_leafs[-2]._face.top_line_segment is line_segment:
-            tree.lower = new_leafs[-2]
-            if opposite_leaf != None:
-                tree.upper = opposite_leaf
-            else:
-                tree.upper = new_leafs[1]
+            if new_leafs[-2]._face.left_point.vertical_orientation(line_segment) == opposite_leaf_orientation:
+                opposite_leaf = unvalid_leafs[-1]  # Maintain opposite leaf one more time
         else:
-            raise RuntimeError(f"face {new_leafs[-2]._face} needs to be directly above or below of line segment {line_segment}")            
-        if new_leafs[-1] is not None:
-            child = tree
-            tree = VDXNode(line_segment.right)
-            tree.right = new_leafs[-1]
-            tree.left = child
+            if new_leafs[-2]._face.bottom_line_segment is line_segment:
+                opposite_leaf = new_leafs[2]
+            else:
+                opposite_leaf = new_leafs[1]
+
+        # Replace the leaf containing the right endpoint        
+        if new_leafs[-2]._face.bottom_line_segment is line_segment:  # kept_face is either right_face_above or right_face_below
+            tree = self._build_subtree(line_segment, [None, new_leafs[-2], opposite_leaf, new_leafs[-1]])
+        elif new_leafs[-2]._face.top_line_segment is line_segment:
+            tree = self._build_subtree(line_segment, [None, opposite_leaf, new_leafs[-2], new_leafs[-1]])
 
         right_endpoint_leaf.replace_with(tree)
+
+    def _build_subtree(self, line_segment: VDLineSegment, leafs: list[Optional[VDLeaf]]) -> VDNode:
+        if len(leafs) < 3 or len(leafs) > 4:
+            raise ValueError(f"The list of leafs {leafs} needs to be of length 3 or 4 to build a subtree.")
+        # The leaf is replaced by a small tree composed of two x-nodes and a y-node
+        tree = VDYNode(line_segment)
+        tree.upper = leafs[1]
+        tree.lower = leafs[2]
+        if len(leafs) > 3 and leafs[3] is not None:  # The new line segment does not share an enpoint with an already existing endpoint
+            child = tree
+            tree = VDXNode(line_segment.right)
+            tree.left = child
+            tree.right = leafs[3]
+        if leafs[0] is not None:
+            child = tree
+            tree = VDXNode(line_segment.left)
+            tree.left = leafs[0]
+            tree.right = child
+        return tree
 
 
 class VDFace:
