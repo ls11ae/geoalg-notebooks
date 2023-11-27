@@ -254,7 +254,7 @@ class VerticalDecomposition:
             trapezoid_left = None
             trapezoid_top.left_point = face.left_point
             trapezoid_bottom.left_point = face.left_point
-        if hort == HORT.EQUAL:   # Case where the new linesegment shares and enpoint with an already existing endpoint
+        elif hort == HORT.EQUAL:   # Case where the new linesegment shares an endpoint with an already existing endpoint
             trapezoid_left = None
             trapezoid_top.upper_left_neighbor = face.upper_left_neighbor
             trapezoid_bottom.lower_left_neighbor = face.lower_left_neighbor
