@@ -8,10 +8,26 @@ from .objects import Face
 from .dcel import DoublyConnectedEdgeList
 
 class PLSearchStructure(ABC):
-    def query(self, point: Point):
+    def query(self, point: Point) -> tuple[Face, PointSequence]:
         pass
 
+class PlanarSubdivision(ABC):
+    pass
+
 class PointLocation:
+    def __init__(self, bounding_box: Rectangle = Rectangle(Point(0, 0), Point(400, 400)),
+                 dcel: Optional[DoublyConnectedEdgeList] = DoublyConnectedEdgeList(),
+                 random_seed: Optional[int] = None) -> None:
+        self._bounding_box = bounding_box
+        self._dcel = dcel
+        self._search_structure: Optional[PLSearchStructure] = None
+        self._random_seed: Optional[int] = random_seed
+    
+    def clear(self):
+        self._dcel.clear()
+        self._search_structure = None
+
+class PointLocation2:
     def __init__(self, bounding_box: Rectangle = Rectangle(Point(0, 0), Point(400, 400)), dcel: Optional[DoublyConnectedEdgeList] = None, random_seed: Optional[int] = None) -> None:
         if dcel is None:
             dcel = DoublyConnectedEdgeList()
@@ -124,7 +140,7 @@ class PointLocation:
             # print(f"Check successful after insertion of LS {segment}")
 
 
-class VerticalDecomposition:
+class VerticalDecomposition(PlanarSubdivision):
     def __init__(self, bounding_box: Rectangle, dcel: DoublyConnectedEdgeList) -> None:
         self._bounding_box = bounding_box
         self._trapezoids: list[VDFace] = []

@@ -330,13 +330,13 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
             return self.extract_points_from_raw_instance(dcel)
 
 class PointLocationInstance(DCELInstance, InstanceHandle[PointLocation]):
-    def __init__(self, drawing_mode: Optional[DrawingMode] = None, drawing_epsilon: float = 5):
+    def __init__(self, drawing_mode: Optional[DrawingMode] = None, drawing_epsilon: float = 5, random_seed: Optional[int] = None):
         if drawing_mode is None:
             drawing_mode = DCELMode(vertex_radius = 3)
         self._drawing_mode = drawing_mode
         self._drawing_epsilon = drawing_epsilon
         self._last_added_point = None
-        self._instance = PointLocation()
+        self._instance = PointLocation(random_seed=random_seed)
         self._dcel = self._instance._dcel
 
     @staticmethod
