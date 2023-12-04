@@ -77,6 +77,8 @@ class PointSequence(GeometricObject):
     def __setitem__(self, key: Any, new_point: Point):
         if isinstance(key, Point):
             key = self._find(key)
+            if key is None:
+                return
         elif not isinstance(key, int):
             raise ValueError("Parameter 'key' needs to be an integer or a point")
         self._points[key] = new_point
