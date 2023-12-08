@@ -26,7 +26,8 @@ The notebooks are accessible online via [Binder](https://mybinder.org/), which p
 
 Of course, it's also possible to execute the notebooks offline in a local evironment.
 Aside from downloading the notebooks themselves, this requires installing the dependencies specified in [environment.yml](./environment.yml).
-The notebooks were originally written in Python 3.9 and tested up to the currently used version 3.11.
+The notebooks no. 00-03 were originally written in Python 3.9 and tested up to the currently used version 3.11.
+Notbook no. 04 was written in Python 3.11.
 
 Another option is to view rendered versions of the notebooks without an execution environment, e.g. here on GitHub or through [nbviewer](https://nbviewer.org/).
 Note that nbviewer has slightly nicer formatting than GitHub (as of April 2023).
@@ -45,25 +46,30 @@ Those don't need to be read in order, but they might occasionally reference earl
 | 01    | **Convex Hull**                        | ![01-pr] | JupyterLite <br> [Binder][01-bd] | [nbviewer][01-nb] <br> [GitHub][01-gh] |
 | 02    | **Line Segment** <br> **Intersection** | ![02-pr] | JupyterLite <br> [Binder][02-bd] | [nbviewer][02-nb] <br> [GitHub][02-gh] |
 | 03    | **Polygon** <br> **Triangulation**     | ![03-pr] | JupyterLite <br> [Binder][03-bd] | [nbviewer][03-nb] <br> [GitHub][03-gh] |
+| 04    | **Point** <br> **Localization**        | ![04-pr] | JupyterLite <br> [Binder][04-bd] | [nbviewer][04-nb] <br> [GitHub][04-gh] |
 
 [01-pr]: ./notebooks/images/01-image00.png
 [02-pr]: ./notebooks/images/02-image00.png
 [03-pr]: ./notebooks/images/03-image00.png
+[04-pr]: ./notebooks/images/04-image01.png
 
 [00-bd]: https://mybinder.org/v2/gh/Jerik79/geoalg-notebooks/master?filepath=notebooks/00-Basics.ipynb
 [01-bd]: https://mybinder.org/v2/gh/Jerik79/geoalg-notebooks/master?filepath=notebooks/01-ConvexHull.ipynb
 [02-bd]: https://mybinder.org/v2/gh/Jerik79/geoalg-notebooks/master?filepath=notebooks/02-LineSegmentIntersection.ipynb
 [03-bd]: https://mybinder.org/v2/gh/Jerik79/geoalg-notebooks/master?filepath=notebooks/03-PolygonTriangulation.ipynb
+[04-bd]: https://mybinder.org/v2/gh/larsnitzschke/geoalg-notebooks/master?filepath=notebooks/04-PointLocalization.ipynb
 
 [00-nb]: https://nbviewer.org/github/Jerik79/geoalg-notebooks/blob/master/notebooks/00-Basics.ipynb
 [01-nb]: https://nbviewer.org/github/Jerik79/geoalg-notebooks/blob/master/notebooks/01-ConvexHull.ipynb
 [02-nb]: https://nbviewer.org/github/Jerik79/geoalg-notebooks/blob/master/notebooks/02-LineSegmentIntersection.ipynb
 [03-nb]: https://nbviewer.org/github/Jerik79/geoalg-notebooks/blob/master/notebooks/03-PolygonTriangulation.ipynb
+[04-nb]: https://nbviewer.org/github/larsnitzschke/geoalg-notebooks/blob/master/notebooks/04-PointLocalization.ipynb
 
 [00-gh]: ./notebooks/00-Basics.ipynb
 [01-gh]: ./notebooks/01-ConvexHull.ipynb
 [02-gh]: ./notebooks/02-LineSegmentIntersection.ipynb
 [03-gh]: ./notebooks/03-PolygonTriangulation.ipynb
+[04-gh]: ./notebooks/04-PointLocalization.ipynb
 
 
 ## Further Information
