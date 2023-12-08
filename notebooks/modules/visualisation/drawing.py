@@ -527,12 +527,6 @@ class DCELMode(DrawingMode):
         pass
 
 
-class SlabDecompositionMode(FixedVertexNumberPathsMode):  # Placeholder
-    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS,
-    highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
-        super().__init__(2, vertex_radius, highlight_radius, line_width)
-
-
 class VerticalExtensionMode(DrawingMode):
     def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH,
                  animate_inserted_ls: bool = True):
