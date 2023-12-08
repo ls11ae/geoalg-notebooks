@@ -68,7 +68,7 @@ class DoublyConnectedEdgeList:
         
         The edge is given by two points.
         If either of the points is not in the DCEL an exception is raised.
-        If the edge is already in the DCEL nothing happens
+        If the edge is already in the DCEL nothing happens.
         """
         vertex_0, vertex_1 = None, None
         for vertex in self.vertices:
