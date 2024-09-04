@@ -1,7 +1,8 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, Iterator, Optional, SupportsFloat, Union
+from typing import Any, Iterator, Iterable, Optional, SupportsFloat, Union
 from enum import auto, Enum
+from itertools import combinations
 import math
 
 
@@ -124,14 +125,13 @@ class Point:
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Point):
             return NotImplemented
-
         return self._x == other._x and self._y == other._y
     
     def __hash__(self) -> int:
         return hash((self._x, self._y))
     
     def __repr__(self) -> str:
-        return f"({self._x}, {self._y})"
+        return f"Point: ({self._x}, {self._y})"
 
     def __add__(self, other: Any) -> Point:
         if not isinstance(other, Point):
@@ -156,7 +156,6 @@ class Point:
 
     def __round__(self, ndigits: Optional[int] = None) -> Point:
         return Point(round(self._x, ndigits), round(self._y, ndigits))
-
 
 class PointReference(Point):    # TODO: Make this a generic type for points with attributes.
     def __init__(self, container: list[Point], position: int):
@@ -196,6 +195,101 @@ class PointReference(Point):    # TODO: Make this a generic type for points with
 
     def __repr__(self) -> str:
         return f"({self._x}, {self._y})+{self.container}"
+
+
+class Line:
+    def __init__(self, p1: Point, p2: Point):
+        self._p1 = p1
+        self._p2 = p2
+
+    def copy(self) -> Line:
+        return Line(self._p1, self._p2)
+    
+    def getIntersection(self, other : Line, epsilon: float = EPSILON) -> Line | Point | None :
+        denominator = (self.p1.x - self.p2.x) * (other.p1.y - other.p2.y) - (self.p1.y - self.p2.y) * (other.p1.x - other.p2.x)
+        ##lines are parallel or coincident
+        if(abs(denominator) < epsilon):
+            ##check if p1, p2 are collinear with other.p1
+            x1, y1 = self.p2.x - self.p1.x, self.p2.y - self.p1.y
+            x2, y2 = other.p1.x - self.p1.x, other.p1.y - self.p1.y
+            if(abs(x1 * y2 - x2 * y2) < epsilon):
+                ##lines are identical, so just return a line as intersection
+                return self
+            ##lines are parallel but not on top of each other, so no intersection exists
+            return None
+        xNumerator = (self.p1.x*self.p2.y - self.p1.y*self.p2.x) * (other.p1.x - other.p2.x) - (self.p1.x - self.p2.x) * (other.p1.x*other.p2.y - other.p1.y*other.p2.x)
+        yNumerator = (self.p1.x*self.p2.y - self.p1.y*self.p2.x) * (other.p1.y - other.p2.y) - (self.p1.y - self.p2.y) * (other.p1.x*other.p2.y - other.p1.y*other.p2.x)
+        return Point(xNumerator / denominator, yNumerator / denominator)
+        
+
+    '''
+    These methods move the given point such that one coordinate is equal to the given value.
+
+    This is need for drawing since the canvas can only draw lines from point to point without extending them.
+    So instead the points on the line can be moved to outside the frame of the canvas so that it looks like a full line is drawn
+
+    The methods fail if a line is horizontal and the y coordinate is changed or if a line is vertical and the x coordinate is changed
+    '''
+    #move p1 such that it has the given x coordinate
+    def move_p1_x(self, new_x : float):
+        intersection = self.getIntersection(Line(Point(new_x, 0), Point(new_x, 1000)))
+        if type(intersection) is None:
+            #lines are parallel, impossible to change coordinate
+            return False
+        if type(intersection) is Line:
+            #lines are identical
+            return False
+        self._p1 = intersection
+        return True
+
+    #move p2 such that it has the given x coordinate
+    def move_p2_x(self, new_x : float):
+        intersection = self.getIntersection(Line(Point(new_x, 0), Point(new_x, 1000)))
+        if type(intersection) is None:
+            #lines are parallel, impossible to change coordinate
+            return False
+        if type(intersection) is Line:
+            #lines are identical
+            return False
+        self._p2 = intersection
+        return True
+
+    #move p1 such that it has the given y coordinate
+    def move_p1_y(self, new_y : float):
+        intersection = self.getIntersection(Line(Point(0, new_y), Point(1000, new_y)))
+        if type(intersection) is None:
+            #lines are parallel, impossible to change coordinate
+            return False
+        if type(intersection) is Line:
+            #lines are identical
+            return False
+        self._p1 = intersection
+        return True
+
+    #move p2 such that it has the given y coordinate
+    def move_p2_y(self, new_y : float):
+        intersection = self.getIntersection(Line(Point(0, new_y), Point(1000, new_y)))
+        if type(intersection) is None:
+            #lines are parallel, impossible to change coordinate
+            return False
+        if type(intersection) is Line:
+            #lines are identical
+            return True
+        self._p2 = intersection
+        return True
+
+
+    ## Properties
+    @property
+    def p1(self) -> float:
+        return self._p1
+
+    @property
+    def p2(self) -> float:
+        return self._p2
+
+    def __repr__(self) -> str:
+        return f"Line: ({self._p1}, {self._p2})"
 
 
 class LineSegment:
