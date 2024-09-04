@@ -8,7 +8,7 @@ from typing import Any, Iterable, Iterator, Optional
 
 from ..geometry.core import (
     AnimationEvent, AppendEvent, ClearEvent, PopEvent, SetEvent,
-    Point, PointReference, LineSegment, HorizontalOrientation as HORT, VerticalOrientation as VORT
+    Point, PointReference, LineSegment, Line, HorizontalOrientation as HORT, VerticalOrientation as VORT
 )
 
 from ipycanvas import Canvas, hold_canvas
@@ -81,6 +81,37 @@ class CanvasDrawingHandle:
         if transparent:
             self._canvas.stroke_style = self.opaque_style
             self._canvas.fill_style  = self.opaque_style
+
+    def draw_line(self, p1 : Point, p2 : Point, line_width:int, stroke:bool = True, transparent : bool = False):
+        self._canvas.line_width = abs(line_width)
+        line = Line(p1,p2)
+        '''
+        seems to be a dirty fix:
+        try and move p1 such that its x coord is 0, if this works also move p2 such that its endpoint is on the right canvas side
+        if it doesnt work this means the line is parallel to the x axis, so try again by moving y coordinate around
+
+        This is needed because the canvas cant draw a line crossing the whole screen unless the endpoints are on the border.
+        So the only way is to move the endpoints
+        '''
+        if(line.move_p1_x(0)):
+            line.move_p2_x(self._canvas.width)
+        else:
+            line.move_p1_y(0)
+            line.move_p2_y(self._canvas.height)
+        self._canvas.begin_path()
+        self._canvas.move_to(line.p1.x, line.p1.y)
+        self._canvas.line_to(line.p2.x, line.p2.y)
+
+        if transparent:
+            self._canvas.stroke_style = self.transparent_style
+            self._canvas.fill_style = self.transparent_style
+        if stroke:
+            self._canvas.stroke()
+        if transparent:
+            self._canvas.stroke_style = self.opaque_style
+            self._canvas.fill_style  = self.opaque_style
+        pass
+
 
     def draw_polygon(self, points: Iterable[Point], line_width: int, stroke: bool = True,
     fill: bool = False, transparent: bool = False):
@@ -173,6 +204,9 @@ class PointsMode(DrawingMode):
 
         drawer.clear()
         self.draw(drawer, points)
+
+
+
 
 
 class SweepLineMode(PointsMode):
@@ -428,10 +462,41 @@ class FixedVertexNumberPathsMode(DrawingMode):
         self.draw(drawer, points)
 
 
+class LineMode(DrawingMode):
+    def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
+        self._point_radius = point_radius
+        self._highlight_radius = highlight_radius
+        self.line_width = line_width
+
+    def draw(self, drawer:Drawer, points:Iterable[Point]):
+        print("doin loop")
+        with drawer.main_canvas.hold():
+            points_iter = iter(points)
+            cur_point = next(points_iter, None)
+            while cur_point is not None:
+                next_point = next(points_iter, None)
+                if(next_point is None):
+                    drawer.main_canvas.draw_point(cur_point, transparent=True, radius=self._point_radius)
+                else:
+                    drawer.main_canvas.draw_line(cur_point, next_point, self.line_width)
+                cur_point = next_point
+        print("done with loop")
+
+    def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
+        print("drawin step")
+        pass
+
+    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
+        print("animating")
+        pass
+
+
 class LineSegmentsMode(FixedVertexNumberPathsMode):
     def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS,
     highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
         super().__init__(2, vertex_radius, highlight_radius, line_width)
+
+
 
 
 class MonotonePartitioningMode(DrawingMode):    # TODO: If possible, this could maybe make use of composition too.
