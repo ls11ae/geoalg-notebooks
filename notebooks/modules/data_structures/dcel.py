@@ -6,6 +6,7 @@ import numpy as np
 
 from ..geometry import LineSegment, Orientation as ORT, Point, EPSILON
 from .objects import Vertex, HalfEdge, Face
+from ..geometry.core import AnimationEvent, GeometricObject
 
 class DoublyConnectedEdgeList:
     """ 
