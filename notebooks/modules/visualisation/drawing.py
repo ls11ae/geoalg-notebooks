@@ -469,9 +469,10 @@ class LineMode(DrawingMode):
         self.line_width = line_width
 
     def draw(self, drawer:Drawer, points:Iterable[Point]):
-        print("doin loop")
+        vertex_queue: list[Point] = drawer._get_drawing_mode_state(default = [])
+        vertex_queue.extend(points)
         with drawer.main_canvas.hold():
-            points_iter = iter(points)
+            points_iter = iter(vertex_queue)
             cur_point = next(points_iter, None)
             while cur_point is not None:
                 next_point = next(points_iter, None)
@@ -479,16 +480,20 @@ class LineMode(DrawingMode):
                     drawer.main_canvas.draw_point(cur_point, transparent=True, radius=self._point_radius)
                 else:
                     drawer.main_canvas.draw_line(cur_point, next_point, self.line_width)
-                cur_point = next_point
-        print("done with loop")
+                cur_point = next(points_iter, None)
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
-        print("drawin step")
+        
         pass
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
-        print("animating")
-        pass
+        points: list[Point] = []
+        event_iterator = iter(animation_events)
+        next_event = next(event_iterator, None)
+        while next_event is not None:
+            next_event.execute_on(points)
+            self._draw_animation_step(drawer, points)
+            
 
 
 class LineSegmentsMode(FixedVertexNumberPathsMode):

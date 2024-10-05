@@ -13,7 +13,6 @@ import numpy as np
 I = TypeVar("I")
 
 Algorithm = Callable[[I], GeometricObject]
-
 '''
 General class to handle all instances of visualisation.
 
@@ -206,13 +205,11 @@ class LineSetInstance(InstanceHandle[set[Line]]):
             return True
         elif self._cached_point == point:
             return False
-
         line = Line(self._cached_point, point)
         if line in self._instance:
             return False
         self._instance.add(line)
         self._cached_point = None
-
         return True
 
     def clear(self):
@@ -228,7 +225,7 @@ class LineSetInstance(InstanceHandle[set[Line]]):
 
     @property
     def default_number_of_random_points(self) -> int:
-        return 200
+        return 20
 
     def generate_random_points(self, max_x: float, max_y: float, number: int) -> list[Point]:
         points: list[Point] = []
@@ -241,7 +238,6 @@ class LineSetInstance(InstanceHandle[set[Line]]):
 
         if number % 2 == 1:
             points.extend(super().generate_random_points(max_x, max_y, 1))
-
         return points
 
 
