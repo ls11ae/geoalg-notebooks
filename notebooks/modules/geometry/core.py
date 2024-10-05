@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, Iterator, Iterable, Optional, SupportsFloat, Union
+from typing import Any, Iterator, Iterable, Optional, SupportsFloat, Union, Generic, TypeVar
 from enum import auto, Enum
 from itertools import combinations
 import math
@@ -8,6 +8,7 @@ import math
 
 EPSILON: float = 1e-9    # Chosen by testing currently implemented algorithms with the visualisation tool.
 
+P = TypeVar("P")
 
 class Orientation(Enum):
     LEFT = auto()
@@ -197,6 +198,19 @@ class PointReference(Point):    # TODO: Make this a generic type for points with
         return f"({self._x}, {self._y})+{self.container}"
 
 
+class PointExtension(Point, Generic[P]):
+    def __init__(self, x: SupportsFloat, y: SupportsFloat, data : P):
+        super().__init__(x, y)
+        self._data = data
+        
+    def data(self) -> P:
+        return self._data
+
+
+class PointList(PointExtension[list[Point]]):
+    def data(self) -> list[Point]:
+        return self._data
+
 class Line:
     def __init__(self, p1: Point, p2: Point):
         self._p1 = p1
@@ -225,7 +239,7 @@ class Line:
     '''
     These methods move the given point such that one coordinate is equal to the given value.
 
-    This is need for drawing since the canvas can only draw lines from point to point without extending them.
+    This is needed for drawing since the canvas can only draw lines from point to point without extending them.
     So instead the points on the line can be moved to outside the frame of the canvas so that it looks like a full line is drawn
 
     The methods fail if a line is horizontal and the y coordinate is changed or if a line is vertical and the x coordinate is changed
@@ -401,6 +415,10 @@ class Rectangle:
         else:
             self._lower = point_1.y
             self._upper = point_0.y
+
+    def isInside(self, point : Point) -> bool:
+        return (point.x() < self.right) and (point.x() > self.left) and (point.y() < self.upper) and (point.y() > self.lower)
+
 
     @property
     def left(self):
