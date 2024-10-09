@@ -3,7 +3,7 @@ from itertools import chain
 import time
 from typing import Callable, Generic, Optional, TypeVar, Union
 
-from ..geometry.core import GeometricObject, Line, LineSegment, Point, PointReference
+from ..geometry import AnimationObject, Line, LineSegment, Point, PointReference
 from ..data_structures import DoublyConnectedSimplePolygon, DoublyConnectedEdgeList, PointLocation
 from .drawing import DrawingMode, LineSegmentsMode, LineMode, PointsMode, PolygonMode, DCELMode
 
@@ -12,7 +12,7 @@ import numpy as np
 
 I = TypeVar("I")
 
-Algorithm = Callable[[I], GeometricObject]
+Algorithm = Callable[[I], AnimationObject]
 '''
 General class to handle all instances of visualisation.
 
@@ -31,7 +31,7 @@ class InstanceHandle(ABC, Generic[I]):
     '''
     runs the algorithm and returns its output aswell as the time it took to run
     '''
-    def run_algorithm(self, algorithm: Algorithm[I]) -> tuple[GeometricObject, float]:
+    def run_algorithm(self, algorithm: Algorithm[I]) -> tuple[AnimationObject, float]:
         instance_points = self.extract_points_from_raw_instance(self._instance)
 
         start_time = time.perf_counter()
@@ -47,7 +47,7 @@ class InstanceHandle(ABC, Generic[I]):
     '''
     runs a preprocessing algorithm before the algorithm itself. Returns the algorithms solution and the time it took to run
     '''
-    def run_algorithm_with_preprocessing(self, preprocessing: Algorithm[I], algorithm: Algorithm[I]) -> tuple[GeometricObject, float]:
+    def run_algorithm_with_preprocessing(self, preprocessing: Algorithm[I], algorithm: Algorithm[I]) -> tuple[AnimationObject, float]:
         instance_points = self.extract_points_from_raw_instance(self._instance)
 
         preprocessing(self._instance)

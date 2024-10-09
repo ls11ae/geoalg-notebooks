@@ -1,9 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import TypeVar, Generic, Iterator
-from ..geometry import Point
-
-A = TypeVar("A")
+from typing import Iterator
+from .core import Point
 
 # ---- ---- ---- ---- superclasses ---- ---- ---- ----
 

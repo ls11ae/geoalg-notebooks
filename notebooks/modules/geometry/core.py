@@ -1,8 +1,6 @@
 from __future__ import annotations
-from abc import ABC, abstractmethod
-from typing import Any, Iterator, Iterable, Optional, SupportsFloat, Union, Generic, TypeVar
+from typing import Any, Optional, SupportsFloat, Union, Generic, TypeVar
 from enum import auto, Enum
-from itertools import combinations
 import math
 
 
@@ -28,15 +26,6 @@ class HorizontalOrientation(Enum):
     LEFT = auto()
     RIGHT = auto()
     EQUAL = auto()
-
-
-class GeometricObject(ABC):     # TODO: Rename, move and export this.
-    @abstractmethod
-    def points(self) -> Iterator[Point]:
-        pass
-
-    def animation_events(self) -> Iterator[AnimationEvent]:
-        return (AppendEvent(point) for point in self.points())
 
 
 class Point:
@@ -435,44 +424,3 @@ class Rectangle:
     @property
     def lower(self):
         return self._lower
-    
-
-class AnimationEvent(ABC):      # TODO: Maybe use an Enum instead...
-    @abstractmethod
-    def execute_on(self, points: list[Point]):
-        pass
-
-
-class AppendEvent(AnimationEvent):
-    def __init__(self, point: Point):
-        self.point = point
-
-    def execute_on(self, points: list[Point]):
-        points.append(self.point)
-
-
-class PopEvent(AnimationEvent):
-    def execute_on(self, points: list[Point]):
-        points.pop()
-
-
-class SetEvent(AnimationEvent):
-    def __init__(self, key: int, point: Point):
-        self.key = key
-        self.point = point
-
-    def execute_on(self, points: list[Point]):
-        points[self.key] = self.point
-
-
-class DeleteEvent(AnimationEvent):
-    def __init__(self, key: int):
-        self.key = key
-
-    def execute_on(self, points: list[Point]):
-        del points[self.key]
-
-
-class ClearEvent(AnimationEvent):
-    def execute_on(self, points: list[Point]):
-        points.clear()

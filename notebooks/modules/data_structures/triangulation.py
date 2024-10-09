@@ -1,7 +1,6 @@
 from __future__ import annotations
 import copy
-from itertools import chain
-from typing import Iterable, Iterator, Optional, Tuple, Any, Callable
+from typing import Iterator, Optional, Any, Callable
 from enum import Enum, auto
 import numpy as np
 
@@ -9,7 +8,7 @@ import numpy as np
 from .binary_tree import BinaryTreeDict, Comparator, ComparisonResult as CR
 from .objects import HalfEdge, Vertex
 from .dcsp import DoublyConnectedSimplePolygon
-from ..geometry import Point, PointSequence, Orientation as ORT
+from ..geometry import PointSequence, Orientation as ORT
 
 # From Notebook 03:
 

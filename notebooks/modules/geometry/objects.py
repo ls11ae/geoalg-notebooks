@@ -3,9 +3,10 @@ from collections import OrderedDict
 from typing import Any, Iterable, Iterator, Union
 
 from .core import *
+from .animation_base import AnimationEvent, AnimationObject, AppendEvent, PopEvent, ClearEvent, SetEvent, DeleteEvent
 
 
-class PointSequence(GeometricObject):
+class PointSequence(AnimationObject):
     def __init__(self, points: Iterable[Point] = []):
         self._points: list[Point] = []
         self._animation_events: list[AnimationEvent] = []
@@ -92,7 +93,7 @@ class PointSequence(GeometricObject):
 
 
 # TODO: Actually make this generic. For that, an Updater like for binary trees is needed. Maybe share type vars and aliases?
-class PointSequenceDict(GeometricObject):
+class PointSequenceDict(AnimationEvent):
     def __init__(self):
         self._intersections: OrderedDict[Point, set[LineSegment]] = OrderedDict()
         self._animation_events: list[AnimationEvent] = []

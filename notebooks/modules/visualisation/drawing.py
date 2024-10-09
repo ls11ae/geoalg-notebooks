@@ -3,10 +3,9 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from itertools import islice
 import time
-import copy
 from typing import Any, Iterable, Iterator, Optional
 
-from ..geometry.core import (
+from ..geometry import (
     AnimationEvent, AppendEvent, ClearEvent, PopEvent, SetEvent,
     Point, PointReference, LineSegment, Line, HorizontalOrientation as HORT, VerticalOrientation as VORT
 )

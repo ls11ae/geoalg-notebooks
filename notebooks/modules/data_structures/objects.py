@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Iterable, Iterator, Optional, Tuple
+from typing import Iterable
 
 from ..geometry import LineSegment, Orientation as ORT, Point, EPSILON
 
