@@ -406,7 +406,7 @@ class Rectangle:
             self._upper = point_0.y
 
     def isInside(self, point : Point) -> bool:
-        return (point.x() < self.right) and (point.x() > self.left) and (point.y() < self.upper) and (point.y() > self.lower)
+        return (point.x < self.right) and (point.x > self.left) and (point.y < self.upper) and (point.y > self.lower)
 
 
     @property

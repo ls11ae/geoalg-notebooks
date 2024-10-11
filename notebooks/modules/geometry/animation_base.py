@@ -15,7 +15,7 @@ class AnimationObject(ABC):
         pass
 
     def animation_events(self) -> Iterator[AnimationEvent]:
-        return iter(self.animation_events)
+        return self._animation_events
 
 '''
 Object to keep track of changes to data. See below for implementations
@@ -25,7 +25,7 @@ class AnimationEvent(ABC):
         super().__init__()
 
     @abstractmethod
-    def execute_event(self, data : list[Point]):
+    def execute_on(self, data : list[Point]):
         pass
 
 class AppendEvent(AnimationEvent):

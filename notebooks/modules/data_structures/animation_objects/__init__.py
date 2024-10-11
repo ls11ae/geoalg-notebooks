@@ -1,1 +1,1 @@
-from dcel_animator import *
+from .dcel_animator import *

@@ -93,7 +93,7 @@ class PointSequence(AnimationObject):
 
 
 # TODO: Actually make this generic. For that, an Updater like for binary trees is needed. Maybe share type vars and aliases?
-class PointSequenceDict(AnimationEvent):
+class PointSequenceDict(AnimationObject):
     def __init__(self):
         self._intersections: OrderedDict[Point, set[LineSegment]] = OrderedDict()
         self._animation_events: list[AnimationEvent] = []
