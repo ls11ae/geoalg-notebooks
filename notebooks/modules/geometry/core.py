@@ -192,13 +192,19 @@ class PointExtension(Point, Generic[P]):
         super().__init__(x, y)
         self._data = data
         
-    def data(self) -> P:
+    @property
+    def data(self):
         return self._data
+    
+    @data.setter
+    def data(self, data):
+        self._data = data
 
 
 class PointList(PointExtension[list[Point]]):
-    def data(self) -> list[Point]:
-        return self._data
+
+    def __init__(self, x: SupportsFloat, y: SupportsFloat, data : list[Point] = []):
+        super().__init__(x, y, data)
 
 class Line:
     def __init__(self, p1: Point, p2: Point):
@@ -209,6 +215,8 @@ class Line:
         return Line(self._p1, self._p2)
     
     def getIntersection(self, other : Line, epsilon: float = EPSILON) -> Line | Point | None :
+        if other is None:
+            return None
         denominator = (self.p1.x - self.p2.x) * (other.p1.y - other.p2.y) - (self.p1.y - self.p2.y) * (other.p1.x - other.p2.x)
         ##lines are parallel or coincident
         if(abs(denominator) < epsilon):
@@ -223,8 +231,35 @@ class Line:
         xNumerator = (self.p1.x*self.p2.y - self.p1.y*self.p2.x) * (other.p1.x - other.p2.x) - (self.p1.x - self.p2.x) * (other.p1.x*other.p2.y - other.p1.y*other.p2.x)
         yNumerator = (self.p1.x*self.p2.y - self.p1.y*self.p2.x) * (other.p1.y - other.p2.y) - (self.p1.y - self.p2.y) * (other.p1.x*other.p2.y - other.p1.y*other.p2.x)
         return Point(xNumerator / denominator, yNumerator / denominator)
-        
-
+    
+    def orientation(self, p : Point) -> Orientation:
+        area = (self._p2.x - self._p1.x) * (p.y - self._p2.y) - (self._p2.y - self._p1.y) * (p.x - self._p1.x)
+        if area > EPSILON:
+            return Orientation.LEFT
+        if area < -EPSILON:
+            return Orientation.RIGHT   
+        return Orientation.BETWEEN
+    '''
+    moves the points that define the line such that they are both outside the given frame
+    '''
+    def expand(self, bot_left : Point, top_right : Point):
+        xDiff = abs(self._p2.x - self._p1.x)
+        yDiff = abs(self._p2.y - self._p1.y)
+        if xDiff < EPSILON:
+            #line is essentially vertical, change y coords
+            self.move_p1_y(bot_left.y)
+            self.move_p2_y(top_right.y)
+        elif yDiff < EPSILON:
+            #line is essentially horizontal, change x coords
+            self.move_p1_x(bot_left.x)
+            self.move_p2_x(top_right.x)
+        elif xDiff < yDiff:
+            self.move_p1_y(bot_left.y)
+            self.move_p2_y(top_right.y)
+        else:
+            self.move_p1_x(bot_left.x)
+            self.move_p2_x(top_right.x)
+        pass
     '''
     These methods move the given point such that one coordinate is equal to the given value.
 
@@ -284,11 +319,11 @@ class Line:
 
     ## Properties
     @property
-    def p1(self) -> float:
+    def p1(self):
         return self._p1
 
     @property
-    def p2(self) -> float:
+    def p2(self):
         return self._p2
 
     def __repr__(self) -> str:
@@ -412,15 +447,31 @@ class Rectangle:
     @property
     def left(self):
         return self._left
+    
+    @left.setter
+    def left(self, left : float):
+        self._left = left
 
     @property
     def right(self):
         return self._right
+    
+    @right.setter
+    def right(self, right : float):
+        self._right = right
 
     @property
     def upper(self):
         return self._upper
+    
+    @upper.setter
+    def upper(self, upper : float):
+        self._upper = upper
 
     @property
     def lower(self):
         return self._lower
+    
+    @lower.setter
+    def lower(self, lower : float):
+        self._lower = lower
