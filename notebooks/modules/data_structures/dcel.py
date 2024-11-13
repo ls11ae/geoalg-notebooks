@@ -197,7 +197,7 @@ class DoublyConnectedEdgeList:
         """ Adds a vertex on an existing edge by splitting it. """
         # Checks for correct insertion
         if not edge in self.edges:
-            raise Exception(f"Edge {edge} should already be part of the DCEL to add point {point} in it.")
+            raise Exception(f"Edge {edge} should already be part of the DCEL to add point {point} on it.")
         if not edge.origin.point != edge.destination.point and point.orientation(edge.origin.point, edge.destination.point) == ORT.BETWEEN:
             raise Exception(f"Point {point} should lie on the edge {edge}")
         if edge.origin.point == point or edge.destination.point == point: # vertex is one of the endpoints of the edge.
@@ -267,7 +267,7 @@ class DoublyConnectedEdgeList:
                 return face
         return self.outer_face
 
-    def find_splitting_face(self, vertex: Vertex, point: Point):
+    def find_splitting_face(self, vertex: Vertex, point: Point) -> Face:
         """ Return the face that is split by a line segment between the given vertex and point and is closest to the vertex. """
         out_edges = vertex.outgoing_edges()
         if len(out_edges) == 0:
