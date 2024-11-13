@@ -193,7 +193,10 @@ class LineSegmentSetInstance(InstanceHandle[set[LineSegment]]):
 
 
 class LineSetInstance(InstanceHandle[set[Line]]):
-    def __init__(self, drawing_mode: Optional[DrawingMode] = None):
+    #make bot_left and top_right equal to the canvases bottom right and topright corner to makes sure lines are drawn correctly
+    def __init__(self, bot_left : Point, top_right : Point, drawing_mode: Optional[DrawingMode] = None):
+        self._bot_left = bot_left
+        self._top_right = top_right
         if drawing_mode is None:
             drawing_mode = LineMode()
         super().__init__(set(), drawing_mode)
@@ -206,6 +209,7 @@ class LineSetInstance(InstanceHandle[set[Line]]):
         elif self._cached_point == point:
             return False
         line = Line(self._cached_point, point)
+        line.expand(self._bot_left, self._top_right)
         if line in self._instance:
             return False
         self._instance.add(line)
