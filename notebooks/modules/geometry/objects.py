@@ -3,7 +3,7 @@ from collections import OrderedDict
 from typing import Any, Iterable, Iterator, Union
 
 from .core import *
-from .animation_base import AnimationEvent, AnimationObject, AppendEvent, PopEvent, ClearEvent, SetEvent, DeleteEvent, UpdateEvent
+from .animation_base import AnimationEvent, AnimationObject, AppendEvent, PopEvent, ClearEvent, SetEvent, DeleteEvent, UpdateEvent, DeleteAtEvent
 
 
 class PointSequence(AnimationObject):
@@ -96,10 +96,11 @@ class PointSequence(AnimationObject):
         self._animation_events.append(SetEvent(key, new_point))
 
     def __delitem__(self, key: Any):
+        print("deleting")
         if not isinstance(key, int):
             raise ValueError("Parameter 'key' needs to be an integer.")
         del self._points[key]
-        self._animation_events.append(DeleteEvent(key))
+        self._animation_events.append(DeleteAtEvent(key))
 
 
 # TODO: Actually make this generic. For that, an Updater like for binary trees is needed. Maybe share type vars and aliases?
