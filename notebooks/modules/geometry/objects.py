@@ -3,7 +3,7 @@ from collections import OrderedDict
 from typing import Any, Iterable, Iterator, Union
 
 from .core import *
-from .animation_base import AnimationEvent, AnimationObject, AppendEvent, PopEvent, ClearEvent, SetEvent, DeleteEvent
+from .animation_base import AnimationEvent, AnimationObject, AppendEvent, PopEvent, ClearEvent, SetEvent, DeleteEvent, UpdateEvent
 
 
 class PointSequence(AnimationObject):
@@ -31,6 +31,16 @@ class PointSequence(AnimationObject):
     def clear(self):
         self._points.clear()
         self._animation_events.append(ClearEvent())
+
+    def update(self, old : Point, new : Point):
+        i = self._points.index(old)
+        self._points.remove(old)
+        self._points.insert(i, new)
+        self._animation_events.append(UpdateEvent(old,new))
+
+    def delete(self, to_del : Point):
+        self._points.remove(to_del)
+        self._animation_events.append(DeleteEvent(to_del))
 
     def animate(self, point: Point):
         self._animation_events.append(AppendEvent(point))
