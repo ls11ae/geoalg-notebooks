@@ -11,7 +11,6 @@ class DCELAnimator(AnimationObject):
         self._animation_events = []
         self._illformed : bool = False
         self._init_bounding_box(boundingBox)
-        print(self._dcel.edges)
     
     def _init_bounding_box(self, boundingBox: Rectangle):
         #if the bounding box is illformed, all further calculations don't make sense
@@ -38,28 +37,27 @@ class DCELAnimator(AnimationObject):
         self._animation_events.append(AppendEvent(point))
         return v
 
-    def add_edge(self, point1 : Point, point2 : Point):
-        self._dcel.add_edge_by_points(point1, point2)
-        self._animation_events.append(EdgeAddedEvent(point1, point2))
+    def add_edge(self, p1 : Point, p2 : Point):
+        self._dcel.add_edge_by_points(p1, p2)
+        self._animation_events.append(EdgeAddedEvent(p1, p2))
 
     def add_vertex_on_edge(self, point : Point, edge : HalfEdge) -> Vertex:
-        self._animation_events.append(EdgeRemovedEvent(edge.origin.point, edge.twin.origin.point))
         v = self._dcel.add_vertex_in_edge(edge, point)
-        self._animation_events.append(AppendEvent(point))
-
-        self._animation_events.append(EdgeRemovedEvent(edge.origin.point, edge.twin.origin.point))
-        self._animation_events.append(EdgeRemovedEvent(edge.next.origin.point, edge.next.twin.origin.point))
         return v
 
     def points(self) -> Iterator[Point]:
         points : list[PointList] = []
+        one = True
         for v in self._dcel.vertices:
-            p = PointList(v.x, v.y)
-            data = []
-            for e in v.outgoing_edges():
-                data.append(Point(e.destination.x, e.destination.y))
-            p.data = data
+            p = PointList(v.point.x, v.point.y, [])
             points.append(p)
+            if v.edge.destination is not v:
+                e = v.edge
+                p.data.append(Point(e.destination.point.x, e.destination.point.y))
+                e = e.twin.next
+                while(e != v.edge):
+                    p.data.append(Point(e.destination.point.x, e.destination.point.y))
+                    e = e.twin.next
         return iter(points)
     
     def get_next_face(self, v : Vertex, p : Point) -> Face:

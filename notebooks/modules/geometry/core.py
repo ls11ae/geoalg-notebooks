@@ -191,7 +191,7 @@ class PointExtension(Point, Generic[P]):
     def __init__(self, x: SupportsFloat, y: SupportsFloat, data : P):
         super().__init__(x, y)
         self._data = data
-        
+    
     @property
     def data(self):
         return self._data
@@ -214,7 +214,7 @@ class Line:
     def copy(self) -> Line:
         return Line(self._p1, self._p2)
     
-    def getIntersection(self, other : Line, epsilon: float = EPSILON) -> Line | Point | None :
+    def intersection(self, other : Line, epsilon: float = EPSILON) -> Line | Point | None :
         if other is None:
             return None
         denominator = (self.p1.x - self.p2.x) * (other.p1.y - other.p2.y) - (self.p1.y - self.p2.y) * (other.p1.x - other.p2.x)
@@ -232,6 +232,16 @@ class Line:
         yNumerator = (self.p1.x*self.p2.y - self.p1.y*self.p2.x) * (other.p1.y - other.p2.y) - (self.p1.y - self.p2.y) * (other.p1.x*other.p2.y - other.p1.y*other.p2.x)
         return Point(xNumerator / denominator, yNumerator / denominator)
     
+    def intersection_segment(self, segment : LineSegment, epsilon : float = EPSILON) -> LineSegment | Point | None:
+        i = self.intersection(segment.to_line())
+        if(type(i) is Line):
+            return segment
+        if(type(i) is Point):
+            ort = i.orientation(segment.lower, segment.upper)
+            if(ort is Orientation.BETWEEN):
+                return Point
+        return None
+
     def orientation(self, p : Point) -> Orientation:
         area = (self._p2.x - self._p1.x) * (p.y - self._p2.y) - (self._p2.y - self._p1.y) * (p.x - self._p1.x)
         if area > EPSILON:
@@ -239,6 +249,7 @@ class Line:
         if area < -EPSILON:
             return Orientation.RIGHT   
         return Orientation.BETWEEN
+    
     '''
     moves the points that define the line such that they are both outside the given frame
     '''
@@ -270,7 +281,7 @@ class Line:
     '''
     #move p1 such that it has the given x coordinate
     def move_p1_x(self, new_x : float):
-        intersection = self.getIntersection(Line(Point(new_x, 0), Point(new_x, 1000)))
+        intersection = self.intersection(Line(Point(new_x, 0), Point(new_x, 1000)))
         if type(intersection) is None:
             #lines are parallel, impossible to change coordinate
             return False
@@ -282,7 +293,7 @@ class Line:
 
     #move p2 such that it has the given x coordinate
     def move_p2_x(self, new_x : float):
-        intersection = self.getIntersection(Line(Point(new_x, 0), Point(new_x, 1000)))
+        intersection = self.intersection(Line(Point(new_x, 0), Point(new_x, 1000)))
         if type(intersection) is None:
             #lines are parallel, impossible to change coordinate
             return False
@@ -294,7 +305,7 @@ class Line:
 
     #move p1 such that it has the given y coordinate
     def move_p1_y(self, new_y : float):
-        intersection = self.getIntersection(Line(Point(0, new_y), Point(1000, new_y)))
+        intersection = self.intersection(Line(Point(0, new_y), Point(1000, new_y)))
         if type(intersection) is None:
             #lines are parallel, impossible to change coordinate
             return False
@@ -306,7 +317,7 @@ class Line:
 
     #move p2 such that it has the given y coordinate
     def move_p2_y(self, new_y : float):
-        intersection = self.getIntersection(Line(Point(0, new_y), Point(1000, new_y)))
+        intersection = self.intersection(Line(Point(0, new_y), Point(1000, new_y)))
         if type(intersection) is None:
             #lines are parallel, impossible to change coordinate
             return False
@@ -360,6 +371,9 @@ class LineSegment:
         return self._upper if self._upper.x > self._lower.x or (self._upper.x == self._lower.x and self._upper.y > self._lower.y) else self._lower
 
     ## Operation(s)
+
+    def to_line(self) -> Line:
+        return Line(self.left, self.right)
 
     def intersection(self, other: LineSegment, epsilon: float = EPSILON) -> Union[Point, LineSegment, None]:
         self_direction = self._upper - self._lower

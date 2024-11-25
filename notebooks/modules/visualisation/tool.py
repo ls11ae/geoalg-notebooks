@@ -264,6 +264,7 @@ class VisualisationTool(Generic[I]):
             except Exception as exception:
                 title = html.escape(str(exception), quote = True)
                 self._algorithm_messages[index].value = f"<b title='{title}'><font color='red'>ERROR</font></b>"
+                print(str(exception))
                 return
 
             if not self._animation_checkbox.value:
