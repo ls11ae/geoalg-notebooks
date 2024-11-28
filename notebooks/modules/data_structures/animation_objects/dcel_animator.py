@@ -72,6 +72,9 @@ class DCELAnimator(AnimationObject):
     def get_bottom_left(self) -> Vertex:
         return self._dcel.start_vertex
     
+    def get_splitting_face(self, v : Vertex, p : Point) -> Face:
+        return self._dcel.find_splitting_face(v,p)
+
     @property
     def illformed(self):
         return self._illformed

@@ -87,12 +87,12 @@ class DoublyConnectedEdgeList:
     def _add_edge(self, vertex_0: Vertex, vertex_1: Vertex):
         half_edge_0 = None
         half_edge_1 = None
-        if vertex_0.edge == vertex_0.edge.twin:  # single vertex
+        if vertex_0.edge == vertex_0.edge.twin:  # vertex_0 has no edges
             half_edge_0 = vertex_0.edge
         else:
             half_edge_0 = HalfEdge(vertex_0)
             self._edges.append(half_edge_0)
-        if vertex_1.edge == vertex_1.edge.twin:  # single vertex
+        if vertex_1.edge == vertex_1.edge.twin:  # vertex_1 has no edges
             half_edge_1 = vertex_1.edge
         else:
             half_edge_1 = HalfEdge(vertex_1)
@@ -135,7 +135,7 @@ class DoublyConnectedEdgeList:
         # Find correct order around vertex_1
         search_edge = vertex_0.edge.twin
         if vertex_0.edge != vertex_0.edge.twin and vertex_0.edge.twin != vertex_0.edge.prev: # >1 adjacent vertices
-            while not DoublyConnectedEdgeList._point_between_edge_and_next(vertex_1.point, search_edge):
+            while not DoublyConnectedEdgeList.point_between_edge_and_next(vertex_1.point, search_edge):
                 search_edge = search_edge.next.twin
                 if search_edge == vertex_0.edge.twin:
                     raise Exception(f"Could not find a suitable edge while inserting edge between vertices {vertex_0} and {vertex_1}")
@@ -143,7 +143,7 @@ class DoublyConnectedEdgeList:
         # Find correct order around vertex_2
         search_edge2 = vertex_1.edge.twin
         if vertex_1.edge != vertex_1.edge.twin and vertex_1.edge.twin != vertex_1.edge.prev: # >1 adjacent vertices
-            while not DoublyConnectedEdgeList._point_between_edge_and_next(vertex_0.point, search_edge2):
+            while not DoublyConnectedEdgeList.point_between_edge_and_next(vertex_0.point, search_edge2):
                 search_edge2 = search_edge2.next.twin
                 if search_edge2 == vertex_1.edge.twin:
                     raise Exception(f"Could not find a suitable edge while inserting edge between vertices {vertex_0} and {vertex_1}")
@@ -273,25 +273,30 @@ class DoublyConnectedEdgeList:
         if len(out_edges) == 0:
             raise Exception(f"Vertex {vertex} should be connected to face boundary")
         for edge in out_edges:
-            if DoublyConnectedEdgeList._point_between_edge_and_next(point, edge.twin):
+            if DoublyConnectedEdgeList.point_between_edge_and_next(point, edge.twin):
                 return edge.twin.incident_face
+        print(vertex)
+        print(vertex.outgoing_edges())
         raise Exception(f"Malformed DCEL: point {point} must split a face around vertex {vertex}")
     
     def find_edges_of_vertex(self, vertex: Vertex) -> list[HalfEdge]:
         return [edge for edge in self.edges if edge.origin == vertex]
         
     @staticmethod
-    def _point_between_edge_and_next(point: Point, edge: HalfEdge) -> bool:
+    def point_between_edge_and_next(point: Point, edge: HalfEdge) -> bool:
         edge_0, edge_1 = edge, edge.next
         edge_0_origin, edge_0_destination = edge_0.origin.point, edge_0.destination.point
         edge_1_origin, edge_1_destination = edge_1.origin.point, edge_1.destination.point
         
         if edge_0.twin is edge_1:
             return True
-        return point.orientation(edge_0_origin, edge_0_destination) == ORT.LEFT and (
-            point.orientation(edge_1_origin, edge_1_destination) == ORT.LEFT or # Case A
-            edge_1_destination.orientation(edge_0_origin, edge_0_destination) == ORT.RIGHT) or ( # Case B
-            point.orientation(edge_1_origin, edge_1_destination) == ORT.LEFT and edge_0_origin.orientation(edge_1_origin, edge_1_destination) == ORT.RIGHT) # Case C
+        #point is left of both edges
+        caseA1 = point.orientation(edge_0_origin, edge_0_destination) == ORT.LEFT and point.orientation(edge_1_origin, edge_1_destination) == ORT.LEFT# Case A
+        #point is left of the first edge and edges make a right turn
+        caseA2 = point.orientation(edge_0_origin, edge_0_destination) == ORT.LEFT and edge_1_destination.orientation(edge_0_origin, edge_0_destination) == ORT.RIGHT
+        #point is left of second edge and edges make a right turn
+        caseB = (point.orientation(edge_1_origin, edge_1_destination) == ORT.LEFT and edge_0_origin.orientation(edge_1_origin, edge_1_destination) == ORT.RIGHT)
+        return caseA1 or caseA2 or caseB # Case C (where?)
 
     def _split_face(self, edge: HalfEdge, face: Face) -> Face:
         inner_edge = edge if not edge.is_cycle_clockwise() else edge.twin
