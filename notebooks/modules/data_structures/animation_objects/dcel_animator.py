@@ -1,5 +1,5 @@
 from __future__ import annotations
-from ...geometry.animation_base import AnimationObject, AnimationEvent, AppendEvent
+from ...geometry.animation_base import AnimationObject, AnimationEvent, AppendEvent, PopEvent
 from ...data_structures import DoublyConnectedEdgeList, Vertex, HalfEdge, Face
 from ...geometry import Rectangle, Point, PointList
 from typing import Iterator
@@ -34,7 +34,7 @@ class DCELAnimator(AnimationObject):
 
     def add_vertex(self, point : Point) -> Vertex:
         v = self._dcel.add_vertex(point)
-        self._animation_events.append(AppendEvent(point))
+        self._animation_events.append(VertexAddedEvent(point))
         return v
 
     def add_edge(self, p1 : Point, p2 : Point):
@@ -42,8 +42,21 @@ class DCELAnimator(AnimationObject):
         self._animation_events.append(EdgeAddedEvent(p1, p2))
 
     def add_vertex_on_edge(self, point : Point, edge : HalfEdge) -> Vertex:
+        origin = PointList(edge.origin.x, edge.origin.y, [])
+        dest = PointList(edge.destination.x, edge.destination.y, [])
+        p = PointList(point.x, point.y, [])
+        self._animation_events.append(EdgeRemovedEvent(origin, dest))
+        self._animation_events.append(VertexAddedEvent(point))
+        self._animation_events.append(EdgeAddedEvent(origin, point))
+        self._animation_events.append(EdgeAddedEvent(point, dest))
         v = self._dcel.add_vertex_in_edge(edge, point)
         return v
+    
+    def animate_edge(self, p1 : Point, p2 : Point):
+        self._animation_events.append(AppendEvent(p1))
+        self._animation_events.append(AppendEvent(p2))
+        self._animation_events.append(PopEvent())
+        self._animation_events.append(PopEvent())
 
     def points(self) -> Iterator[Point]:
         points : list[PointList] = []
@@ -80,30 +93,36 @@ class DCELAnimator(AnimationObject):
         return self._illformed
 
 
-class EdgeAddedEvent(AnimationEvent):
-    def __init__(self, p1: PointList, p2 : PointList):
-        self._p1 = p1
-        self._p2 = p2
+class VertexAddedEvent(AnimationEvent):
+    def __init__(self, p : Point):
+        self._p = PointList(p.x,p.y, [])
 
-    def execute_on(self, data : list[Point]):
-        for p in data:
+    def execute_on(self, points: list[Point]):
+        points.append(self._p)
+
+class EdgeAddedEvent(AnimationEvent):
+    def __init__(self, p1: Point, p2 : Point):
+        self._p1 = PointList(p1.x,p1.y, [])
+        self._p2 = PointList(p2.x,p2.y, [])
+
+    def execute_on(self, points : list[Point]):
+        for p in points:
             if isinstance(p, PointList):
-                if p is self._p1:
+                if p == self._p1:
                     p.data.append(self._p2)
-                if p is self._p2:
+                if p == self._p2:
                     p.data.append(self._p1)
 
-class EdgeRemovedEvent():
+class EdgeRemovedEvent(AnimationEvent):
     def __init__(self, p1: PointList, p2 : PointList):
         self._p1 = p1
         self._p2 = p2
 
-    def execute_on(self, data : list[Point]):
-        for p in data:
+    def execute_on(self, points : list[Point]):
+        for p in points:
             if not isinstance(p, PointList):
                 continue
-            if p is self._p1 and p.data().__contains__(self._p2):
+            if p is self._p1 and p.data.__contains__(self._p2):
                 p.data.remove(self._p2)
-            if p is self._p2 and p.data().__contains__(self._p1):
+            if p is self._p2 and p.data.__contains__(self._p1):
                 p.data.remove(self._p1)
-

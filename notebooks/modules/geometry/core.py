@@ -200,11 +200,19 @@ class PointExtension(Point, Generic[P]):
     def data(self, data):
         self._data = data
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, PointList):
+            return NotImplemented
+        return self._x == other._x and self._y == other._y
+
 
 class PointList(PointExtension[list[Point]]):
 
     def __init__(self, x: SupportsFloat, y: SupportsFloat, data : list[Point] = []):
         super().__init__(x, y, data)
+
+    def __eq__(self, other: Any) -> bool:
+        return super().__eq__(other)
 
 class Line:
     def __init__(self, p1: Point, p2: Point):

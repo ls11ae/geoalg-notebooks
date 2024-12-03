@@ -616,33 +616,52 @@ class DCELMode(DrawingMode):
                     for neighbor in point.data:
                         drawer.main_canvas.draw_path([point, neighbor], self._line_width)
 
-    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float): # TODO
-        pass
-
-
-class DCELModeUpdated(DrawingMode):
-    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
-        self._vertex_radius = vertex_radius
-        self._highlight_radius = highlight_radius
-        self._line_width = line_width
-
-    def draw(self, drawer: Drawer, points: Iterable[Point]):
-        point_queue: list[Point] = drawer._get_drawing_mode_state(default = [])
+    def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         with drawer.main_canvas.hold():
+            drawer.main_canvas.clear()
+            last : Point = None
             for point in points:
                 # Draw point
-                if point not in point_queue:
-                    drawer.main_canvas.draw_point(point, self._vertex_radius)
+                drawer.main_canvas.draw_point(point, self._vertex_radius)
                 # Draw connections of the point
-                if not isinstance(point, PointReference):
-                    continue
-                for i, neighbor in enumerate(point.container):
-                    if i != point.position:
+                if isinstance(point, PointReference):
+                    for i, neighbor in enumerate(point.container):
+                        if i != point.position:
+                            drawer.main_canvas.draw_path([point, neighbor], self._line_width)
+                elif isinstance(point, PointList):
+                    for neighbor in point.data:
                         drawer.main_canvas.draw_path([point, neighbor], self._line_width)
-        point_queue.extend(points)  # Keep track of already drawn points
+                elif isinstance(point, Point):
+                    drawer.main_canvas.draw_point(point, self._line_width)
+                    if(last is None):
+                        last = point
+                    else:
+                        drawer.main_canvas.set_colour(255,0,0)
+                        drawer.main_canvas.draw_path([last, point], self._line_width)
+                        drawer.main_canvas.set_colour(0,0,255)
+                        last = None
+
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float): # TODO
-        pass
+        points: list[Point] = []
+        event_iterator = iter(animation_events)
+        next_event = next(event_iterator, None)
+        while next_event is not None:
+            next_event.execute_on(points)
+            if type(next_event) is AppendEvent:
+                next_event = next(event_iterator, None)
+                while(type(next_event) is AppendEvent):
+                    next_event.execute_on(points)
+                    next_event = next(event_iterator, None)
+            elif type(next_event) is PopEvent:
+                next_event = next(event_iterator, None)
+                while(type(next_event) is PopEvent):
+                    next_event.execute_on(points)
+                    next_event = next(event_iterator, None)
+            else:
+                next_event = next(event_iterator, None)
+            self._draw_animation_step(drawer, points)
+            time.sleep(animation_time_step)
 
 class VerticalExtensionMode(DrawingMode):
     def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH,
