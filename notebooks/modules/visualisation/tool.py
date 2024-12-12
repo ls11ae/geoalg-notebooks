@@ -31,7 +31,7 @@ class VisualisationTool(Generic[I]):
     ## Initialisation methods.
 
     def __init__(self, width: int, height: int, instance: InstanceHandle[I], notebook_number: Optional[int] = None):
-        if width < 0 or height < 0 or notebook_number < 0:
+        if width < 0 or height < 0 or (not type(notebook_number is None) and notebook_number < 0):
             raise ValueError("Parameter values must be greater than 0")
         self._width = width
         self._height = height
