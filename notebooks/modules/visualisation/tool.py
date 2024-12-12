@@ -30,7 +30,9 @@ class VisualisationTool(Generic[I]):
 
     ## Initialisation methods.
 
-    def __init__(self, width: int, height: int, instance: InstanceHandle[I], notebook_number: Optional[int] = None):    # TODO: Check positivity.
+    def __init__(self, width: int, height: int, instance: InstanceHandle[I], notebook_number: Optional[int] = None):
+        if width < 0 or height < 0 or notebook_number < 0:
+            raise ValueError("Parameter values must be greater than 0")
         self._width = width
         self._height = height
 
@@ -56,11 +58,6 @@ class VisualisationTool(Generic[I]):
 
         self._init_canvases()
         self._init_ui()
-
-    def handle_click_on_multi_canvas(self, x: float, y: float):  # TODO: Remove this copy
-        if self.add_point(Point(x, y)):
-            self.clear_algorithm_drawings()
-            self.clear_algorithm_messages()
 
     def _init_canvases(self):
         for i in range(0, 6):
