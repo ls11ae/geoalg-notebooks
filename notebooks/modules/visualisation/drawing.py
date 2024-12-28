@@ -234,8 +234,6 @@ class BoundingBoxMode(DrawingMode):
             self._draw_animation_step(drawer, points)
             time.sleep(animation_time_step)
         self.draw(drawer, points)
-        for point in points:
-                print(point)
 
 class SweepLineMode(PointsMode):
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH / 3):
