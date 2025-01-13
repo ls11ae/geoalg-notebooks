@@ -218,16 +218,9 @@ class Line:
     def __init__(self, p1: Point, p2: Point):
         self._p1 : Point = p1
         self._p2 : Point = p2
-        denom = (self._p2.x - self._p1.x)
-        if abs(denom) > EPSILON:
-            self._m = (self._p2.y - self._p1.y) / denom
-            self._b = -(self._m * self._p1.x) + self._p1.y
-        else:
-            self._m = None
-            self._b = None
 
     @staticmethod
-    def line_from_m_b(self, m : float, b : float):
+    def line_from_m_b(m : float, b : float):
         return Line(Point(0,b), Point(1000, 1000 * m + b))
 
     def copy(self) -> Line:
@@ -269,6 +262,16 @@ class Line:
             return Orientation.RIGHT   
         return Orientation.BETWEEN
     
+    def get_m_b(self) -> None | tuple[float,float]:
+        denom = (self._p2.x - self._p1.x)
+        if abs(denom) > EPSILON:
+            m : float = (self._p2.y - self._p1.y) / denom
+            b : float = -(m * self._p1.x) + self._p1.y
+            return [m,b]
+        else:
+            return None
+
+
     '''
     moves the points that define the line such that they are both outside the given frame
     '''
@@ -339,14 +342,6 @@ class Line:
     @property
     def p2(self) -> Point:
         return self._p2
-    
-    @property
-    def m(self) -> float | None:
-        return self._m
-    
-    @property
-    def b(self) -> float | None:
-        return self._b
 
     def __repr__(self) -> str:
         return f"Line: ({self._p1}, {self._p2})"
