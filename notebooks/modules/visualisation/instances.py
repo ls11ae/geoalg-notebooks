@@ -16,7 +16,7 @@ Algorithm = Callable[[I], AnimationObject]
 '''
 General class to handle all instances of visualisation.
 
-Holds an instance of type I (for example a set of points) and can run an algorithm that
+Holds an instance of type I (for example a set of points) that gets used as an input to whatever algorithm is called
 
 '''
 class InstanceHandle(ABC, Generic[I]):
@@ -235,9 +235,6 @@ class LineSetInstance(InstanceHandle[set[Line]]):
         if number % 2 == 1:
             points.extend(super().generate_random_points(max_x, max_y, 1))
         return points
-
-
-
 
 class SimplePolygonInstance(InstanceHandle[DoublyConnectedSimplePolygon]):
     def __init__(self, drawing_mode: Optional[DrawingMode] = None):
