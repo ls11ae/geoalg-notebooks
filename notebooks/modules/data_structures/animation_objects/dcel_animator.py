@@ -88,10 +88,12 @@ class DCELAnimator(AnimationObject):
     def get_splitting_face(self, v : Vertex, p : Point) -> Face:
         return self._dcel.find_splitting_face(v,p)
 
+    def vertices(self) -> list[Vertex]:
+        return self._dcel.vertices
+
     @property
     def illformed(self):
         return self._illformed
-
 
 class VertexAddedEvent(AnimationEvent):
     def __init__(self, p : Point):

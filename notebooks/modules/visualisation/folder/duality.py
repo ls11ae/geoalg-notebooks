@@ -1,7 +1,19 @@
+'''
+Drawing modes that draw a point/line/linesegment and their respective dual. The ColorCycle is used to change color in every
+step so objects that are duals of each other have the same color
+
+The modes also offset the points and lines such that the origin of the canvas is moved to the center (assuming canvas is from 0 to 400).
+This is needed to allow for visualisation of duality with negative coordinates.  
+'''
+
 from ..drawing import DrawingMode, DEFAULT_POINT_RADIUS, DEFAULT_HIGHLIGHT_RADIUS, DEFAULT_LINE_WIDTH, Drawer
 from typing import Iterable
-from ...geometry import Point, AppendEvent, PopEvent, SetEvent, AnimationEvent
 from time import time
+from ...geometry import Point,Line, LineSegment, dual_point, dual_line, dual_lineSegment, AnimationEvent
+
+X_OFFSET = 200
+Y_OFFSET = 200
+SCALE = 20
 
 class ColorCycle:
     def __init__(self, r : int, g : int, b : int, step : int):
@@ -61,13 +73,24 @@ class ColorCycle:
     def step(self, step):
         self._step = step
 
+def offsetPoint(point : Point, invert : bool) -> Point:
+    if invert:
+        return Point((point.x * SCALE) + X_OFFSET, (point.y * SCALE) + Y_OFFSET)
+    else:
+        return Point((point.x - X_OFFSET)/SCALE, (point.y-Y_OFFSET)/SCALE)
+
+def offsetLine(line : Line, invert : bool) -> Line:
+    return Line(offsetPoint(line.p1, invert), offsetPoint(line.p2,invert))
+
+def offsetLineSegment(lS: LineSegment, invert : bool) -> LineSegment:
+    return LineSegment(offsetPoint(lS.lower,invert), offsetPoint(lS.upper,invert))
+
 class DualityPointsMode(DrawingMode):
-    def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width = DEFAULT_LINE_WIDTH, draw_axis : bool = False):
+    def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width = DEFAULT_LINE_WIDTH):
         self._point_radius = point_radius
         self._highlight_radius = highlight_radius
         self._line_width = line_width
         self._color = ColorCycle(0,0,0,75)
-        self._draw_axis = draw_axis
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         vertex_queue: list[Point] = drawer._get_drawing_mode_state(default = [])
@@ -78,35 +101,24 @@ class DualityPointsMode(DrawingMode):
             r,g,b = self._color.current()
             self._color.do_step()
             drawer.main_canvas.set_colour(r,g,b)
-            if self._draw_axis:
-                self.draw_axis(drawer)
+            #axis
+            drawer.main_canvas.draw_line(Point(200,0), Point(200,400), self._line_width/2)
+            drawer.main_canvas.draw_line(Point(0,200), Point(400,200), self._line_width/2)
             for point in vertex_queue:
                 r,g,b = self._color.current()
                 self._color.do_step()
                 drawer.main_canvas.set_colour(r,g,b)
-                drawer.main_canvas.draw_point(point, self._point_radius)            
-
-    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
-        points = []
-        for event in animation_events:
-            event.execute_on(points)
-        self.draw(drawer,points)
-
-    def draw_axis(self, drawer):
-        drawer.main_canvas.draw_line(Point(200,0), Point(200,400), self._line_width/2)
-        drawer.main_canvas.draw_line(Point(0,200), Point(400,200), self._line_width/2)
-
+                drawer.main_canvas.draw_point(point, self._point_radius)
+                dual = offsetLine(dual_point(offsetPoint(point, False)), True)
+                drawer.main_canvas.draw_line(dual.p1, dual.p2, line_width=self._line_width)  
 
 class DualityLineMode(DrawingMode):
-    def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH, draw_axis : bool = False, in_segments : bool = False):
+    def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
         self._point_radius = point_radius
         self._highlight_radius = highlight_radius
         self._line_width = line_width
         self._color = ColorCycle(0,0,0,75)
-        self._draw_axis = draw_axis
-        self._in_segments = in_segments
         
-
     def draw(self, drawer:Drawer, points:Iterable[Point]):
         vertex_queue: list[Point] = drawer._get_drawing_mode_state(default = [])
         vertex_queue.extend(points)
@@ -117,38 +129,24 @@ class DualityLineMode(DrawingMode):
             r,g,b = self._color.current()
             drawer.main_canvas.set_colour(r,g,b)
             self._color.do_step()
-            if(self._draw_axis):
-                self.draw_axis(drawer)
-            did_swap = False
+            #draw axis
+            drawer.main_canvas.draw_line(Point(200,0), Point(200,400), self._line_width/2)
+            drawer.main_canvas.draw_line(Point(0,200), Point(400,200), self._line_width/2)
             while cur_point is not None:
-                if self._in_segments:
-                    if not did_swap:
-                        r,g,b = self._color.current()
-                        self._color.do_step()
-                        drawer.main_canvas.set_colour(r,g,b)
-                        did_swap = not did_swap
-                    else:
-                        did_swap = not did_swap
-                else:
-                    r,g,b = self._color.current()
-                    self._color.do_step()
-                    drawer.main_canvas.set_colour(r,g,b)
+                r,g,b = self._color.current()
+                self._color.do_step()
+                drawer.main_canvas.set_colour(r,g,b)
                 next_point = next(points_iter, None)
                 if(next_point is None):
                     drawer.main_canvas.draw_point(cur_point, transparent=True, radius=self._point_radius)
                 else:
                     drawer.main_canvas.draw_line(cur_point, next_point, self._line_width)
+                    drawer.main_canvas.draw_point(offsetPoint(dual_line(offsetLine(Line(cur_point, next_point),False)), True), self._point_radius)
                 cur_point = next(points_iter, None)
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
-        points = []
-        for event in animation_events:
-            event.execute_on(points)
-        self.draw(drawer,points)
-
-    def draw_axis(self, drawer):
-        drawer.main_canvas.draw_line(Point(200,0), Point(200,400), self._line_width/2)
-        drawer.main_canvas.draw_line(Point(0,200), Point(400,200), self._line_width/2)
+        pass
+        
 
 class DualityLineSegmentMode(DrawingMode):
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH, draw_axis : bool = False):
@@ -156,7 +154,6 @@ class DualityLineSegmentMode(DrawingMode):
         self._highlight_radius = highlight_radius
         self._line_width = line_width
         self._color = ColorCycle(0,0,0,75)
-        self._draw_axis = draw_axis
 
     def draw(self, drawer:Drawer, points:Iterable[Point]):
         vertex_queue: list[Point] = drawer._get_drawing_mode_state(default = [])
@@ -168,8 +165,9 @@ class DualityLineSegmentMode(DrawingMode):
             r,g,b = self._color.current()
             self._color.do_step()
             drawer.main_canvas.set_colour(r,g,b)
-            if(self._draw_axis):
-                self.draw_axis(drawer)
+            #draw axis
+            drawer.main_canvas.draw_line(Point(200,0), Point(200,400), self._line_width/2)
+            drawer.main_canvas.draw_line(Point(0,200), Point(400,200), self._line_width/2)
             while cur_point is not None:
                 r,g,b = self._color.current()
                 self._color.do_step()
@@ -179,14 +177,10 @@ class DualityLineSegmentMode(DrawingMode):
                     drawer.main_canvas.draw_point(cur_point, transparent=True, radius=self._point_radius)
                 else:
                     drawer.main_canvas.draw_path([cur_point, next_point], self._line_width)
+                    duals = dual_lineSegment(offsetLineSegment(LineSegment(cur_point, next_point),False))
+                    l1 = offsetLine(duals[0], True)
+                    l2 = offsetLine(duals[1], True)
+                    drawer.main_canvas.draw_line(l1.p1, l1.p2, self._line_width)
+                    drawer.main_canvas.draw_line(l2.p1, l2.p2, self._line_width)
                 cur_point = next(points_iter, None)
-
-    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
-        points = []
-        for event in animation_events:
-            event.execute_on(points)
-        self.draw(drawer,points)
-
-    def draw_axis(self, drawer):
-        drawer.main_canvas.draw_line(Point(200,0), Point(200,400), self._line_width/2)
-        drawer.main_canvas.draw_line(Point(0,200), Point(400,200), self._line_width/2)
+        
