@@ -8,6 +8,7 @@ class DCELAnimator(AnimationObject):
     def __init__(self, boundingBox : Rectangle):
         super().__init__()
         self._dcel : DoublyConnectedEdgeList = DoublyConnectedEdgeList()
+        self._points : list[Point] = []
         self._animation_events = []
         self._illformed : bool = False
         self._init_bounding_box(boundingBox)
@@ -41,6 +42,10 @@ class DCELAnimator(AnimationObject):
         self._dcel.add_edge_by_points(p1, p2)
         self._animation_events.append(EdgeAddedEvent(p1, p2))
 
+    def add_point(self, point : Point):
+        self._animation_events.append(AppendEvent(point))
+        self._points.append(point)
+
     def add_vertex_on_edge(self, point : Point, edge : HalfEdge) -> Vertex:
         origin = PointList(edge.origin.x, edge.origin.y, [])
         dest = PointList(edge.destination.x, edge.destination.y, [])
@@ -59,7 +64,7 @@ class DCELAnimator(AnimationObject):
         self._animation_events.append(PopEvent())
 
     def points(self) -> Iterator[Point]:
-        points : list[PointList] = []
+        points : list[Point] = []
         one = True
         for v in self._dcel.vertices:
             p = PointList(v.point.x, v.point.y, [])
@@ -71,6 +76,7 @@ class DCELAnimator(AnimationObject):
                 while(e != v.edge):
                     p.data.append(Point(e.destination.point.x, e.destination.point.y))
                     e = e.twin.next
+        points = points + self._points
         return iter(points)
     
     def get_next_face(self, v : Vertex, p : Point) -> Face:

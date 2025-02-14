@@ -85,6 +85,15 @@ def offsetLine(line : Line, invert : bool) -> Line:
 def offsetLineSegment(lS: LineSegment, invert : bool) -> LineSegment:
     return LineSegment(offsetPoint(lS.lower,invert), offsetPoint(lS.upper,invert))
 
+def offsetPoints(points : list[Point], invert : bool) -> list[Point]:
+    return [offsetPoint(point,invert) for point in points]
+
+def offsetLines(lines : list[Line], invert : bool) -> list[Line]:
+    return [offsetLine(line,invert) for line in lines]
+
+def offsetLineSegments(lSs : list[LineSegment], invert : bool) -> list[LineSegment]:
+    return [offsetLineSegment(lS, invert) for lS in lSs]
+
 class DualityPointsMode(DrawingMode):
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width = DEFAULT_LINE_WIDTH):
         self._point_radius = point_radius
@@ -111,6 +120,9 @@ class DualityPointsMode(DrawingMode):
                 drawer.main_canvas.draw_point(point, self._point_radius)
                 dual = offsetLine(dual_point(offsetPoint(point, False)), True)
                 drawer.main_canvas.draw_line(dual.p1, dual.p2, line_width=self._line_width)  
+
+    def animate(self, drawer, animation_events, animation_time_step):
+        return super().animate(drawer, animation_events, animation_time_step)
 
 class DualityLineMode(DrawingMode):
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
@@ -144,8 +156,8 @@ class DualityLineMode(DrawingMode):
                     drawer.main_canvas.draw_point(offsetPoint(dual_line(offsetLine(Line(cur_point, next_point),False)), True), self._point_radius)
                 cur_point = next(points_iter, None)
 
-    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
-        pass
+    def animate(self, drawer, animation_events, animation_time_step):
+        return super().animate(drawer, animation_events, animation_time_step)
         
 
 class DualityLineSegmentMode(DrawingMode):
@@ -184,3 +196,5 @@ class DualityLineSegmentMode(DrawingMode):
                     drawer.main_canvas.draw_line(l2.p1, l2.p2, self._line_width)
                 cur_point = next(points_iter, None)
         
+    def animate(self, drawer, animation_events, animation_time_step):
+        return super().animate(drawer, animation_events, animation_time_step)

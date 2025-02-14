@@ -1,1 +1,1 @@
-from .duality import (dual_point, dual_line, dual_lineSegment)
+from .duality import (dual_point, dual_line, dual_lineSegment, dual_lines, dual_points)

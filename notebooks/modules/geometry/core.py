@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Any, Optional, SupportsFloat, Union, Generic, TypeVar
 from enum import auto, Enum
 import math
+import sys
 
 
 EPSILON: float = 1e-9    # Chosen by testing currently implemented algorithms with the visualisation tool.
@@ -272,12 +273,14 @@ class Line:
     
     def get_m_b(self) -> None | tuple[float,float]:
         denom = (self._p2.x - self._p1.x)
+        m : float = 0
+        b : float = 0
         if abs(denom) > EPSILON:
-            m : float = (self._p2.y - self._p1.y) / denom
-            b : float = -(m * self._p1.x) + self._p1.y
-            return [m,b]
+            m = (self._p2.y - self._p1.y) / denom
         else:
-            return None
+            m = sys.float_info.max
+        b : float = -(m * self._p1.x) + self._p1.y
+        return [m,b]
 
 
     '''

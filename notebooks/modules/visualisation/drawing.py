@@ -577,6 +577,10 @@ class DCELMode(DrawingMode):
                 elif isinstance(point, PointList):
                     for neighbor in point.data:
                         drawer.main_canvas.draw_path([point, neighbor], self._line_width)
+                else:
+                    drawer.main_canvas.set_colour(255,0,0)
+                    drawer.main_canvas.draw_point(point, self._vertex_radius)
+                    drawer.main_canvas.set_colour(0,0,255)
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         with drawer.main_canvas.hold():
@@ -624,6 +628,9 @@ class DCELMode(DrawingMode):
                 next_event = next(event_iterator, None)
             self._draw_animation_step(drawer, points)
             time.sleep(animation_time_step)
+        with drawer.main_canvas.hold():
+            drawer.main_canvas.clear()
+            self.draw(drawer,points)
 
 class VerticalExtensionMode(DrawingMode):
     def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH,
