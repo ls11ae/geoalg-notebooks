@@ -1,7 +1,7 @@
 from __future__ import annotations
 from ...geometry.animation_base import AnimationObject, AnimationEvent, AppendEvent, PopEvent
 from ...data_structures import DoublyConnectedEdgeList, Vertex, HalfEdge, Face
-from ...geometry import Rectangle, Point, PointList
+from ...geometry import Rectangle, Point, PointList, Line
 from typing import Iterator
 
 class DCELAnimator(AnimationObject):
@@ -97,6 +97,9 @@ class DCELAnimator(AnimationObject):
     def vertices(self) -> list[Vertex]:
         return self._dcel.vertices
 
+    def faces(self) -> list[Face]:
+        return self._dcel.faces
+
     @property
     def illformed(self):
         return self._illformed
@@ -134,3 +137,20 @@ class EdgeRemovedEvent(AnimationEvent):
                 p.data.remove(self._p2)
             if p is self._p2 and p.data.__contains__(self._p1):
                 p.data.remove(self._p1)
+
+class MinAreaTriangleAnimator(AnimationObject):
+    def __init__(self, dcel : DCELAnimator):
+        self._dcel = dcel
+        self._smallest_triangle : list[Point] = []
+
+
+    def points(self) -> Iterator[Point]:
+        return iter(list(self._dcel.points()) + self._smallest_triangle)
+
+    @property
+    def smallest_triangle(self) -> list[Point]:
+        return self._smallest_triangle
+    
+    @smallest_triangle.setter
+    def smallest_triangle(self, value):
+        self._smallest_triangle = value
