@@ -598,7 +598,6 @@ class DCELMode(DrawingMode):
                     for neighbor in point.data:
                         drawer.main_canvas.draw_path([point, neighbor], self._line_width)
                 elif isinstance(point, Point):
-                    drawer.main_canvas.draw_point(point, self._line_width)
                     if(last is None):
                         last = point
                     else:

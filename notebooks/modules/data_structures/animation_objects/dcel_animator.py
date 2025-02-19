@@ -63,6 +63,10 @@ class DCELAnimator(AnimationObject):
         self._animation_events.append(PopEvent())
         self._animation_events.append(PopEvent())
 
+    def animate_point(self, p1 : Point):
+        self._animation_events.append(AppendEvent(p1))
+        self._animation_events.append(PopEvent())
+
     def points(self) -> Iterator[Point]:
         points : list[Point] = []
         one = True
@@ -138,14 +142,57 @@ class EdgeRemovedEvent(AnimationEvent):
             if p is self._p2 and p.data.__contains__(self._p1):
                 p.data.remove(self._p1)
 
+class StateChangedEvent(AnimationEvent):
+    def execute_on(self, data):
+        pass
+
 class MinAreaTriangleAnimator(AnimationObject):
     def __init__(self, dcel : DCELAnimator):
         self._dcel = dcel
         self._smallest_triangle : list[Point] = []
+        self._animation_events = list(dcel.animation_events())
+        self._animation_events.append(StateChangedEvent())
 
 
     def points(self) -> Iterator[Point]:
         return iter(list(self._dcel.points()) + self._smallest_triangle)
+
+    def add_edge(self, p1 : Point, p2 : Point):
+        self._animation_events.append(AppendEvent(PointList(p1.x, p1.y, [p2])))
+        self._animation_events.append(AppendEvent(PointList(p2.x, p2.y, [p1])))
+
+    def remove_edge(self):
+        self._animation_events.append(PopEvent())
+        self._animation_events.append(PopEvent())
+
+    def animate_point(self, p1 : Point):
+        self._animation_events.append(AppendEvent(p1))
+        self._animation_events.append(PopEvent())
+
+    def animate_triangle(self, p1 : Point, p2 : Point, p3 : Point):
+        self._animation_events.append(AppendEvent(p1))
+        self._animation_events.append(AppendEvent(p1))
+        self._animation_events.append(AppendEvent(p1))
+        self.add_edge(p1,p2)
+        self.add_edge(p2,p3)
+        self.add_edge(p3,p1)
+        
+        self._animation_events.append(PopEvent())
+        self._animation_events.append(PopEvent())
+        self._animation_events.append(PopEvent())
+
+        self._animation_events.append(PopEvent())
+        self._animation_events.append(PopEvent())
+        self._animation_events.append(PopEvent())
+        self._animation_events.append(PopEvent())
+        self._animation_events.append(PopEvent())
+        self._animation_events.append(PopEvent())
+
+    def add_point(self, p : Point):
+        self._animation_events.append(AppendEvent(p))
+
+    def remove_point(self):
+        self._animation_events.append(PopEvent())
 
     @property
     def smallest_triangle(self) -> list[Point]:
@@ -154,3 +201,7 @@ class MinAreaTriangleAnimator(AnimationObject):
     @smallest_triangle.setter
     def smallest_triangle(self, value):
         self._smallest_triangle = value
+
+    @property
+    def dcel(self) -> DCELAnimator:
+        return self._dcel
