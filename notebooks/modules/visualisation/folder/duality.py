@@ -12,68 +12,13 @@ from time import time
 from ...geometry import Point,Line, LineSegment, dual_point, dual_line, dual_lineSegment, AnimationEvent, PointList
 from ...data_structures.animation_objects import StateChangedEvent
 import time
+from ..colors import colorbrewer as c
 
 X_OFFSET = 200
 Y_OFFSET = 200
 SCALE = 20
 
-class ColorCycle:
-    def __init__(self, r : int, g : int, b : int, step : int):
-        self._r = r
-        self._g = g
-        self._b = b
-        self._step = step
-
-    def current(self) -> tuple[int,int,int]:
-        return (self._r,self._g,self._b)
-
-    def do_step(self):
-        self._r += self._step
-        if(self._r > 255):
-            self._r = 0
-            self._g +=self._step
-            if(self._g > 255):
-                self._g = 0
-                self._b += self._step
-                if(self._b > 255):
-                    self._b = 0
-
-    def reset(self):
-        self._r = 0
-        self._g = 0
-        self._b = 0
-
-    @property
-    def r(self) -> int:
-        return self._r
-    
-    @r.setter
-    def r(self, r):
-        self._r = r
-    
-    @property
-    def g(self) -> int:
-        return self._g
-    
-    @r.setter
-    def g(self, g):
-        self._g = g
-    
-    @property
-    def b(self) -> int:
-        return self._b
-    
-    @b.setter
-    def b(self, b):
-        self._b = b
-    
-    @property
-    def step(self) -> int:
-        return self._step
-    
-    @step.setter
-    def step(self, step):
-        self._step = step
+COLOR_SCHEME = [165,0,38], [215,48,39], [244,109,67], [253,174,97], [254,224,144], [171,217,233], [116,173,209], [69,117,180], [49,54,149]
 
 def offsetPoint(point : Point, invert : bool) -> Point:
     if invert:
@@ -101,24 +46,19 @@ class DualityPointsMode(DrawingMode):
         self._point_radius = point_radius
         self._highlight_radius = highlight_radius
         self._line_width = line_width
-        self._color = ColorCycle(0,0,0,75)
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         vertex_queue: list[Point] = drawer._get_drawing_mode_state(default = [])
         vertex_queue.extend(points)
-        self._color.reset()
         with drawer.main_canvas.hold():
+            #draw axis in black
             drawer.main_canvas.clear()
-            r,g,b = self._color.current()
-            self._color.do_step()
-            drawer.main_canvas.set_colour(r,g,b)
-            #axis
+            drawer.main_canvas.set_colour(0,0,0)
             drawer.main_canvas.draw_line(Point(200,0), Point(200,400), self._line_width/2)
             drawer.main_canvas.draw_line(Point(0,200), Point(400,200), self._line_width/2)
-            for point in vertex_queue:
-                r,g,b = self._color.current()
-                self._color.do_step()
-                drawer.main_canvas.set_colour(r,g,b)
+            #draw points
+            for point, color in zip(vertex_queue, COLOR_SCHEME):
+                drawer.main_canvas.set_colour(color[0], color[1], color[2])
                 drawer.main_canvas.draw_point(point, self._point_radius)
                 dual = offsetLine(dual_point(offsetPoint(point, False)), True)
                 drawer.main_canvas.draw_line(dual.p1, dual.p2, line_width=self._line_width)  
@@ -131,25 +71,23 @@ class DualityLineMode(DrawingMode):
         self._point_radius = point_radius
         self._highlight_radius = highlight_radius
         self._line_width = line_width
-        self._color = ColorCycle(0,0,0,75)
         
     def draw(self, drawer:Drawer, points:Iterable[Point]):
         vertex_queue: list[Point] = drawer._get_drawing_mode_state(default = [])
         vertex_queue.extend(points)
-        self._color.reset()
         with drawer.main_canvas.hold():
-            points_iter = iter(vertex_queue)
-            cur_point = next(points_iter, None)
-            r,g,b = self._color.current()
-            drawer.main_canvas.set_colour(r,g,b)
-            self._color.do_step()
+            
             #draw axis
+            drawer.main_canvas.set_colour(0,0,0)
             drawer.main_canvas.draw_line(Point(200,0), Point(200,400), self._line_width/2)
             drawer.main_canvas.draw_line(Point(0,200), Point(400,200), self._line_width/2)
-            while cur_point is not None:
-                r,g,b = self._color.current()
-                self._color.do_step()
-                drawer.main_canvas.set_colour(r,g,b)
+            points_iter = iter(vertex_queue)
+            color_iter = iter(COLOR_SCHEME)
+            cur_point = next(points_iter, None)
+            cur_color = next(color_iter, None)
+            while (cur_point is not None) and (cur_color is not None):
+                drawer.main_canvas.set_colour(cur_color[0], cur_color[1], cur_color[2])
+                cur_color = next(color_iter, None)
                 next_point = next(points_iter, None)
                 if(next_point is None):
                     drawer.main_canvas.draw_point(cur_point, transparent=True, radius=self._point_radius)
@@ -167,25 +105,23 @@ class DualityLineSegmentMode(DrawingMode):
         self._point_radius = point_radius
         self._highlight_radius = highlight_radius
         self._line_width = line_width
-        self._color = ColorCycle(0,0,0,75)
 
     def draw(self, drawer:Drawer, points:Iterable[Point]):
         vertex_queue: list[Point] = drawer._get_drawing_mode_state(default = [])
         vertex_queue.extend(points)
-        self._color.reset()
         with drawer.main_canvas.hold():
-            points_iter = iter(vertex_queue)
-            cur_point = next(points_iter, None)
-            r,g,b = self._color.current()
-            self._color.do_step()
-            drawer.main_canvas.set_colour(r,g,b)
+            
             #draw axis
+            drawer.main_canvas.set_colour(0,0,0)
             drawer.main_canvas.draw_line(Point(200,0), Point(200,400), self._line_width/2)
             drawer.main_canvas.draw_line(Point(0,200), Point(400,200), self._line_width/2)
-            while cur_point is not None:
-                r,g,b = self._color.current()
-                self._color.do_step()
-                drawer.main_canvas.set_colour(r,g,b)
+            points_iter = iter(vertex_queue)
+            color_iter = iter(COLOR_SCHEME)
+            cur_point = next(points_iter, None)
+            cur_color = next(color_iter, None)
+            while (cur_point is not None) and (cur_color is not None):
+                drawer.main_canvas.set_colour(cur_color[0], cur_color[1], cur_color[2])
+                cur_color = next(color_iter, None)
                 next_point = next(points_iter, None)
                 if(next_point is None):
                     drawer.main_canvas.draw_point(cur_point, transparent=True, radius=self._point_radius)
