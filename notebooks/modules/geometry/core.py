@@ -30,9 +30,11 @@ class HorizontalOrientation(Enum):
 
 
 class Point:
-    def __init__(self, x: SupportsFloat, y: SupportsFloat):
+    def __init__(self, x: SupportsFloat, y: SupportsFloat, tag : float = 0):
         self._x = float(x)
         self._y = float(y)
+        #used to distinguish different points during drawing
+        self.tag = tag
 
     def copy(self) -> Point:
         return Point(self._x, self._y)

@@ -1,8 +1,9 @@
 from __future__ import annotations
-from ...geometry.animation_base import AnimationObject, AnimationEvent, AppendEvent, PopEvent
+from ...geometry.animation_base import AnimationObject, AnimationEvent, AppendEvent, PopEvent, DeleteEvent
 from ...data_structures import DoublyConnectedEdgeList, Vertex, HalfEdge, Face
 from ...geometry import Rectangle, Point, PointList, Line
 from typing import Iterator
+from itertools import chain
 
 class DCELAnimator(AnimationObject):
     def __init__(self, boundingBox : Rectangle):
@@ -43,7 +44,7 @@ class DCELAnimator(AnimationObject):
         self._animation_events.append(EdgeAddedEvent(p1, p2))
 
     def add_point(self, point : Point):
-        self._animation_events.append(AppendEvent(point))
+        self._animation_events.append(AppendEvent(Point(point.x, point.y, 4)))
         self._points.append(point)
 
     def add_vertex_on_edge(self, point : Point, edge : HalfEdge) -> Vertex:
@@ -56,15 +57,23 @@ class DCELAnimator(AnimationObject):
         self._animation_events.append(EdgeAddedEvent(point, dest))
         v = self._dcel.add_vertex_in_edge(edge, point)
         return v
-    
+
+    def highlight_line(self, l : Line):
+        self._animation_events.append(AppendEvent(Point(l.p1.x, l.p1.y, 3)))
+        self._animation_events.append(AppendEvent(Point(l.p2.x, l.p2.y, 3)))
+
+    def unhighlight_line(self, l : Line):
+        self._animation_events.append(DeleteEvent(Point(l.p1.x, l.p1.y, 3)))
+        self._animation_events.append(DeleteEvent(Point(l.p2.x, l.p2.y, 3)))
+
     def animate_edge(self, p1 : Point, p2 : Point):
-        self._animation_events.append(AppendEvent(p1))
-        self._animation_events.append(AppendEvent(p2))
+        self._animation_events.append(AppendEvent(Point(p1.x, p1.y, 2)))
+        self._animation_events.append(AppendEvent(Point(p2.x, p2.y, 2)))
         self._animation_events.append(PopEvent())
         self._animation_events.append(PopEvent())
 
     def animate_point(self, p1 : Point):
-        self._animation_events.append(AppendEvent(p1))
+        self._animation_events.append(AppendEvent(Point(p1.x, p1.y, 1)))
         self._animation_events.append(PopEvent())
 
     def points(self) -> Iterator[Point]:
@@ -155,7 +164,9 @@ class MinAreaTriangleAnimator(AnimationObject):
 
 
     def points(self) -> Iterator[Point]:
-        return iter(list(self._dcel.points()) + self._smallest_triangle)
+        dcel_iter = self._dcel.points()
+        points_iter = iter(self._smallest_triangle)
+        return chain(dcel_iter, points_iter)
 
     def add_edge(self, p1 : Point, p2 : Point):
         self._animation_events.append(AppendEvent(PointList(p1.x, p1.y, [p2])))

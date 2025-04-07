@@ -1,4 +1,5 @@
 import html
+import os
 import time
 from typing import Callable, Generic, Iterable, Optional
 
@@ -259,9 +260,10 @@ class VisualisationTool(Generic[I]):
                 else:
                     algorithm_output, algorithm_running_time = self._instance.run_algorithm_with_preprocessing(preprocessing, algorithm)
             except Exception as exception:
+                #ERROR
+                os.write(1, (str(exception) + "\n").encode())
                 title = html.escape(str(exception), quote = True)
-                self._algorithm_messages[index].value = f"<b title='{title}'><font color='red'>ERROR</font></b>"
-                print(str(exception))
+                self._algorithm_messages[index].value = f"<b title='{title}'><font color='red'>'{exception}'</font></b>"
                 return
 
             if not self._animation_checkbox.value:
