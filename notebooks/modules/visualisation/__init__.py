@@ -7,5 +7,5 @@ from .instances import (
     PointSetInstance, LineSegmentSetInstance, SimplePolygonInstance, DCELInstance,
     PointLocationInstance, LineSetInstance
 )
-from .folder import *
+from .notebooks import *
 from .tool import VisualisationTool

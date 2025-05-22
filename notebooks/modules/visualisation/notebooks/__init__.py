@@ -4,3 +4,7 @@ from .duality import (
 from .arrangements import (
     BoundingBoxMode
 )
+
+from .delaunay import (
+    TriangleMode, TriangleInstance
+)

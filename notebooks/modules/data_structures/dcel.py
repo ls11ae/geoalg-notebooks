@@ -439,6 +439,3 @@ class DoublyConnectedEdgeList:
     @property
     def outer_face(self) -> Face:
         return self._outer_face
-    
-    def __len__(self) -> int:
-        return self._number_of_vertices

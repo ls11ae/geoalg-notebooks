@@ -1,0 +1,78 @@
+from ..drawing import DrawingMode, DEFAULT_HIGHLIGHT_RADIUS, DEFAULT_LINE_WIDTH, DEFAULT_POINT_RADIUS, Drawer
+from ..instances import InstanceHandle
+from ...geometry import Point, AnimationEvent, SetEvent
+import time
+from typing import Iterable, Optional
+import numpy as np
+from ...data_structures import Triangulation
+
+class TriangleInstance(InstanceHandle[Triangulation]):
+    def __init__(self):
+        self._drawing_mode = TriangleMode()
+        self._instance : Triangulation = Triangulation()
+        self._drawing_mode.set_instance(self._instance)
+        super().__init__(self._instance, self._drawing_mode, 10)
+        
+    def add_point(self, point: Point) -> bool:
+        return self._instance.insert_point(point)
+
+    def clear(self):
+        self._instance.reset()
+
+    def size(self) -> int:
+        if self._instance is None:
+            return 0
+        return len(self._instance.edges_as_points()) / 2
+
+    @staticmethod
+    def extract_points_from_raw_instance(instance: Triangulation) -> list[Point]:
+        if instance is None:
+            return []
+        return instance.edges_as_points()
+
+    def generate_random_points(self, max_x: float, max_y: float, number: int) -> list[Point]:
+        x_values = np.clip(np.random.normal(0.5 * max_x, 0.15 * max_x, number), 0.05 * max_x, 0.95 * max_x)
+        y_values = np.clip(np.random.normal(0.5 * max_y, 0.15 * max_y, number), 0.05 * max_y, 0.95 * max_y)
+        return [Point(x, y) for x, y in zip(x_values, y_values)]
+
+class TriangleMode(DrawingMode):
+    def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width = DEFAULT_LINE_WIDTH):
+        self._point_radius = point_radius
+        self._highlight_radius = highlight_radius
+        self._line_width = line_width
+        self._instance = None
+
+    def set_instance(self, triangulation : Triangulation):
+        self._instance = triangulation
+    
+    def draw(self, drawer: Drawer, points: Iterable[Point]):
+        if self._instance is None:
+            return
+        with drawer.main_canvas.hold():
+            drawer.main_canvas.clear()
+            edges = iter(self._instance.edges_as_points())
+            cur = next(edges, None)
+            while cur is not None:
+                nex = next(edges, None)
+                if nex is not None:
+                    drawer.main_canvas.draw_path([cur, nex], self._line_width)
+                else:
+                    drawer.main_canvas.draw_point(cur, self._line_width)
+                cur = next(edges, None)
+
+    def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
+        with drawer.main_canvas.hold():
+            drawer.main_canvas.clear()
+            if(len(points) >= 4):
+                drawer.main_canvas.draw_polygon(points[0:4], self._line_width)
+                drawer.main_canvas.draw_points(points[4:], self._point_radius)
+
+    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
+        points: list[Point] = []
+        event_iterator = iter(animation_events)
+        event = next(event_iterator, None)
+        while event is not None:
+            event = next(event_iterator, None)            
+            self._draw_animation_step(drawer, points)
+            time.sleep(animation_time_step)
+        self.draw(drawer, points)

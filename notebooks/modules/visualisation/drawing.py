@@ -105,8 +105,6 @@ class CanvasDrawingHandle:
         if transparent:
             self._canvas.stroke_style = self.opaque_style
             self._canvas.fill_style  = self.opaque_style
-        pass
-
 
     def draw_polygon(self, points: Iterable[Point], line_width: int, stroke: bool = True,
     fill: bool = False, transparent: bool = False):
