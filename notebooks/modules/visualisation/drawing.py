@@ -106,6 +106,19 @@ class CanvasDrawingHandle:
             self._canvas.stroke_style = self.opaque_style
             self._canvas.fill_style  = self.opaque_style
 
+    def draw_circle(self, center : Point, radius : float, line_width: int, stroke: bool = True,
+    fill: bool = False, transparent: bool = False):
+        self._canvas.begin_path()
+        self._canvas.arc(center.x, center.y, radius, 0, 360)
+        if transparent:
+            self._canvas.stroke_style = self.transparent_style
+            self._canvas.fill_style = self.transparent_style
+        if stroke:
+            self._canvas.stroke()
+        if transparent:
+            self._canvas.stroke_style = self.opaque_style
+            self._canvas.fill_style  = self.opaque_style
+
     def draw_polygon(self, points: Iterable[Point], line_width: int, stroke: bool = True,
     fill: bool = False, transparent: bool = False):
         self.draw_path(points, line_width, close = True, stroke = stroke, fill = fill, transparent = transparent)

@@ -1,8 +1,7 @@
 from __future__ import annotations
-from .objects import Vertex, HalfEdge, Face
+from .objects import HalfEdge
 from ..geometry import Point
 from .dcel import DoublyConnectedEdgeList as DCEL
-from .objects import HalfEdge, Vertex, Face
 from numpy import linalg
 
 P0 = Point(0, 400)
@@ -46,10 +45,17 @@ class Triangulation(DCEL):
 
 
     def is_legal(self, e : HalfEdge) -> bool:
-        #e is on the outer face => cant be illegal as there is no second triangle
+        #if the edge is on the outer face it cannot be illegal
+        #if the twin is on the outer face, there is no opposing vertex
         if e.incident_face is self._outer_face or e.twin.incident_face is self._outer_face:
             return True
         opposite_vertex = e.twin.next.destination
+        
+        center = self.center_of_circumcircle(e)
+        return center.distance(e.origin.point) < center.distance(opposite_vertex.point)
+    
+    @staticmethod
+    def center_of_circumcircle(e : HalfEdge) -> Point:
         p0 = e.origin.point
         p1 = e.destination.point
         p2 = e.next.destination.point
@@ -60,9 +66,7 @@ class Triangulation(DCEL):
         b_y = linalg.det([[pow(p0.x,2) + pow(p0.y,2), p0.x, 1],
                           [pow(p1.x,2) + pow(p1.y,2), p1.x, 1],
                           [pow(p2.x,2) + pow(p2.y,2), p2.x, 1]])
-        center = Point(-b_x/(2*a), -b_y/(2*a))
-        return center.distance(p0) < center.distance(opposite_vertex.point)
-        
+        return Point(-b_x/(2*a), -b_y/(2*a))
     
     def flip_edge(self, e : HalfEdge) -> bool:
         #edges on the outer face can not 

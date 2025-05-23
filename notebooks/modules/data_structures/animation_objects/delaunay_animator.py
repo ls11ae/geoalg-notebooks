@@ -1,9 +1,32 @@
 from __future__ import annotations
 from ..triangle_tree import Triangulation
-from ...geometry import AnimationObject, AnimationEvent, Point
+from ...geometry import AnimationObject, AnimationEvent, Point, PointFloat, AppendEvent, PopEvent
 from typing import Iterator, Iterable
 
 from ..objects import HalfEdge, Vertex
+
+class EdgeAnimator(AnimationObject):
+    def __init__(self):
+        super().__init__()
+        self._illegal_edges : list[HalfEdge] = []
+
+    def animate_is_legal(self, e : HalfEdge):
+        center = Triangulation.center_of_circumcircle(e)
+        self._animation_events.append(AppendEvent(PointFloat(center.x, center.y, center.distance(e.origin.point))))
+        self._animation_events.append(PopEvent())
+
+    def add_illegal_edge(self, e : HalfEdge):
+        self._illegal_edges.append(e)
+
+    def edge_or_twin_in_list(self, e : HalfEdge):
+        return self._illegal_edges.__contains__(e) or self._illegal_edges.__contains__(e.twin)
+
+    def points(self) -> Iterator[Point]:
+        points = []
+        for e in self._illegal_edges:
+            points.append(e.origin.point)
+            points.append(e.destination.point)
+        return iter(points)
 
 class DelaunayAnimator(AnimationObject):
     def __init__(self, triangulation : Triangulation):

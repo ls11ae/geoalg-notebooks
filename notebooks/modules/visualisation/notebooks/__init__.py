@@ -5,6 +5,6 @@ from .arrangements import (
     BoundingBoxMode
 )
 
-from .delaunay import (
-    TriangleMode, TriangleInstance
+from .delaunay_visualisation import (
+    TriangleMode, TriangleInstance, IllegalEdgeMode
 )
