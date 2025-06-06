@@ -203,7 +203,7 @@ class Face:
     def contains(self, search_point: Point) -> bool:
         # Ray Casting Algorithm
         inside = False
-        ray = LineSegment(Point(-EPSILON, search_point.y), search_point)
+        ray = LineSegment(Point(-1000000, search_point.y), search_point)
         for edge in self.outer_half_edges():
             ls = LineSegment(edge.origin.point, edge.destination.point)
             intersection = ls.intersection(ray)
