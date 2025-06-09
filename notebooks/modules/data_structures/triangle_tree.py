@@ -1,12 +1,12 @@
 from __future__ import annotations
-from .objects import HalfEdge
+from .objects import HalfEdge, Vertex
 from ..geometry import Point
 from .dcel import DoublyConnectedEdgeList as DCEL
 from numpy import linalg
 
-P0 = Point(0, 400)
-P1 = Point(400, 400)
-P2 = Point(200, 0)
+P0 = Point(-3000, 3000)
+P1 = Point(3000, 3000)
+P2 = Point(200, -3000)
 
 class Triangulation(DCEL):
 
@@ -23,24 +23,18 @@ class Triangulation(DCEL):
             return False
 
         v = self.add_vertex(p)
-        if len(v.outgoing_edges()) > 2:
-            return False
-        elif len(v.outgoing_edges()) == 2:
+        if len(v.outgoing_edges()) == 2:
             #point was added on an edge
             for e in v.outgoing_edges():
                 self.add_edge_by_points(p, e.next.destination)
-        else:
+        elif len(v.outgoing_edges()) == 0:
+            #point was added in a face
             f = self.find_containing_face(p)
             for f_p in f.outer_points():
                 self.add_edge_by_points(p, f_p)
+        else:
+            raise ValueError("new Vertex is neither on an Edge or in a Face (No idea how you did that, congrats)")
         return True
-    
-    def legalize_all_edges(self):
-        self.asdf = True
-        for e in self._edges:
-            if not self.is_legal(e):
-                self.flip_edge(e)
-        self.asdf = False
                     
 
 
@@ -103,7 +97,7 @@ class Triangulation(DCEL):
         #since the edge drawn dont have a direction this will draw every edge twice
         points = []
         for e in self.edges:
-            #if all([e.incident_face is not self._dcel.outer_face for e in e.origin.incident_edges()]) and all([e.incident_face is not self._dcel.outer_face for e in e.destination.incident_edges()]):
+            #if not e.origin.point in [P0,P1,P2] and not e.destination.point in [P0, P1, P2]:
             points.append(e.origin.point)
             points.append(e.destination.point)
         return points

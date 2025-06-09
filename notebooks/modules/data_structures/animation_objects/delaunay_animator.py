@@ -1,6 +1,6 @@
 from __future__ import annotations
 from ..triangle_tree import Triangulation
-from ...geometry import AnimationObject, AnimationEvent, Point, PointFloat, AppendEvent, PopEvent
+from ...geometry import AnimationObject, AnimationEvent, Point, PointFloat, AppendEvent, PopEvent, PointPair
 from typing import Iterator, Iterable
 
 from ..objects import HalfEdge, Vertex
@@ -9,17 +9,30 @@ class EdgeAnimator(AnimationObject):
     def __init__(self):
         super().__init__()
         self._illegal_edges : list[HalfEdge] = []
+        self._checked_edges : list[HalfEdge] = []
 
-    def animate_is_legal(self, e : HalfEdge):
+    def animate_circumcircle(self, e : HalfEdge):
         center = Triangulation.center_of_circumcircle(e)
         self._animation_events.append(AppendEvent(PointFloat(center.x, center.y, center.distance(e.origin.point))))
+        self._animation_events.append(AppendEvent(Point(e.twin.next.destination.point.x, e.twin.next.destination.point.y)))
+        self._animation_events.append(PopEvent())
+        self._animation_events.append(PopEvent())
+
+    def highlight_edge(self, e : HalfEdge):
+        self._animation_events.append(AppendEvent(PointPair(e.origin.point.x, e.origin.point.y, e.destination.point)))
+
+    def unhighlight_edge(self):
         self._animation_events.append(PopEvent())
 
     def add_illegal_edge(self, e : HalfEdge):
         self._illegal_edges.append(e)
 
-    def edge_or_twin_in_list(self, e : HalfEdge):
-        return self._illegal_edges.__contains__(e) or self._illegal_edges.__contains__(e.twin)
+    def edge_or_twin_checked(self, e : HalfEdge) -> bool:
+        return self._checked_edges.__contains__(e) or self._checked_edges.__contains__(e.twin)
+
+    def add_checked_edge(self, e : HalfEdge):
+        self._checked_edges.append(e)
+        self._checked_edges.append(e.twin)
 
     def points(self) -> Iterator[Point]:
         points = []
@@ -28,16 +41,20 @@ class EdgeAnimator(AnimationObject):
             points.append(e.destination.point)
         return iter(points)
 
-class DelaunayAnimator(AnimationObject):
+class Incremental_Construction_Animator(AnimationObject):
     def __init__(self, triangulation : Triangulation):
         super().__init__()
         self._triangulation = triangulation
 
     def points(self) -> Iterator[Point]:
         return self._triangulation.edges_as_points()
-        
-    def legalize_all_edges(self):
-        self._triangulation.legalize_all_edges()
+    
+    def insert_point(self, p : Point):
+        self._triangulation.insert_point(p)
+
+    def legalize_edge(self, e : HalfEdge, v : Vertex):
+        if not self.is_legal(e,v):
+            self.flip_edge(e)
 
     def is_legal(self, e : HalfEdge, v : Vertex) -> bool:
         return self._triangulation.is_legal(e,v)
