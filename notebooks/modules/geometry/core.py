@@ -231,6 +231,13 @@ class PointFloat(PointExtension[float]):
 
     def __eq__(self, other: Any) -> bool:
         return super().__eq__(other)
+    
+class PointPair(PointExtension[Point]):
+    def __init__(self, x, y, data):
+        super().__init__(x, y, data)
+
+    def __eq__(self, other):
+        return super().__eq__(other)
 
 class Line:
     def __init__(self, p1: Point, p2: Point):
