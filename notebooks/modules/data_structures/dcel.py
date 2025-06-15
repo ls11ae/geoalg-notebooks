@@ -152,16 +152,16 @@ class DoublyConnectedEdgeList:
         half_edge_0._incident_face = face_0  # TODO: Remove?
         half_edge_1._incident_face = face_0
 
-        half_edge_0._set_twin(half_edge_1)
+        half_edge_0.twin = half_edge_1
 
         old_s1_next = search_edge.next
         old_s2_next = search_edge2.next
 
-        search_edge._set_next(half_edge_0)
-        search_edge2._set_next(half_edge_1)
+        search_edge.next = half_edge_0
+        search_edge2.next = half_edge_1
         
-        half_edge_0._set_next(old_s2_next)
-        half_edge_1._set_next(old_s1_next)
+        half_edge_0.next = old_s2_next
+        half_edge_1.next = old_s1_next
 
         if new_face:
             face_1 = self._split_face(half_edge_0, face_0)

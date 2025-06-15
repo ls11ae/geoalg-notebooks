@@ -82,6 +82,10 @@ class HalfEdge:
     @property
     def origin(self) -> Vertex:
         return self._origin
+    
+    @origin.setter
+    def origin(self, origin):
+        self._origin = origin
 
     @property
     def destination(self) -> Vertex:
@@ -115,37 +119,40 @@ class HalfEdge:
     def twin(self) -> HalfEdge:
         return self._twin
 
+    @twin.setter
+    def twin(self, twin : HalfEdge):
+        self._twin = twin
+        twin._twin = self
+
     @property
     def prev(self) -> HalfEdge:
         return self._prev
+    
+    @prev.setter
+    def prev(self, prev : HalfEdge):
+        self._prev = prev
+        prev._next = self
 
     @property
     def next(self) -> HalfEdge:
         return self._next
     
+    @next.setter
+    def next(self, next : HalfEdge):
+        self._next = next
+        next._prev = self
+
     @property
     def incident_face(self) -> Face:
         return self._incident_face
     
-    @property
-    def length(self) -> float:
-        return self.origin.point.distance(self.destination.point)
-
     @incident_face.setter
     def incident_face(self, incident_face):
         self._incident_face = incident_face
-
-    def _set_twin(self, twin: HalfEdge):
-        self._twin = twin
-        twin._twin = self
-
-    def _set_prev(self, prev: HalfEdge):
-        self._prev = prev
-        prev._next = self
-
-    def _set_next(self, next: HalfEdge):
-        self._next = next
-        next._prev = self
+    
+    @property
+    def length(self) -> float:
+        return self.origin.point.distance(self.destination.point)
 
     def __repr__(self) -> str:
         return f"Edge@{self._origin._point}->{self.destination._point}"
@@ -190,6 +197,8 @@ class Face:
         outer_edges = [self._outer_component]
         current_edge = self.outer_component.next
         while current_edge != self.outer_component:
+            if len(outer_edges) > 6:
+                raise Exception(str(outer_edges))
             outer_edges.append(current_edge)
             current_edge = current_edge.next
         return outer_edges
@@ -203,7 +212,7 @@ class Face:
     def contains(self, search_point: Point) -> bool:
         # Ray Casting Algorithm
         inside = False
-        ray = LineSegment(Point(-1000000, search_point.y), search_point)
+        ray = LineSegment(Point(-100000, search_point.y), search_point)
         for edge in self.outer_half_edges():
             ls = LineSegment(edge.origin.point, edge.destination.point)
             intersection = ls.intersection(ray)
