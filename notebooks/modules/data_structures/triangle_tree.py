@@ -13,15 +13,18 @@ class Triangulation(DCEL):
     def __init__(self, p0 : Point = P0, p1 : Point = P1, p2 : Point = P2):
         super().__init__([p0,p1,p2], [[0,1], [1,2], [2,0]])
 
-    def insert_point(self, p : Point) -> bool:
+    def insert_point(self, p : Point, b : bool = False) -> Vertex | None:
+        if b:
+            raise Exception("test")
         # this can be done more efficient TODO
         if self.find_containing_face(p) is self.outer_face:
             # point is outside the large dummy triangle
-            return False
+            return None
+        
         if list(self.points).__contains__(p):
             # point is already in the dcel
-            return False
-
+            return None
+        
         v = self.add_vertex(p)
         if len(v.outgoing_edges()) == 2:
             #point was added on an edge
@@ -34,13 +37,10 @@ class Triangulation(DCEL):
                 self.add_edge_by_points(p, f_p)
         else:
             raise ValueError("new Vertex is neither on an Edge or in a Face (No idea how you did that, congrats)")
-        return True
-                    
-
+        return v
 
     def is_legal(self, e : HalfEdge) -> bool:
-        #if the edge is on the outer face it cannot be illegal
-        #if the twin is on the outer face, there is no opposing vertex
+        #edges adjacent to the outer face cannot be illegal as there is no fourth vertex
         if e.incident_face is self._outer_face or e.twin.incident_face is self._outer_face:
             return True
         opposite_vertex = e.twin.next.destination
@@ -63,28 +63,35 @@ class Triangulation(DCEL):
         return Point(-b_x/(2*a), -b_y/(2*a))
     
     def flip_edge(self, e : HalfEdge) -> bool:
-        #edges on the outer face can not 
+        #edges on the outer face cannot be flipped as there is not fourth vertex
         if e.incident_face is self.outer_face or e.twin.incident_face is self.outer_face:
             return False
         if not self._edges.__contains__(e):
             return False
-        v0, v1 = e.next.destination, e.twin.next.destination
-        #update vertex edges
-        e.destination._edge = e.next
-        e.origin._edge = e.prev
+        t = e.twin
+        #save pointers to makes rerouting at least somewhat readable
+        e_next = e.next
+        e_prev = e.prev
+        t_next = t.next
+        t_prev = t.prev
+        #update connections of the flipped edge
+        e.prev = e_next
+        t.prev = t_next
+        e.next = t_prev
+        t.next = e_prev
+        #update vertices of flipped edge
+        e.origin = e.prev.destination
+        t.origin = t.prev.destination
+        #update connections between e.prev and e.next
+        e.prev.prev = e.next
+        t.prev.next = t.next
         #update faces
-        self._faces.remove(e.twin.incident_face)
-        f0 = e.incident_face
-        e.twin.next.incident_face = f0
-        e.twin.next.next.incident_face = f0
-        #update edge connections
-        e.next._set_prev(e.twin.prev)
-        e.prev._set_next(e.twin.next)
-        #remove edge
-        self._remove_edge(e)
-        self._remove_edge(e.twin)
-        #add flipped edge
-        self._add_edge(v0,v1)
+        e.next.incident_face = e.incident_face
+        e.next.next.incident_face = e.incident_face
+        t.next.incident_face = t.incident_face
+        t.next.next.incident_face = t.incident_face
+        e.incident_face.outer_component = e
+        t.incident_face.outer_component = t
         return True
 
     def _remove_edge(self, e : HalfEdge) -> bool:
