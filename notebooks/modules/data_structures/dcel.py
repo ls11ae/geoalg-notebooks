@@ -87,7 +87,7 @@ class DoublyConnectedEdgeList:
     def _add_edge(self, vertex_0: Vertex, vertex_1: Vertex):
         half_edge_0 = None
         half_edge_1 = None
-        if vertex_0.edge == vertex_0.edge.twin:  # vertex_0 has no edges
+        if vertex_0.edge == vertex_0.edge.twin:  # vertex 0 has no outgoing connections
             half_edge_0 = vertex_0.edge
         else:
             half_edge_0 = HalfEdge(vertex_0)
@@ -214,13 +214,13 @@ class DoublyConnectedEdgeList:
         old_twin_next = edge.twin.next
 
         # Fix twin and next pointers
-        newVertex.edge._set_twin(edge.twin)
-        newHalfEdge._set_twin(edge)
+        newVertex.edge = edge.twin
+        newHalfEdge = edge
 
-        edge._set_next(newVertex.edge)
-        newVertex.edge._set_next(old_next)
-        newVertex.edge.twin._set_next(newHalfEdge)
-        newHalfEdge._set_next(old_twin_next)
+        edge = newVertex.edge
+        newVertex.edge  = old_next
+        newVertex.edge.twin = newHalfEdge
+        newHalfEdge = old_twin_next
 
         # Set faces
         newVertex.edge.incident_face = edge.incident_face
@@ -275,8 +275,6 @@ class DoublyConnectedEdgeList:
         for edge in out_edges:
             if DoublyConnectedEdgeList.point_between_edge_and_next(point, edge.twin):
                 return edge.twin.incident_face
-        print(vertex)
-        print(vertex.outgoing_edges())
         raise Exception(f"Malformed DCEL: point {point} must split a face around vertex {vertex}")
     
     def find_edges_of_vertex(self, vertex: Vertex) -> list[HalfEdge]:
