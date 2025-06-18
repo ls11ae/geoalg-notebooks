@@ -44,6 +44,10 @@ class Vertex:
     @property
     def edge(self) -> HalfEdge:
         return self._edge
+    
+    @edge.setter
+    def edge(self, e : HalfEdge):
+        self._edge = e 
 
     def __repr__(self) -> str:
         return f"Vertex@{self._point}"
@@ -197,8 +201,6 @@ class Face:
         outer_edges = [self._outer_component]
         current_edge = self.outer_component.next
         while current_edge != self.outer_component:
-            if len(outer_edges) > 6:
-                raise Exception(str(outer_edges))
             outer_edges.append(current_edge)
             current_edge = current_edge.next
         return outer_edges
