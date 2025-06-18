@@ -4,20 +4,23 @@ from ...geometry import Point, AnimationEvent, SetEvent, PointFloat, PointPair, 
 import time
 from typing import Iterable, Optional
 import numpy as np
-from ...data_structures import Triangulation
+from ...data_structures import Triangulation, P0, P1, P2
 
 class TriangleInstance(InstanceHandle[Triangulation]):
-    def __init__(self):
+    def __init__(self, p0 : Point = P0, p1 : Point = P1, p2 : Point = P2):
+        self._p0 = p0
+        self._p1 = p1
+        self._p2 = p2
         self._drawing_mode = TriangleMode()
-        self._instance : Triangulation = Triangulation()
+        self._instance : Triangulation = Triangulation(p0,p1,p2)
         self._drawing_mode.set_instance(self._instance)
         super().__init__(self._instance, self._drawing_mode, 10)
         
     def add_point(self, point: Point) -> bool:
-        return self._instance.insert_point(point)
+        return self._instance.insert_point(point) is not None
 
     def clear(self):
-        self._instance.reset()
+        self._instance.reset(self._p0, self._p1, self._p2)
 
     def size(self) -> int:
         if self._instance is None:

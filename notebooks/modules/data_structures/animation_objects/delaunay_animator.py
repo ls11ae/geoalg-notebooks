@@ -42,22 +42,29 @@ class EdgeAnimator(AnimationObject):
         return iter(points)
 
 class Incremental_Construction_Animator(AnimationObject):
-    def __init__(self, triangulation : Triangulation):
+    def __init__(self):
         super().__init__()
-        self._triangulation = triangulation
+        self._triangulation = Triangulation()
 
     def points(self) -> Iterator[Point]:
         return self._triangulation.edges_as_points()
     
     def insert_point(self, p : Point):
-        self._triangulation.insert_point(p)
+        return self._triangulation.insert_point(p)
 
-    def legalize_edge(self, e : HalfEdge, v : Vertex):
-        if not self.is_legal(e,v):
-            self.flip_edge(e)
+    def legalize_edge(self, e : HalfEdge, v : Vertex) -> bool:
+        if not self.is_legal(e):
+            if e.next.destination is v:
+                e = e.twin
+            next = e.next
+            prev = e.prev
+            return self.flip_edge(e)
+            #self.legalize_edge(next, v)
+            #self.legalize_edge(prev, v)
+        return False
 
-    def is_legal(self, e : HalfEdge, v : Vertex) -> bool:
-        return self._triangulation.is_legal(e,v)
+    def is_legal(self, e : HalfEdge) -> bool:
+        return self._triangulation.is_legal(e)
     
     def flip_edge(self, e : HalfEdge) -> bool:
         new_p0, new_p1 = e.next.destination, e.twin.next.destination

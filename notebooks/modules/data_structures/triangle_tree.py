@@ -13,18 +13,15 @@ class Triangulation(DCEL):
     def __init__(self, p0 : Point = P0, p1 : Point = P1, p2 : Point = P2):
         super().__init__([p0,p1,p2], [[0,1], [1,2], [2,0]])
 
-    def insert_point(self, p : Point, b : bool = False) -> Vertex | None:
-        if b:
-            raise Exception("test")
+    def insert_point(self, p : Point) -> Vertex | None:
         # this can be done more efficient TODO
-        if self.find_containing_face(p) is self.outer_face:
+        f = self.find_containing_face(p)
+        if f is self.outer_face:
             # point is outside the large dummy triangle
             return None
-        
         if list(self.points).__contains__(p):
             # point is already in the dcel
             return None
-        
         v = self.add_vertex(p)
         if len(v.outgoing_edges()) == 2:
             #point was added on an edge
@@ -32,7 +29,6 @@ class Triangulation(DCEL):
                 self.add_edge_by_points(p, e.next.destination)
         elif len(v.outgoing_edges()) == 0:
             #point was added in a face
-            f = self.find_containing_face(p)
             for f_p in f.outer_points():
                 self.add_edge_by_points(p, f_p)
         else:
@@ -68,23 +64,28 @@ class Triangulation(DCEL):
             return False
         if not self._edges.__contains__(e):
             return False
-        t = e.twin
         #save pointers to makes rerouting at least somewhat readable
+        t = e.twin
         e_next = e.next
         e_prev = e.prev
         t_next = t.next
         t_prev = t.prev
         #update connections of the flipped edge
         e.prev = e_next
-        t.prev = t_next
         e.next = t_prev
+        t.prev = t_next
         t.next = e_prev
         #update vertices of flipped edge
         e.origin = e.prev.destination
         t.origin = t.prev.destination
         #update connections between e.prev and e.next
         e.prev.prev = e.next
-        t.prev.next = t.next
+        t.prev.prev = t.next
+        #update vertices
+        e.origin.edge = e
+        t.origin.edge = t
+        e.prev.origin.edge = e.prev
+        t.prev.origin.edge = t.prev
         #update faces
         e.next.incident_face = e.incident_face
         e.next.next.incident_face = e.incident_face
