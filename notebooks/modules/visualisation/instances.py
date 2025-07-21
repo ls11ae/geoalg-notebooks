@@ -367,7 +367,6 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
                         if subpath_distances < neighbour_distances:
                             path[i + 1:j + 1] = reversed(path[i + 1:j + 1])
                             found_improvement = True
-                        #print("loop end")
             
             circle = [(i, i + 1) for i in range(n - 1)]
             if len(circle) > 1:

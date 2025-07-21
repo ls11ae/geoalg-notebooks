@@ -101,13 +101,13 @@ class Triangulation(DCEL):
         self._edges.remove(e)
         return True
         
-    def edges_as_points(self) -> list[Point]:
+    def edges_as_points(self, include_outer_edges : bool = True) -> list[Point]:
         #since the edge drawn dont have a direction this will draw every edge twice
         points = []
         for e in self.edges:
-            #if not e.origin.point in [P0,P1,P2] and not e.destination.point in [P0, P1, P2]:
-            points.append(e.origin.point)
-            points.append(e.destination.point)
+            if include_outer_edges or ((not e.origin.point in [P0,P1,P2]) and (not e.destination.point in [P0, P1, P2])):
+                points.append(e.origin.point)
+                points.append(e.destination.point)
         return points
 
     def reset(self, p0 : Point = P0, p1 : Point = P1, p2 : Point = P2):

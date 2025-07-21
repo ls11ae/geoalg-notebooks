@@ -44,6 +44,7 @@ class TriangleMode(DrawingMode):
         self._highlight_radius = highlight_radius
         self._line_width = line_width
         self._instance = None
+        self._draw_outer_points = True
 
     def set_instance(self, triangulation : Triangulation):
         self._instance = triangulation
@@ -53,11 +54,12 @@ class TriangleMode(DrawingMode):
             return
         with drawer.main_canvas.hold():
             drawer.main_canvas.clear()
-            edges = iter(self._instance.edges_as_points())
+            edges = iter(self._instance.edges_as_points(self._draw_outer_points))
             cur = next(edges, None)
             while cur is not None:
                 nex = next(edges, None)
                 if nex is not None:
+                    
                     drawer.main_canvas.draw_path([cur, nex], self._line_width)
                 else:
                     drawer.main_canvas.draw_point(cur, self._line_width)
@@ -66,18 +68,24 @@ class TriangleMode(DrawingMode):
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         with drawer.main_canvas.hold():
             drawer.main_canvas.clear()
-            if(len(points) >= 4):
-                drawer.main_canvas.draw_polygon(points[0:4], self._line_width)
-                drawer.main_canvas.draw_points(points[4:], self._point_radius)
+            it = iter(points)
+            cur = next(it, None)
+            while cur is not None:
+                if isinstance(cur, PointPair):
+                    drawer.main_canvas.draw_path([cur, cur.data], self._line_width)
+                else:
+                    drawer.main_canvas.draw_point(cur, self._line_width)
+                cur = next(it, None)
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
         points: list[Point] = []
         event_iterator = iter(animation_events)
         event = next(event_iterator, None)
         while event is not None:
-            event = next(event_iterator, None)            
+            event.execute_on(points)           
             self._draw_animation_step(drawer, points)
             time.sleep(animation_time_step)
+            event = next(event_iterator, None) 
         self.draw(drawer, points)
 
 class IllegalEdgeMode(DrawingMode):
@@ -106,7 +114,9 @@ class IllegalEdgeMode(DrawingMode):
             cur_point = next(iterator, None)
             while cur_point is not None:
                 if isinstance(cur_point, PointFloat):
+                    drawer.main_canvas.set_colour(255,0,0)
                     drawer.main_canvas.draw_circle(cur_point, cur_point.data, self._line_width)
+                    drawer.main_canvas.set_colour(0,0,255)
                 elif isinstance(cur_point, PointPair):
                     drawer.main_canvas.draw_path([cur_point, cur_point.data], self._line_width)
                 elif isinstance(cur_point, Point):
