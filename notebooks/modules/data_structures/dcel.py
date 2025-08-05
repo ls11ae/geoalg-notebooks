@@ -214,13 +214,13 @@ class DoublyConnectedEdgeList:
         old_twin_next = edge.twin.next
 
         # Fix twin and next pointers
-        newVertex.edge = edge.twin
-        newHalfEdge = edge
+        newVertex.edge.twin = edge.twin
+        newHalfEdge.twin = edge
 
-        edge = newVertex.edge
-        newVertex.edge  = old_next
-        newVertex.edge.twin = newHalfEdge
-        newHalfEdge = old_twin_next
+        edge.next = newVertex.edge
+        newVertex.edge.next  = old_next
+        newVertex.edge.twin.next = newHalfEdge
+        newHalfEdge.next = old_twin_next
 
         # Set faces
         newVertex.edge.incident_face = edge.incident_face
