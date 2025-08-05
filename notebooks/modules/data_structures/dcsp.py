@@ -149,18 +149,18 @@ class DoublyConnectedSimplePolygon:
             old_closing_edge = copy.copy(old_closing_edge)
             old_closing_edge_twin = copy.copy(old_closing_edge_twin)
             old_closing_edge._origin._edge = old_closing_edge
-            old_closing_edge._set_prev(self._closing_edge._twin)
-            old_closing_edge_twin._set_prev(self._closing_edge)
+            old_closing_edge.prev = self._closing_edge._twin
+            old_closing_edge_twin.prev = self._closing_edge
 
         closing_edge, converse_edge = vertex._edge, HalfEdge(vertex)
         if self._is_reversed:
             closing_edge, converse_edge = converse_edge, closing_edge
-        converse_edge._set_twin(old_closing_edge)
-        closing_edge._set_twin(old_closing_edge_twin)
-        converse_edge._set_next(old_closing_edge_twin._next)
-        closing_edge._set_next(old_closing_edge._next)
-        converse_edge._set_prev(old_closing_edge_twin)
-        closing_edge._set_prev(old_closing_edge)
+        converse_edge.twin = old_closing_edge
+        closing_edge.twin = old_closing_edge_twin
+        converse_edge.next = old_closing_edge_twin._next
+        closing_edge.next = old_closing_edge._next
+        converse_edge.prev = old_closing_edge_twin
+        closing_edge.prev = old_closing_edge
 
         self._closing_edge = closing_edge
 
@@ -188,11 +188,11 @@ class DoublyConnectedSimplePolygon:
 
         diagonal1 = HalfEdge(vertex1)
         diagonal2 = HalfEdge(vertex2)
-        diagonal1._set_twin(diagonal2)
-        diagonal1._set_prev(connection_edge1._prev)
-        diagonal2._set_prev(connection_edge2._prev)
-        diagonal1._set_next(connection_edge2)
-        diagonal2._set_next(connection_edge1)
+        diagonal1.twin = diagonal2
+        diagonal1.prev = connection_edge1._prev
+        diagonal2.prev = connection_edge2._prev
+        diagonal1.next = connection_edge2
+        diagonal2.next = connection_edge1
 
         self._has_diagonals = True
 
