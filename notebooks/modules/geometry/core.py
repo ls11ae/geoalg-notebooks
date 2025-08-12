@@ -422,17 +422,7 @@ class Line:
             return Orientation.RIGHT   
         return Orientation.BETWEEN
     
-    #replace by two properties
-    def get_m_b(self) -> None | tuple[float,float]:
-        denom = (self._p2.x - self._p1.x)
-        m : float = 0
-        b : float = 0
-        if abs(denom) > EPSILON:
-            m = (self._p2.y - self._p1.y) / denom
-        else:
-            m = sys.float_info.max
-        b : float = -(m * self._p1.x) + self._p1.y
-        return [m,b]
+    
 
 
     '''
@@ -496,8 +486,8 @@ class Line:
             return True
         return False
 
+    # -------- properties --------
 
-    ## Properties
     @property
     def p1(self) -> Point:
         return self._p1
@@ -505,6 +495,26 @@ class Line:
     @property
     def p2(self) -> Point:
         return self._p2
+
+    def slope(self) -> SupportsFloat:
+        "Returns infinity if p1.x == p2.x"
+        if self.p1.x == self.p2.x:
+            return float("inf")  # vertical segment
+        return (self.p2.y - self.p1.y) / (self.p2.x - self.p1.x)
+    
+    def y_from_x(self, x):
+        "Throws exception if p1.x == p2.x"
+        if self.p1.x == self.p2.x:
+            raise Exception(f"Can not give y coordinate for vertical line: {self}")
+        return self.slope() * (x - self.p1.x) + self.p1.y
+    
+    def x_from_y(self, y):
+        "Throws exception if p1.y == p2.y"
+        if self.p1.y == self.p2.y:
+            raise Exception(f"Can not give x coordinate for horizontal line: {self}")
+        return (y - self.p1.y) / self.slope() + self.p1.x
+
+    # -------- magic methods --------
 
     def __repr__(self) -> str:
         return f"Line: ({self._p1}, {self._p2})"
