@@ -4,71 +4,120 @@ from enum import auto, Enum
 import math
 import sys
 
+EPSILON: float = 1e-9 # Chosen by testing currently implemented algorithms with the visualisation tool.
 
-EPSILON: float = 1e-9    # Chosen by testing currently implemented algorithms with the visualisation tool.
-
-P = TypeVar("P")
+P = TypeVar("P") # type variable for points with generic data
 
 class Orientation(Enum):
+    "locates a point relative to the enpoints of a line segment"
     LEFT = auto()
     RIGHT = auto()
     BETWEEN = auto()
     BEFORE_SOURCE = auto()
     BEHIND_TARGET = auto()
 
-
 class VerticalOrientation(Enum):
+    "locates a point relative to a line"
     ON = auto()
     ABOVE = auto()
     BELOW = auto()
 
-
 class HorizontalOrientation(Enum):
+    "locates a point relative to another point (lexicograhical order)"
     LEFT = auto()
     RIGHT = auto()
     EQUAL = auto()
 
 
 class Point:
-    def __init__(self, x: SupportsFloat, y: SupportsFloat, tag : float = 0):
+    """Point representation used by many other objects.
+
+    Attributes
+    ----------
+    _x : float
+        x coordinate
+    _y : float
+        y coordinate
+    _tag : int
+        used to distinguish different types of points during drawing, set according to your needs
+
+    Methods
+    -------
+    copy()
+        returns an exact copy of this point
+    distance(other)
+        returns euclidian distance to another point
+    dot(other)
+        returns the dot product between the vectors defined by the two points and the origin
+    perp_dot(other)
+        TODO:comment
+    orientation(source, target, epsilon)
+        returns the orientation relative to target and source (see Orientation Enum)
+    vertical_orientation(lineSegment)
+        returns the relative position to the given line
+        TODO: replace with line once linesegment inherits from line
+    horizontal_orientation(other)
+        returns the lexicographical order relative to the given point
+    """
+
+    def __init__(self, x: SupportsFloat, y: SupportsFloat, tag : int = 0):
+        """
+        Parameters
+        ----------
+        tag : int
+            used to distinguish different points when drawing, use as needed (default is 0)
+        """
+
         self._x = float(x)
         self._y = float(y)
-        #used to distinguish different points during drawing
         self.tag = tag
 
     def copy(self) -> Point:
-        return Point(self._x, self._y)
+        return Point(self._x, self._y, self.tag)
 
-    ## Properties
-
-    @property
-    def x(self) -> float:
-        return self._x
-
-    @x.setter
-    def x(self,value):
-        self._x = value
-
-    @property
-    def y(self) -> float:
-        return self._y
-
-    @y.setter
-    def y(self,value):
-        self._y = value
-
-    ## Operations
+    # -------- methods --------
 
     def distance(self, other: Point) -> float:
         return math.sqrt((self._x - other._x)**2 + (self._y - other._y)**2)
 
     def dot(self, other: Point) -> float:
+        "interprets points as vectors to those points"
         return self._x * other._x + self._y * other._y
 
     def perp_dot(self, other: Point) -> float:
+        "interprets points as vectors to those points"
         return self._x * other._y - self._y * other._x
 
     def orientation(self, source: Point, target: Point, epsilon: float = EPSILON) -> Orientation:
+        """returns the orientation relative to target and source (see Orientation Enum)
+        
+        Parameters
+        ----------
+        source : Point
+            first point of the linesegment
+        target : Point
+            second point of the linesegment
+        epsilon : float
+            used for numerical stability, standard value should work well
+        
+        Returns
+        -------
+        Orientation.LEFT
+            if the point is left of the line from source to target
+        Orientation.RIGHT
+            if the point is right of the line from source to target
+        Orientation.BEFORE_SOURCE
+            if the point is on the line and lexicographically before source
+        Orientation.AFTER_TARGET
+            if the point is on the line and lexicographically after target
+        Orientation.ON
+            if the point is on the line and lexicographicall between source and target
+
+        Raises
+        ------
+        ValueError
+            if target and source are equal  
+        """
         if source == target:
             raise ValueError("Source and target need to be two different points.")
 
@@ -92,7 +141,24 @@ class Point:
                 return Orientation.BETWEEN
             
     def vertical_orientation(self, line_segment: LineSegment, epsilon: float = EPSILON) -> VerticalOrientation:
-        """ Checks whether the point lies on the given line segment or one the line induced by it.
+        """Checks whether the point lies on the given line segment or one the line induced by it.
+
+        Parameters
+        ----------
+        line_segment : LineSegment
+            TODO: change to use two points instead
+        epsilon : float
+            used for numerical stability, standard value should work well
+        
+        Returns
+        -------
+        VerticalOrientation.ABOVE
+            if the point is above the induced line
+        VerticalOrientation.BELOW
+            if the point is below the induced line
+        VerticalOrientation.ON
+            if the point is on the induced line
+        
         """
         if line_segment.left.x == line_segment.right.x:  # Vertical line segment. This could be simplified if just used for the point location in notebook 04, because it ensures the point is always between the endpoints of the line segment in horizontal order.
             if self.x < line_segment.left.x:
@@ -108,8 +174,23 @@ class Point:
         return VerticalOrientation.ON
 
     def horizontal_orientation(self, other_point: Point) -> HorizontalOrientation:
-        """ Checks whether the point lies to the left or the right of the given point.
-        It uses a symbolic shear transform, i.e. lexicographical order.
+        """Returns the position in lexicographical order relative to the other point using 
+        a symbolic shear transform.
+
+        Parameters
+        ----------
+        other_point : Point
+            point relative to which the position is returned
+        
+        Returns
+        -------
+        HorizontalOrientation.EQUAL
+            if the points are equal 
+        HorizontalOrientation.LEFT
+            if other_point is later in lexicographical order
+        HorizontalOrientation.RIGHT
+            if other_point is earlier in lexicographical order 
+        
         """
         if self == other_point:
             return HorizontalOrientation.EQUAL
@@ -121,7 +202,25 @@ class Point:
     def close_to(self, other_point: Point, epsilon: float = EPSILON) -> bool:
         return self.distance(other_point) < epsilon
 
-    ## Magic methods
+    ## -------- properties --------
+
+    @property
+    def x(self) -> float:
+        return self._x
+
+    @x.setter
+    def x(self,value):
+        self._x = value
+
+    @property
+    def y(self) -> float:
+        return self._y
+
+    @y.setter
+    def y(self,value):
+        self._y = value
+
+    ## -------- magic methods --------
         
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Point):
@@ -137,13 +236,11 @@ class Point:
     def __add__(self, other: Any) -> Point:
         if not isinstance(other, Point):
             return NotImplemented
-
         return Point(self._x + other._x, self._y + other._y)
 
     def __sub__(self, other: Any) -> Point:
         if not isinstance(other, Point):
             return NotImplemented
-
         return Point(self._x - other._x, self._y - other._y)
 
     def __rmul__(self, other: Any) -> Point:
@@ -152,13 +249,13 @@ class Point:
             y = float(other * self._y)
         except Exception:
             return NotImplemented
-
         return Point(x, y)
 
     def __round__(self, ndigits: Optional[int] = None) -> Point:
         return Point(round(self._x, ndigits), round(self._y, ndigits))
 
-class PointReference(Point):    # TODO: Make this a generic type for points with attributes.
+# TODO: replace with PointExtension in all cases
+class PointReference(Point):    
     def __init__(self, container: list[Point], position: int):
         self._container = container
         self._position = position
@@ -198,8 +295,16 @@ class PointReference(Point):    # TODO: Make this a generic type for points with
         return f"({self._x}, {self._y})+{self.container}"
 
 
+# TODO: move all sublcasses of point extension to own file
 class PointExtension(Point, Generic[P]):
-    def __init__(self, x: SupportsFloat, y: SupportsFloat, data : P):
+    """Extends point by a generic data parameter. 
+    
+    Attributes
+    ----------
+    data : P
+        generic data object to hold any necessary information (eg.: outgoing edges)
+    """
+    def __init__(self, x: SupportsFloat, y: SupportsFloat, data : P = None):
         super().__init__(x, y)
         self._data = data
     
@@ -212,13 +317,13 @@ class PointExtension(Point, Generic[P]):
         self._data = data
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, PointList):
+        if not isinstance(other, PointExtension):
             return NotImplemented
         return self._x == other._x and self._y == other._y #TODO: check if data is also equal -> this might break notebook 5
 
-
 class PointList(PointExtension[list[Point]]):
-
+    """A point with an additonal list of points."""
+    
     def __init__(self, x: SupportsFloat, y: SupportsFloat, data : list[Point] = []):
         super().__init__(x, y, data)
 
@@ -226,6 +331,8 @@ class PointList(PointExtension[list[Point]]):
         return super().__eq__(other)
     
 class PointFloat(PointExtension[float]):
+    """A point with an additonal float."""
+
     def __init__(self, x: SupportsFloat, y: SupportsFloat, data : float = 0):
         super().__init__(x, y, data)
 
@@ -233,6 +340,8 @@ class PointFloat(PointExtension[float]):
         return super().__eq__(other)
     
 class PointPair(PointExtension[Point]):
+    """A point with an additonal point."""
+
     def __init__(self, x, y, data):
         super().__init__(x, y, data)
 
@@ -240,6 +349,32 @@ class PointPair(PointExtension[Point]):
         return super().__eq__(other)
 
 class Line:
+    """A line defined by two points on the line.
+
+    Attributes
+    ----------
+    _p1 : Point
+        a point on the line
+    _p2 : Point
+        a different point on the line
+    
+    Methods
+    -------
+    static line_from_m_b(m,b)
+        TODO: add in checks for numerical stability, remove hardcoded value
+    intersection(other)
+        returns the intersection between two lines or a line
+    intersection_segment(line_segment)
+        TODO: instead overload intersection method
+    orientation(point)
+        TODO: use point.orientation(line) instead -> replace all instances
+    get_m_b()
+        TODO: replace by properties
+    expand(bottomLeft, topRight)
+        TODO: dont change actual points, instead move to drawing
+    
+    """
+
     def __init__(self, p1: Point, p2: Point):
         self._p1 : Point = p1
         self._p2 : Point = p2
@@ -287,6 +422,7 @@ class Line:
             return Orientation.RIGHT   
         return Orientation.BETWEEN
     
+    #replace by two properties
     def get_m_b(self) -> None | tuple[float,float]:
         denom = (self._p2.x - self._p1.x)
         m : float = 0
@@ -375,6 +511,33 @@ class Line:
 
 
 class LineSegment:
+    '''A linesegment represented by a lower and upper point
+    TODO:make into sublcass of line
+    
+    Attributes
+    ----------
+    lower : Point
+        the lower of the two endpoints
+    upper : Point
+        the upper of the two endpoints
+    left : Point
+        the left of the two points
+    right : Point
+        the right of the two points
+
+    Methods
+    -------
+    to_Line()
+        returns the line induced by this segment
+    intersection(other)
+        returns the intersection with the other linesegment
+    y_from_x(x)
+        returns the y coodinate at the given x coordinate
+    slope()
+        returns the slope of this segment
+    '''
+
+
     def __init__(self, p: Point, q: Point):
         if p == q:
             raise ValueError("A line segment needs two different endpoints.")
@@ -443,7 +606,6 @@ class LineSegment:
                 return LineSegment(upper, lower)
             else:
                 return None
-
         return None
 
     def y_from_x(self, x):
@@ -472,6 +634,25 @@ class LineSegment:
 
 
 class Rectangle:
+    '''An axis alinged Rectangle represented by left, right, lower and uper boundary
+
+    Attributes
+    ----------
+    _left : float
+        the left boundary of the rectangle
+    _right : float
+        the right boundary of the rectangle
+    _lower : float
+        the lower boundary of the rectangle
+    _upper : float
+        the upper boundary of the rectangle
+
+    Methods
+    -------
+    isInside(point)
+        returns wether the given point is inside the rectangle or not 
+    '''
+
     def __init__(self, point_0: Point, point_1: Point) -> None:
         if point_0.x < point_1.x:
             self._left = point_0.x
@@ -487,9 +668,13 @@ class Rectangle:
             self._lower = point_1.y
             self._upper = point_0.y
 
+    # -------- methods --------
+
     def isInside(self, point : Point) -> bool:
+        '''Returns false if a point is on the boundary'''
         return (point.x < self.right) and (point.x > self.left) and (point.y < self.upper) and (point.y > self.lower)
 
+    # -------- properties --------
 
     @property
     def left(self):
@@ -522,3 +707,7 @@ class Rectangle:
     @lower.setter
     def lower(self, lower : float):
         self._lower = lower
+
+    # -------- standard methods --------
+
+    #TODO: implement __str__ , __copy__, __eq__
