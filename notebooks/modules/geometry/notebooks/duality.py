@@ -4,7 +4,14 @@ def dual_point(p : Point) -> Line:
     return Line.line_from_m_b(p.x, -p.y)
 
 def dual_line(l : Line) -> Point:
-    return Point(l.slope(), -l.y_from_x(0))
+    m = l.slope()
+    try:
+        b = -l.y_from_x(0)
+    except Exception:
+        # line is vertical, so b has no value, represent by point far away
+        # this is effectifly moving one of the points by an inredible small amount
+        return Point(m, float("inf"))
+    return Point(m, b)
 
 def dual_lineSegment(ls : LineSegment) -> tuple[Line,Line]:
     return [dual_point(ls.upper), dual_point(ls.lower)]

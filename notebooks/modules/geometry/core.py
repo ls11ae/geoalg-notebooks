@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import Any, Optional, SupportsFloat, Union, Generic, TypeVar
 from enum import auto, Enum
 import math
-import sys
 
 EPSILON: float = 1e-9 # Chosen by testing currently implemented algorithms with the visualisation tool.
 
@@ -227,11 +226,17 @@ class Point:
             return NotImplemented
         return self._x == other._x and self._y == other._y
     
+    def __copy__(self) -> Point:
+        return Point(self.x, self.y)
+    
+    def __deepcopy__(self, memo) -> Point:
+        return Point(self.x, self.y)
+    
     def __hash__(self) -> int:
         return hash((self._x, self._y))
-    
-    def __repr__(self) -> str:
-        return f"Point: ({self._x}, {self._y})"
+
+    def __str__(self) -> str:
+        return f"({self._x}, {self._y})"
 
     def __add__(self, other: Any) -> Point:
         if not isinstance(other, Point):
@@ -243,6 +248,11 @@ class Point:
             return NotImplemented
         return Point(self._x - other._x, self._y - other._y)
 
+    def __mul__(self, other : Any) -> Point:
+        if not isinstance(other, Point):
+            return NotImplemented
+        return Point(self.x * other.x, self.y * other.y)
+    
     def __rmul__(self, other: Any) -> Point:
         try:
             x = float(other * self._x)
@@ -253,6 +263,8 @@ class Point:
 
     def __round__(self, ndigits: Optional[int] = None) -> Point:
         return Point(round(self._x, ndigits), round(self._y, ndigits))
+    
+    #TODO: implement < > <= >= -> could replace horizontal orientation
 
 # TODO: replace with PointExtension in all cases
 class PointReference(Point):    
@@ -291,9 +303,6 @@ class PointReference(Point):
     def _y(self) -> float:
         return self.point.y
 
-    def __repr__(self) -> str:
-        return f"({self._x}, {self._y})+{self.container}"
-
 
 # TODO: move all sublcasses of point extension to own file
 class PointExtension(Point, Generic[P]):
@@ -319,7 +328,7 @@ class PointExtension(Point, Generic[P]):
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, PointExtension):
             return NotImplemented
-        return self._x == other._x and self._y == other._y #TODO: check if data is also equal -> this might break notebook 5
+        return self._x == other._x and self._y == other._y#TODO: check if data is also equal -> this might break notebook 5
 
 class PointList(PointExtension[list[Point]]):
     """A point with an additonal list of points."""
@@ -421,9 +430,6 @@ class Line:
         if area < -EPSILON:
             return Orientation.RIGHT   
         return Orientation.BETWEEN
-    
-    
-
 
     '''
     moves the points that define the line such that they are both outside the given frame
@@ -516,10 +522,20 @@ class Line:
 
     # -------- magic methods --------
 
-    def __repr__(self) -> str:
-        return f"Line: ({self._p1}, {self._p2})"
+    def __eq__(self, other : Any) -> bool:
+        if not isinstance(other, Line):
+            return NotImplemented
+        return self.p1 == other.p1 and self.p2 == other.p2
+    
+    def __copy__(self) -> Line:
+        return Line(self.p1, self.p2)
+    
+    def __deepcopy__(self, memo) -> Line:
+        return Line(Point(self.p1.x, self.p1.y), Point(self.p2.x, self.p2.y))
 
-
+    def __str__(self) -> str:
+        return f"(--{self.p1}->{self.p2}--)"
+    
 class LineSegment:
     '''A linesegment represented by a lower and upper point
     TODO:make into sublcass of line
@@ -547,7 +563,6 @@ class LineSegment:
         returns the slope of this segment
     '''
 
-
     def __init__(self, p: Point, q: Point):
         if p == q:
             raise ValueError("A line segment needs two different endpoints.")
@@ -558,7 +573,7 @@ class LineSegment:
             self._upper = q
             self._lower = p
 
-    ## Properties
+    # -------- properties --------
 
     @property
     def upper(self) -> Point:
@@ -576,7 +591,7 @@ class LineSegment:
     def right(self) -> Point:
         return self._upper if self._upper.x > self._lower.x or (self._upper.x == self._lower.x and self._upper.y > self._lower.y) else self._lower
 
-    ## Operation(s)
+    # -------- methods --------
 
     def to_line(self) -> Line:
         return Line(self.left, self.right)
@@ -628,20 +643,24 @@ class LineSegment:
             return float("inf")  # vertical segment
         return (self.left.y - self.right.y) / (self.left.x - self.right.x)
 
-    ## Magic methods
+    # -------- magic methods --------
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other : Any) -> bool:
         if not isinstance(other, LineSegment):
             return NotImplemented
-
         return self.upper == other.upper and self.lower == other.lower
-
+    
+    def __copy__(self, other : Any) -> bool:
+        return LineSegment(self.lower, self.upper)
+    
+    def __deepcopy__(self, other : Any, memo) -> bool:
+        return LineSegment(Point(self.left, self.lower), Point(self.right, self.upper))
+    
     def __hash__(self) -> int:
         return hash((self.upper, self.lower))
 
-    def __repr__(self) -> str:
-        return f"{self.left}--{self.right}"
-
+    def __str__(self) -> str:
+        return f"LS({self.left}->{self.right})"
 
 class Rectangle:
     '''An axis alinged Rectangle represented by left, right, lower and uper boundary
@@ -681,7 +700,7 @@ class Rectangle:
     # -------- methods --------
 
     def isInside(self, point : Point) -> bool:
-        '''Returns false if a point is on the boundary'''
+        "Returns false if a point is on the boundary"
         return (point.x < self.right) and (point.x > self.left) and (point.y < self.upper) and (point.y > self.lower)
 
     # -------- properties --------
@@ -703,14 +722,6 @@ class Rectangle:
         self._right = right
 
     @property
-    def upper(self):
-        return self._upper
-    
-    @upper.setter
-    def upper(self, upper : float):
-        self._upper = upper
-
-    @property
     def lower(self):
         return self._lower
     
@@ -718,6 +729,26 @@ class Rectangle:
     def lower(self, lower : float):
         self._lower = lower
 
-    # -------- standard methods --------
+    @property
+    def upper(self):
+        return self._upper
 
-    #TODO: implement __str__ , __copy__, __eq__
+    @upper.setter
+    def upper(self, upper : float):
+        self._upper = upper
+
+    # -------- magic methods --------
+
+    def __eq__(self, other : Any) -> bool:
+        if not isinstance(other, Rectangle):
+            return NotImplemented
+        return self.left == other.left and self.right == other.right and self.lower == other.lower and self.upper == other.upper 
+
+    def __copy__(self) -> Rectangle:
+        return Rectangle(Point(self.left, self.lower), Point(self.right, self.upper))
+    
+    def __deepcopy__(self) -> Rectangle:
+        return Rectangle(Point(self.left, self.lower), Point(self.right, self.upper))
+
+    def __str__(self) -> str:
+        return f"Rectangle({Point(self.left, self.lower)}, {Point(self.right, self.upper)})"
