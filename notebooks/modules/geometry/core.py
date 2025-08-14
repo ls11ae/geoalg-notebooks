@@ -431,67 +431,6 @@ class Line:
             return Orientation.RIGHT   
         return Orientation.BETWEEN
 
-    '''
-    moves the points that define the line such that they are both outside the given frame
-    '''
-    def expand(self, bot_left : Point, top_right : Point):
-        xDiff = abs(self.p2.x - self.p1.x)
-        yDiff = abs(self.p2.y - self.p1.y)
-        if xDiff < EPSILON:
-            #line is essentially vertical, change y coords
-            self.move_p1_y(bot_left.y)
-            self.move_p2_y(top_right.y)
-        elif yDiff < EPSILON:
-            #line is essentially horizontal, change x coords
-            self.move_p1_x(bot_left.x)
-            self.move_p2_x(top_right.x)
-        elif xDiff < yDiff:
-            self.move_p1_y(bot_left.y)
-            self.move_p2_y(top_right.y)
-        else:
-            self.move_p1_x(bot_left.x)
-            self.move_p2_x(top_right.x)
-    '''
-    These methods move the given point such that one coordinate is equal to the given value.
-
-    This is needed for drawing since the canvas can only draw lines from point to point without extending them.
-    So instead the points on the line can be moved to outside the frame of the canvas so that it looks like a full line is drawn
-
-    The methods fail if a line is horizontal and the y coordinate is changed or if a line is vertical and the x coordinate is changed
-    '''
-    #move p1 such that it has the given x coordinate
-    def move_p1_x(self, new_x : float):
-        intersection = self.intersection(Line(Point(new_x, 0), Point(new_x, 1000)))
-        if type(intersection) is Point:
-            self._p1 = intersection
-            return True
-        return False
-
-    #move p2 such that it has the given x coordinate
-    def move_p2_x(self, new_x : float):
-        intersection = self.intersection(Line(Point(new_x, 0), Point(new_x, 1000)))
-        if type(intersection) is Point:
-            self._p2 = intersection
-            return True
-        return False
-
-    #move p1 such that it has the given y coordinate
-    def move_p1_y(self, new_y : float):
-        intersection = self.intersection(Line(Point(0, new_y), Point(1000, new_y)))
-        if type(intersection) is Point:
-            self._p1 = intersection
-            return True
-        return False
-        
-
-    #move p2 such that it has the given y coordinate
-    def move_p2_y(self, new_y : float):
-        intersection = self.intersection(Line(Point(0, new_y), Point(1000, new_y)))
-        if type(intersection) is Point:
-            self._p2 = intersection
-            return True
-        return False
-
     # -------- properties --------
 
     @property
@@ -502,19 +441,19 @@ class Line:
     def p2(self) -> Point:
         return self._p2
 
-    def slope(self) -> SupportsFloat:
+    def slope(self) -> float:
         "Returns infinity if p1.x == p2.x"
         if self.p1.x == self.p2.x:
             return float("inf")  # vertical segment
         return (self.p2.y - self.p1.y) / (self.p2.x - self.p1.x)
     
-    def y_from_x(self, x):
+    def y_from_x(self, x) -> float:
         "Throws exception if p1.x == p2.x"
         if self.p1.x == self.p2.x:
             raise Exception(f"Can not give y coordinate for vertical line: {self}")
         return self.slope() * (x - self.p1.x) + self.p1.y
     
-    def x_from_y(self, y):
+    def x_from_y(self, y) -> float:
         "Throws exception if p1.y == p2.y"
         if self.p1.y == self.p2.y:
             raise Exception(f"Can not give x coordinate for horizontal line: {self}")
@@ -532,6 +471,9 @@ class Line:
     
     def __deepcopy__(self, memo) -> Line:
         return Line(Point(self.p1.x, self.p1.y), Point(self.p2.x, self.p2.y))
+
+    def __hash__(self) -> int:
+        return hash((self.p1, self.p2))
 
     def __str__(self) -> str:
         return f"(--{self.p1}->{self.p2}--)"

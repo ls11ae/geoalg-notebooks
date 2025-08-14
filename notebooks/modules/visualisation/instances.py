@@ -205,7 +205,6 @@ class LineSetInstance(InstanceHandle[set[Line]]):
         elif self._cached_point == point:
             return False
         line = Line(self._cached_point, point)
-        line.expand(self._bot_left, self._top_right)
         if line in self._instance:
             return False
         self._instance.add(line)

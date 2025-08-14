@@ -84,18 +84,21 @@ class CanvasDrawingHandle:
     def draw_line(self, p1 : Point, p2 : Point, line_width:int, stroke:bool = True, transparent : bool = False):
         self._canvas.line_width = abs(line_width)
         line = Line(p1,p2)
-        line.expand(Point(0,0), Point(self._canvas.width, self._canvas.height))
-        '''
-        seems to be a dirty fix:
-        try and move p1 such that its x coord is 0, if this works also move p2 such that its endpoint is on the right canvas side
-        if it doesnt work this means the line is parallel to the x axis, so try again by moving y coordinate around
 
-        This is needed because the canvas cant draw a line crossing the whole screen unless the endpoints are on the border.
-        So the only way is to move the endpoints
-        '''
+        #offset points of the line so they are out of the frame since the drawer only draws line segments
+        offset_p1 : Point = None
+        offset_p2 : Point = None
+        try:
+            offset_p1 = Point(0, line.y_from_x(0))
+            offset_p2 = Point(self.width, line.y_from_x(self.width))
+        except Exception:
+            offset_p1 = Point(line.x_from_y(0), 0)
+            offset_p2 = Point(line.x_from_y(self.height), self.height)
+
+        
         self._canvas.begin_path()
-        self._canvas.move_to(line.p1.x, line.p1.y)
-        self._canvas.line_to(line.p2.x, line.p2.y)
+        self._canvas.move_to(offset_p1.x, offset_p1.y)
+        self._canvas.line_to(offset_p2.x, offset_p2.y)
 
         if transparent:
             self._canvas.stroke_style = self.transparent_style
@@ -105,6 +108,7 @@ class CanvasDrawingHandle:
         if transparent:
             self._canvas.stroke_style = self.opaque_style
             self._canvas.fill_style  = self.opaque_style
+
 
     def draw_circle(self, center : Point, radius : float, line_width: int, stroke: bool = True,
     fill: bool = False, transparent: bool = False):
@@ -126,6 +130,10 @@ class CanvasDrawingHandle:
     @property
     def width(self) -> float:
         return self._canvas.width
+    
+    @property
+    def height(self) -> float:
+        return self._canvas.height
 
 
 class Drawer:
