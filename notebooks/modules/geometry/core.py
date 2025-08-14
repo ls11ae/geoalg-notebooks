@@ -405,7 +405,7 @@ class Line:
             x1, y1 = self.p2.x - self.p1.x, self.p2.y - self.p1.y
             x2, y2 = other.p1.x - self.p1.x, other.p1.y - self.p1.y
             if(abs(x1 * y1 - x2 * y2) < epsilon):
-                ##lines are identical, so just return a line as intersection
+                ##lines are identical, return a line as intersection
                 return self
             ##lines are parallel but not on top of each other, so no intersection exists
             return None
@@ -464,7 +464,19 @@ class Line:
     def __eq__(self, other : Any) -> bool:
         if not isinstance(other, Line):
             return NotImplemented
-        return self.p1 == other.p1 and self.p2 == other.p2
+        if self.p1 == other.p1 and self.p2 == other.p2:
+            return True
+        #lines can be the same even if they are defined by different points
+        denominator = (self.p1.x - self.p2.x) * (other.p1.y - other.p2.y) - (self.p1.y - self.p2.y) * (other.p1.x - other.p2.x)
+        if(abs(denominator) < EPSILON):
+            ##check if p1, p2 are collinear with other.p1
+            x1, y1 = self.p2.x - self.p1.x, self.p2.y - self.p1.y
+            x2, y2 = other.p1.x - self.p1.x, other.p1.y - self.p1.y
+            if(abs(x1 * y1 - x2 * y2) < EPSILON):
+                ##lines are identical, return a line as intersection
+                return True
+        return False
+
     
     def __copy__(self) -> Line:
         return Line(self.p1, self.p2)
