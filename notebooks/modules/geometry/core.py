@@ -8,7 +8,7 @@ EPSILON: float = 1e-9 # Chosen by testing currently implemented algorithms with 
 P = TypeVar("P") # type variable for points with generic data
 
 class Orientation(Enum):
-    "locates a point relative to the enpoints of a line segment"
+    "locates a point relative to the endpoints of a line segment"
     LEFT = auto()
     RIGHT = auto()
     BETWEEN = auto()
@@ -145,7 +145,7 @@ class Point:
         Parameters
         ----------
         line_segment : LineSegment
-            TODO: change to use two points instead
+            TODO: make generic for line, linesegment and point
         epsilon : float
             used for numerical stability, standard value should work well
         
@@ -221,11 +221,11 @@ class Point:
 
     ## -------- magic methods --------
         
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other : Any) -> bool:
         if not isinstance(other, Point):
             return NotImplemented
         return self._x == other._x and self._y == other._y
-    
+
     def __copy__(self) -> Point:
         return Point(self.x, self.y)
     
@@ -263,8 +263,8 @@ class Point:
 
     def __round__(self, ndigits: Optional[int] = None) -> Point:
         return Point(round(self._x, ndigits), round(self._y, ndigits))
+
     
-    #TODO: implement < > <= >= -> could replace horizontal orientation
 
 # TODO: replace with PointExtension in all cases
 class PointReference(Point):    
@@ -369,28 +369,15 @@ class Line:
     
     Methods
     -------
-    static line_from_m_b(m,b)
-        TODO: add in checks for numerical stability, remove hardcoded value
     intersection(other)
         returns the intersection between two lines or a line
     intersection_segment(line_segment)
         TODO: instead overload intersection method
-    orientation(point)
-        TODO: use point.orientation(line) instead -> replace all instances
-    get_m_b()
-        TODO: replace by properties
-    expand(bottomLeft, topRight)
-        TODO: dont change actual points, instead move to drawing
-    
     """
 
     def __init__(self, p1: Point, p2: Point):
         self._p1 : Point = p1
         self._p2 : Point = p2
-
-    @staticmethod
-    def line_from_m_b(m : float, b : float):
-        return Line(Point(0,b), Point(1000, 1000 * m + b))
 
     def copy(self) -> Line:
         return Line(self._p1, self._p2)
@@ -422,14 +409,6 @@ class Line:
             if(ort is Orientation.BETWEEN):
                 return Point
         return None
-
-    def orientation(self, p : Point) -> Orientation:
-        area = (self._p2.x - self._p1.x) * (p.y - self._p2.y) - (self._p2.y - self._p1.y) * (p.x - self._p1.x)
-        if area > EPSILON:
-            return Orientation.LEFT
-        if area < -EPSILON:
-            return Orientation.RIGHT   
-        return Orientation.BETWEEN
 
     # -------- properties --------
 
@@ -477,7 +456,6 @@ class Line:
                 return True
         return False
 
-    
     def __copy__(self) -> Line:
         return Line(self.p1, self.p2)
     
@@ -654,8 +632,11 @@ class Rectangle:
     # -------- methods --------
 
     def isInside(self, point : Point) -> bool:
-        "Returns false if a point is on the boundary"
-        return (point.x < self.right) and (point.x > self.left) and (point.y < self.upper) and (point.y > self.lower)
+        return (point.x > self.left) and (point.x < self.right) and (point.y > self.lower) and (point.y < self.upper)
+    
+    def onBoundary(self, point : Point) -> bool:
+        return ((point.x == self.left or point.x == self.right) and point.y > self.lower and point.y < self.upper) or (
+                (point.y == self.lower or point.y == self.upper) and point.x > self.left and point.x < self.right)
 
     # -------- properties --------
 
