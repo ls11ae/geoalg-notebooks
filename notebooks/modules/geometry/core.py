@@ -129,6 +129,7 @@ class Point:
         elif signed_area > epsilon:
             return Orientation.RIGHT
         else:
+            #TODO: can be done without division
             a = self_direction.dot(target_direction) / target_direction.dot(target_direction)
             # We don't need epsilon here, because the calculation of `a` ensures that
             # `a == 0.0` if `self == source`, whereas `a == 1.0` if `self == target`.
@@ -376,39 +377,47 @@ class Line:
     """
 
     def __init__(self, p1: Point, p2: Point):
+        if p1 == p2:
+            raise ValueError("A line needs two different endpoints.")
         self._p1 : Point = p1
         self._p2 : Point = p2
 
     def copy(self) -> Line:
         return Line(self._p1, self._p2)
     
-    def intersection(self, other : Line, epsilon: float = EPSILON) -> Line | Point | None :
-        if other is None:
-            return None
+    def intersection(self, other : Line, epsilon: float = EPSILON) -> Line | LineSegment | Point | None :
+        #https://en.wikipedia.org/wiki/Line–line_intersection#Given_two_points_on_each_line
         denominator = (self.p1.x - self.p2.x) * (other.p1.y - other.p2.y) - (self.p1.y - self.p2.y) * (other.p1.x - other.p2.x)
-        ##lines are parallel or coincident
-        if(abs(denominator) < epsilon):
-            ##check if p1, p2 are collinear with other.p1
-            x1, y1 = self.p2.x - self.p1.x, self.p2.y - self.p1.y
-            x2, y2 = other.p1.x - self.p1.x, other.p1.y - self.p1.y
-            if(abs(x1 * y1 - x2 * y2) < epsilon):
-                ##lines are identical, return a line as intersection
-                return self
-            ##lines are parallel but not on top of each other, so no intersection exists
-            return None
+        if(abs(denominator) < epsilon): #lines are parallel/identical
+            #check if other.p1 is on self using cross product
+            dxp1, dyp1 = other.p1.x - self.p1.x, other.p1.y - self.p1.y
+            if dxp1 == dyp1 == 0: #p1 == other.p1, use p2 instead since p1 != p2 is guaranteed
+                dxp1, dyp1 = other.p1.x - self.p2.x, other.p1.y - self.p2.y
+            dxl, dyl = self.p2.x - self.p1.x, self.p2.y - self.p1.y
+            cross = dxp1 * dyp1 - dxl * dyl
+            if(abs(cross) < epsilon):
+                #lines are identical
+                if isinstance(other, LineSegment):
+                    return LineSegment(other.p1, other.p2)
+                return Line(self.p1, self.p2)
+            return None #lines are parellel
+        #lines are neither parallel nor idendical, calculate intersection
         xNumerator = (self.p1.x*self.p2.y - self.p1.y*self.p2.x) * (other.p1.x - other.p2.x) - (self.p1.x - self.p2.x) * (other.p1.x*other.p2.y - other.p1.y*other.p2.x)
         yNumerator = (self.p1.x*self.p2.y - self.p1.y*self.p2.x) * (other.p1.y - other.p2.y) - (self.p1.y - self.p2.y) * (other.p1.x*other.p2.y - other.p1.y*other.p2.x)
+        #in case other is a line segment, check if candidate is between endpoints
+        if isinstance(other, LineSegment):
+            #to avoid problems with vertical/horizontal segments, check the coordinate with larger difference
+            dxo, dyo = other.upper.x - other.lower.x, other.upper.y - other.lower.y
+            if (abs(dxo) > abs(dyo)):
+                #x increases more than y
+                if xNumerator >= (other.lower.x * denominator) and xNumerator <= (other.upper.x * denominator):
+                    return Point(xNumerator / denominator, yNumerator / denominator)
+            else:
+                #x increases more than y
+                if yNumerator >= (other.lower.y * denominator) and yNumerator <= (other.upper.y * denominator):
+                    return Point(xNumerator / denominator, yNumerator / denominator)
+            return None
         return Point(xNumerator / denominator, yNumerator / denominator)
-    
-    def intersection_segment(self, segment : LineSegment, epsilon : float = EPSILON) -> LineSegment | Point | None:
-        i = self.intersection(segment.line())
-        if(type(i) is Line):
-            return segment
-        if(type(i) is Point):
-            ort = i.orientation(segment.lower, segment.upper)
-            if(ort is Orientation.BETWEEN):
-                return Point
-        return None
 
     # -------- properties --------
 
@@ -526,6 +535,9 @@ class LineSegment:
 
     def line(self) -> Line:
         return Line(self.left, self.right)
+    
+    def intersection_new(self, other : Line, epsilon: float = EPSILON) -> LineSegment | Point | None:
+        pass
 
     def intersection(self, other: LineSegment, epsilon: float = EPSILON) -> Union[Point, LineSegment, None]:
         self_direction = self._upper - self._lower
