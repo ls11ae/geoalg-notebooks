@@ -391,7 +391,7 @@ class Line:
         if(abs(denominator) < epsilon): #lines are parallel/identical
             #check if other.p1 is on self using cross product
             dxp1, dyp1 = other.p1.x - self.p1.x, other.p1.y - self.p1.y
-            if dxp1 == dyp1 == 0: #p1 == other.p1, use p2 instead since p1 != p2 is guaranteed
+            if dxp1 == dyp1 == 0: #p1 == other.p1, use p2 instead since p1 != p2 is guaranteed from construction
                 dxp1, dyp1 = other.p1.x - self.p2.x, other.p1.y - self.p2.y
             dxl, dyl = self.p2.x - self.p1.x, self.p2.y - self.p1.y
             cross = dxp1 * dyp1 - dxl * dyl
@@ -400,7 +400,8 @@ class Line:
                 if isinstance(other, LineSegment):
                     return LineSegment(other.p1, other.p2)
                 return Line(self.p1, self.p2)
-            return None #lines are parellel
+            #lines are parallel
+            return None
         #lines are neither parallel nor idendical, calculate intersection
         xNumerator = (self.p1.x*self.p2.y - self.p1.y*self.p2.x) * (other.p1.x - other.p2.x) - (self.p1.x - self.p2.x) * (other.p1.x*other.p2.y - other.p1.y*other.p2.x)
         yNumerator = (self.p1.x*self.p2.y - self.p1.y*self.p2.x) * (other.p1.y - other.p2.y) - (self.p1.y - self.p2.y) * (other.p1.x*other.p2.y - other.p1.y*other.p2.x)
@@ -476,7 +477,7 @@ class Line:
     def __str__(self) -> str:
         return f"(--{self.p1}->{self.p2}--)"
     
-class LineSegment:
+class LineSegment(Line):
     '''A linesegment represented by a lower and upper point
     TODO:make into sublcass of line
     
@@ -504,6 +505,7 @@ class LineSegment:
     '''
 
     def __init__(self, p: Point, q: Point):
+        super().__init__(p,q)
         if p == q:
             raise ValueError("A line segment needs two different endpoints.")
         if p.y > q.y or (p.y == q.y and p.x < q.x):
@@ -535,11 +537,9 @@ class LineSegment:
 
     def line(self) -> Line:
         return Line(self.left, self.right)
-    
-    def intersection_new(self, other : Line, epsilon: float = EPSILON) -> LineSegment | Point | None:
-        pass
 
     def intersection(self, other: LineSegment, epsilon: float = EPSILON) -> Union[Point, LineSegment, None]:
+        #TODO: could be generalized for Lines and LineSegments
         self_direction = self._upper - self._lower
         other_direction = other._upper - other._lower
         lower_offset = other._lower - self._lower
@@ -575,16 +575,6 @@ class LineSegment:
             else:
                 return None
         return None
-
-    def y_from_x(self, x):
-        if self.upper.x == self.lower.x:
-            raise Exception(f"Can not give y coordinate for vertical segment {self}")
-        return (x - self.upper.x) / (self.lower.x - self.upper.x) * (self.lower.y - self.upper.y) + self.upper.y
-    
-    def slope(self) -> SupportsFloat:
-        if self.left.x - self.right.x == 0:
-            return float("inf")  # vertical segment
-        return (self.left.y - self.right.y) / (self.left.x - self.right.x)
 
     # -------- magic methods --------
 
