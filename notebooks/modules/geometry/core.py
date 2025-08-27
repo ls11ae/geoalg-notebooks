@@ -401,7 +401,7 @@ class Line:
         return Point(xNumerator / denominator, yNumerator / denominator)
     
     def intersection_segment(self, segment : LineSegment, epsilon : float = EPSILON) -> LineSegment | Point | None:
-        i = self.intersection(segment.to_line())
+        i = self.intersection(segment.line())
         if(type(i) is Line):
             return segment
         if(type(i) is Point):
@@ -452,7 +452,6 @@ class Line:
             x1, y1 = self.p2.x - self.p1.x, self.p2.y - self.p1.y
             x2, y2 = other.p1.x - self.p1.x, other.p1.y - self.p1.y
             if(abs(x1 * y1 - x2 * y2) < EPSILON):
-                ##lines are identical, return a line as intersection
                 return True
         return False
 
@@ -525,7 +524,7 @@ class LineSegment:
 
     # -------- methods --------
 
-    def to_line(self) -> Line:
+    def line(self) -> Line:
         return Line(self.left, self.right)
 
     def intersection(self, other: LineSegment, epsilon: float = EPSILON) -> Union[Point, LineSegment, None]:
