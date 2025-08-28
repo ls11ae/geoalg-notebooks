@@ -1,7 +1,7 @@
 from .core import (
     EPSILON,
     Orientation, VerticalOrientation, HorizontalOrientation,
-    Point, PointReference, 
+    Point,
     Line, LineSegment, 
     Rectangle
 )

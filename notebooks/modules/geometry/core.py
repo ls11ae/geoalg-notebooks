@@ -264,46 +264,7 @@ class Point:
 
     def __round__(self, ndigits: Optional[int] = None) -> Point:
         return Point(round(self._x, ndigits), round(self._y, ndigits))
-
     
-
-# TODO: replace with PointExtension in all cases
-class PointReference(Point):    
-    def __init__(self, container: list[Point], position: int):
-        self._container = container
-        self._position = position
-
-    def copy(self) -> PointReference:
-        return PointReference([point.copy() for point in self.container], self._position)
-
-    @property
-    def container(self) -> list[Point]:
-        return self._container
-
-    @property
-    def position(self) -> int:
-        return self._position
-
-    @property
-    def point(self) -> Point:
-        return self._container[self._position]
-
-    @property
-    def x(self) -> float:
-        return self.point.x
-
-    @property
-    def y(self) -> float:
-        return self.point.y
-
-    @property
-    def _x(self) -> float:
-        return self.point.x
-
-    @property
-    def _y(self) -> float:
-        return self.point.y
-
 
 # TODO: move all sublcasses of point extension to own file
 class PointExtension(Point, Generic[P]):
@@ -331,6 +292,7 @@ class PointExtension(Point, Generic[P]):
             return NotImplemented
         return self._x == other._x and self._y == other._y#TODO: check if data is also equal -> this might break notebook 5
 
+
 class Line:
     """A line defined by two points on the line.
 
@@ -344,9 +306,7 @@ class Line:
     Methods
     -------
     intersection(other)
-        returns the intersection between two lines or a line
-    intersection_segment(line_segment)
-        TODO: instead overload intersection method
+        returns the intersection between two lines or a line and a line segment
     """
 
     def __init__(self, p1: Point, p2: Point):
@@ -449,7 +409,8 @@ class Line:
 
     def __str__(self) -> str:
         return f"(--{self.p1}->{self.p2}--)"
-    
+
+
 class LineSegment(Line):
     '''A linesegment represented by a lower and upper point
     TODO:make into sublcass of line
@@ -567,6 +528,7 @@ class LineSegment(Line):
 
     def __str__(self) -> str:
         return f"LS({self.left}->{self.right})"
+
 
 class Rectangle:
     '''An axis alinged Rectangle represented by left, right, lower and uper boundary
