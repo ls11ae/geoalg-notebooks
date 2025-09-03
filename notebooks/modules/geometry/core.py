@@ -547,7 +547,15 @@ class Rectangle:
     Methods
     -------
     isInside(point)
-        returns wether the given point is inside the rectangle or not 
+        returns wether the given point is inside the rectangle or not
+    isOnBoundary(point)
+        returns wether the given point is on the boundary or not
+    isOutside(point)
+        returns wether the given point is outside the rectangle or not 
+        (equal to !isInside and !isOnBoundary)
+    expand(point)
+        increases the rectangles boundary to contain the given point
+        does nothing if the point is already within the boundary
     '''
 
     def __init__(self, point_0: Point, point_1: Point) -> None:
@@ -570,43 +578,40 @@ class Rectangle:
     def isInside(self, point : Point) -> bool:
         return (point.x > self.left) and (point.x < self.right) and (point.y > self.lower) and (point.y < self.upper)
     
-    def onBoundary(self, point : Point) -> bool:
+    def isOnBoundary(self, point : Point) -> bool:
         return ((point.x == self.left or point.x == self.right) and point.y > self.lower and point.y < self.upper) or (
                 (point.y == self.lower or point.y == self.upper) and point.x > self.left and point.x < self.right)
+
+    def isOutside(self, point : Point) -> bool:
+        return (point.x < self.left) or (point.x > self.right) or (point.y < self.lower) or (point.y > self.upper)
+
+    def expand(self, point : Point):
+        if point.x < self.left:
+            self._left = point.x
+        if point.x > self.right:
+            self._right = point.x
+        if point.y < self.lower:
+            self._lower = point.y
+        if point.y > self.upper:
+            self._upper = point.y
 
     # -------- properties --------
 
     @property
     def left(self):
         return self._left
-    
-    @left.setter
-    def left(self, left : float):
-        self._left = left
 
     @property
     def right(self):
         return self._right
-    
-    @right.setter
-    def right(self, right : float):
-        self._right = right
 
     @property
     def lower(self):
         return self._lower
-    
-    @lower.setter
-    def lower(self, lower : float):
-        self._lower = lower
 
     @property
     def upper(self):
         return self._upper
-
-    @upper.setter
-    def upper(self, upper : float):
-        self._upper = upper
 
     # -------- magic methods --------
 
