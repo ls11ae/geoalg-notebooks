@@ -1,7 +1,7 @@
 from .duality import (
     DualityPointsMode, DualityLineMode, DualityLineSegmentMode, offsetPoints, offsetLines, SmallestAreaTriangleMode
 )
-from .arrangements import (
+from .bounding_box_mode import (
     BoundingBoxMode
 )
 

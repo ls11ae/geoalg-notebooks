@@ -556,6 +556,8 @@ class Rectangle:
     expand(point)
         increases the rectangles boundary to contain the given point
         does nothing if the point is already within the boundary
+    points()
+        returns the four corner points in clockwise order, starting at the bottom left
     '''
 
     def __init__(self, point_0: Point, point_1: Point) -> None:
@@ -594,6 +596,12 @@ class Rectangle:
             self._lower = point.y
         if point.y > self.upper:
             self._upper = point.y
+
+    def points(self) -> list[Point]:
+        return [Point(self.left, self.lower), 
+                Point(self.left, self.upper), 
+                Point(self.right, self.upper), 
+                Point(self.right, self.lower)]
 
     # -------- properties --------
 

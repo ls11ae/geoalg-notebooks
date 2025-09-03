@@ -30,9 +30,11 @@ class BoundingBoxAnimator(AnimationObject):
     def __init__(self):
         super().__init__()
         self._bounding_box : Rectangle = None
+        self._updates : list[Point] = []
 
     def update(self, point : Point):
         'Updates the boundary of the bounding box to contain the given point.'
+        self._updates.append(point)
         if (self._bounding_box is None):
             #append 4 points to have 4 initial cornerpoints
             self._bounding_box = Rectangle(point, point)
@@ -43,21 +45,18 @@ class BoundingBoxAnimator(AnimationObject):
             return
         #update bounding box and animation
         self._animation_events.append(AppendEvent(point))
-        self._animation_events.append(PopEvent())
         self._bounding_box.expand(point)
-        for i, p in enumerate(self.points()):
+        for i, p in enumerate(self._bounding_box.points()):
             self._animation_events.append(SetEvent(i, p))
 
     def points(self) -> Iterator[Point]:
-        '''Returns the four corner of the bounding box in clockwise order, starting at the bottom left.
+        '''Returns the four corner of the bounding box in clockwise order (starting at the bottom left) 
+        and all points the update method was called with.
         If the bounding box was not initialized by adding a point via update, returns an empty list instead.
         '''
         if self._bounding_box is None:
              return iter([])
-        return iter([Point(self._bounding_box.left, self._bounding_box.lower), 
-                     Point(self._bounding_box.left, self._bounding_box.upper), 
-                     Point(self._bounding_box.right, self._bounding_box.upper), 
-                     Point(self._bounding_box.right, self._bounding_box.lower)])
+        return iter(self._bounding_box.points() + self._updates)
 
     @property
     def boundingBox(self) -> Rectangle | None:
