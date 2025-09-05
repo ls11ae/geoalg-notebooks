@@ -1,7 +1,10 @@
 from .art_gallery import ArtGalleryMode
+from .bounding_box_mode import BoundingBoxMode
 from .chans_hull import ChansHullMode
 from .dcel import DCELMode
+from .duality import DualityPointsMode, DualityLineMode, DualityLineSegmentMode, offsetPoints, offsetLines
 from .fixed_vertex_number_paths import FixedVertexNumberPathsMode
+from .illegal_edge import IllegalEdgeMode
 from .line_segment import LineSegmentsMode
 from .line import LineMode
 from .monotone_partitioning import MonotonePartitioningMode
@@ -9,5 +12,7 @@ from .path import PathMode
 from .point_location import PointLocationMode
 from .points import PointsMode
 from .polygon import PolygonMode
+from .smallest_area_triangle import SmallestAreaTriangleMode
 from .sweep_line import SweepLineMode
+from .triangle_mode import TriangleMode
 from .vertical_extension import VerticalExtensionMode

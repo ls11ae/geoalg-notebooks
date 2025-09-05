@@ -1,9 +1,6 @@
 from .drawing_modes import *
+from .instances import *
 
-from .instances import (
-    PointSetInstance, LineSegmentSetInstance, SimplePolygonInstance, DCELInstance,
-    PointLocationInstance, LineSetInstance
-)
-from .notebooks import *
+from .instance_handle import InstanceHandle
 from .tool import VisualisationTool
 

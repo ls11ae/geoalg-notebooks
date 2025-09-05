@@ -5,7 +5,7 @@ from typing import Callable, Generic, Iterable, Optional
 
 from ..geometry.core import Point
 from .drawing import CanvasDrawingHandle, Drawer, DrawingMode
-from .instances import Algorithm, I, InstanceHandle
+from .instance_handle import Algorithm, I, InstanceHandle
 
 from ipycanvas import MultiCanvas
 from ipywidgets import (
