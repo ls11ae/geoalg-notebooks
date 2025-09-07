@@ -41,9 +41,15 @@ class LineSegmentSetInstance(InstanceHandle[set[LineSegment]]):
         return list(chain.from_iterable((segment.upper, segment.lower) for segment in instance))
 
     def generate_random_points(self, max_x: float, max_y: float, number: int) -> list[Point]:
+        #this might look nicer
+        #if number % 2 != 0:
+        #    number = number + 1
+        #return LineSegmentSetInstance.generate_random_points_uniform(max_x, max_y, number)
+
         points: list[Point] = []
         for point in LineSegmentSetInstance.generate_random_points_uniform(max_x, max_y, number // 2):
             points.append(point)
+            #generate second point nearby
             scale = np.random.uniform(0.01, 0.05)
             x = np.clip(np.random.normal(point.x, scale * max_x), 0.05 * max_x, 0.95 * max_x)
             y = np.clip(np.random.normal(point.y, scale * max_y), 0.05 * max_y, 0.95 * max_y)
@@ -51,5 +57,4 @@ class LineSegmentSetInstance(InstanceHandle[set[LineSegment]]):
 
         if number % 2 == 1:
             points.extend(LineSegmentSetInstance.generate_random_points_uniform(max_x, max_y, 1))
-
         return points

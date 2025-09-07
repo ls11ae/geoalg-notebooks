@@ -8,10 +8,7 @@ from ..drawing_modes import LineMode
 from ..instance_handle import InstanceHandle
 
 class LineSetInstance(InstanceHandle[set[Line]]):
-    #make bot_left and top_right equal to the canvases bottom right and topright corner to makes sure lines are drawn correctly
-    def __init__(self, bot_left : Point, top_right : Point, drawing_mode: Optional[DrawingMode] = None):
-        self._bot_left = bot_left
-        self._top_right = top_right
+    def __init__(self, drawing_mode: Optional[DrawingMode] = None):
         if drawing_mode is None:
             drawing_mode = LineMode()
         super().__init__(set(), drawing_mode, 20)
@@ -42,14 +39,6 @@ class LineSetInstance(InstanceHandle[set[Line]]):
         return list(chain.from_iterable((line.p1, line.p2) for line in instance))
 
     def generate_random_points(self, max_x: float, max_y: float, number: int) -> list[Point]:
-        points: list[Point] = []
-        for point in LineSetInstance.generate_random_points_uniform(max_x, max_y, number // 2):
-            points.append(point)
-            scale = np.random.uniform(0.01, 0.05)
-            x = np.clip(np.random.normal(point.x, scale * max_x), 0.05 * max_x, 0.95 * max_x)
-            y = np.clip(np.random.normal(point.y, scale * max_y), 0.05 * max_y, 0.95 * max_y)
-            points.append(Point(x, y))
-
-        if number % 2 == 1:
-            points.extend(LineSetInstance.generate_random_points_uniform(max_x, max_y, 1))
-        return points
+        if number % 2 != 0:
+            number = number + 1
+        return LineSetInstance.generate_random_points_uniform(max_x, max_y, number)
