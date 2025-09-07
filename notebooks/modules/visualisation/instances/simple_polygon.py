@@ -4,9 +4,7 @@ from ...data_structures import DoublyConnectedSimplePolygon
 from ...geometry import Point
 from ..drawing import DrawingMode
 from ..drawing_modes import PolygonMode
-
 from ..instance_handle import InstanceHandle
-
 
 class SimplePolygonInstance(InstanceHandle[DoublyConnectedSimplePolygon]):
     def __init__(self, drawing_mode: Optional[DrawingMode] = None):
@@ -33,11 +31,9 @@ class SimplePolygonInstance(InstanceHandle[DoublyConnectedSimplePolygon]):
 
     def generate_random_points(self, max_x: float, max_y: float, number: int) -> list[Point]:
         while True:
-            points = super().generate_random_points(max_x, max_y, number)
-
+            points = SimplePolygonInstance.generate_random_points_uniform(max_x, max_y, number)
             try:
                 polygon = DoublyConnectedSimplePolygon.try_from_unordered_points(points)
             except Exception:
                 continue
-
             return self.extract_points_from_raw_instance(polygon)

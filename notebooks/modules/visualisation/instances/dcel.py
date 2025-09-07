@@ -1,13 +1,12 @@
+
 from typing import Optional
+import numpy as np
 
 from ...data_structures import DoublyConnectedEdgeList
 from ...geometry import Point, PointReference
 from ..drawing import DrawingMode
 from ..drawing_modes import DCELMode
-import numpy as np
-
 from ..instance_handle import InstanceHandle
-
 
 class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
     def __init__(self, drawing_mode: Optional[DrawingMode] = None, drawing_epsilon: float = 5):
@@ -83,7 +82,7 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
             # grid pattern with min distance up/down and left/right = 1
             if min_distance is None:
                 min_distance = self._drawing_epsilon
-            points = super().generate_random_points(max_x/min_distance, max_y/min_distance, number)
+            points = DCELInstance.generate_random_points_uniform(max_x/min_distance, max_y/min_distance, number)
 
             points = [Point(np.round(point.x, 0), np.round(point.y, 0)) for point in points]
             points = [Point(point.x*min_distance, point.y*min_distance) for point in points]

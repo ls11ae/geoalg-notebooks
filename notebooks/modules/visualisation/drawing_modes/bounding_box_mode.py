@@ -4,7 +4,8 @@ import time
 from typing import Iterable
 
 class BoundingBoxMode(DrawingMode):
-    '''Drawing Mode for the BoundingBoxAnimator.
+    """
+    Drawing Mode for the BoundingBoxAnimator.
     
     Methods
     -------
@@ -13,7 +14,7 @@ class BoundingBoxMode(DrawingMode):
     animate(drawer, animation_events, animation_time_step)
         handles animation events one by one
         does not wait between SetEvents, to make sure the corners of the bounding box update in one step
-    '''
+    """
 
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width = DEFAULT_LINE_WIDTH):
         self._point_radius = point_radius

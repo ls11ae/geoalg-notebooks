@@ -4,12 +4,8 @@ from ...data_structures import DoublyConnectedEdgeList, PointLocation
 from ...geometry import PointReference
 from ..drawing import DrawingMode
 from ..drawing_modes import DCELMode
-import numpy as np
-
 from ..instance_handle import InstanceHandle
 from .dcel import DCELInstance
-
-
 
 class PointLocationInstance(DCELInstance, InstanceHandle[PointLocation]):
     def __init__(self, drawing_mode: Optional[DrawingMode] = None, drawing_epsilon: float = 5, random_seed: Optional[int] = None):

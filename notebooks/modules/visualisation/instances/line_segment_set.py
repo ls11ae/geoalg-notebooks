@@ -1,11 +1,10 @@
 from typing import Optional
+from itertools import chain
+import numpy as np
 
 from ...geometry import Point, LineSegment
 from ..drawing import DrawingMode
 from ..drawing_modes import LineSegmentsMode
-from itertools import chain
-import numpy as np
-
 from ..instance_handle import InstanceHandle
 
 class LineSegmentSetInstance(InstanceHandle[set[LineSegment]]):
@@ -43,7 +42,7 @@ class LineSegmentSetInstance(InstanceHandle[set[LineSegment]]):
 
     def generate_random_points(self, max_x: float, max_y: float, number: int) -> list[Point]:
         points: list[Point] = []
-        for point in super().generate_random_points(max_x, max_y, number // 2):
+        for point in LineSegmentSetInstance.generate_random_points_uniform(max_x, max_y, number // 2):
             points.append(point)
             scale = np.random.uniform(0.01, 0.05)
             x = np.clip(np.random.normal(point.x, scale * max_x), 0.05 * max_x, 0.95 * max_x)
@@ -51,6 +50,6 @@ class LineSegmentSetInstance(InstanceHandle[set[LineSegment]]):
             points.append(Point(x, y))
 
         if number % 2 == 1:
-            points.extend(super().generate_random_points(max_x, max_y, 1))
+            points.extend(LineSegmentSetInstance.generate_random_points_uniform(max_x, max_y, 1))
 
         return points

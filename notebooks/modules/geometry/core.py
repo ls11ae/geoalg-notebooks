@@ -412,7 +412,7 @@ class Line:
 
 
 class LineSegment(Line):
-    '''A linesegment represented by a lower and upper point
+    """A linesegment represented by a lower and upper point
     TODO:make into sublcass of line
     
     Attributes
@@ -436,7 +436,7 @@ class LineSegment(Line):
         returns the y coodinate at the given x coordinate
     slope()
         returns the slope of this segment
-    '''
+    """
 
     def __init__(self, p: Point, q: Point):
         super().__init__(p,q)
@@ -531,7 +531,8 @@ class LineSegment(Line):
 
 
 class Rectangle:
-    '''An axis alinged Rectangle represented by left, right, lower and uper boundary
+    """
+    An axis alinged Rectangle represented by left, right, lower and uper boundary
 
     Attributes
     ----------
@@ -558,7 +559,7 @@ class Rectangle:
         does nothing if the point is already within the boundary
     points()
         returns the four corner points in clockwise order, starting at the bottom left
-    '''
+    """
 
     def __init__(self, point_0: Point, point_1: Point) -> None:
         if point_0.x < point_1.x:
