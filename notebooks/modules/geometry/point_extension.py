@@ -32,7 +32,15 @@ class PointPair(PointExtension[Point]):
         return super().__eq__(other)
 
 
-# TODO: replace with PointExtension in all cases
+'''
+references a point in a list by storing the list and the position
+
+overwrites the x, y, _x, _y properties from point to make sure operations from point class access
+correct values. This is necessary because the x/y paramter of the point class get never set because
+the super().__init__ method is never called
+
+
+'''
 class PointReference(Point):    
     def __init__(self, container: list[Point], position: int):
         self._container = container
