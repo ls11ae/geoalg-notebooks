@@ -2,7 +2,7 @@ from .art_gallery import ArtGalleryMode
 from .bounding_box_mode import BoundingBoxMode
 from .chans_hull import ChansHullMode
 from .dcel import DCELMode
-from .duality import DualityPointsMode, DualityLineMode, DualityLineSegmentMode, offsetPoints, offsetLines
+from .duality import DualityPointsMode, DualityLineMode, DualityLineSegmentMode, offset_points, offset_lines
 from .fixed_vertex_number_paths import FixedVertexNumberPathsMode
 from .illegal_edge import IllegalEdgeMode
 from .line_segment import LineSegmentsMode

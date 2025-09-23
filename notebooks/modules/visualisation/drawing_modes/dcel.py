@@ -12,6 +12,7 @@ from ...geometry import (
     Point, PointReference, PointList
 )
 
+#TODO: this should probably be unified to either use pointreference or pointlist instead of both
 class DCELMode(DrawingMode):
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
         super().__init__(point_radius, highlight_radius, line_width)
@@ -59,7 +60,7 @@ class DCELMode(DrawingMode):
                         last = None
 
 
-    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float): # TODO
+    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
         points: list[Point] = []
         event_iterator = iter(animation_events)
         next_event = next(event_iterator, None)

@@ -4,6 +4,10 @@ import time
 from typing import Iterable
 
 class IllegalEdgeMode(DrawingMode):
+    """
+    Used by Notebook 6 for drawing and animating the highlight_illegal_edges algorithm.
+    """
+
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width = DEFAULT_LINE_WIDTH):
         super().__init__(point_radius, highlight_radius, line_width)
 

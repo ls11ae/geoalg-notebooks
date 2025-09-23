@@ -23,7 +23,6 @@ class TriangleMode(DrawingMode):
             while cur is not None:
                 nex = next(edges, None)
                 if nex is not None:
-                    
                     drawer.main_canvas.draw_path([cur, nex], self._line_width)
                 else:
                     drawer.main_canvas.draw_point(cur, self._line_width)

@@ -25,19 +25,11 @@ class LineMode(DrawingMode):
             cur_point = next(points_iter, None)
             while cur_point is not None:
                 next_point = next(points_iter, None)
-                if(next_point is None):
+                if next_point is None:
                     drawer.main_canvas.draw_point(cur_point, transparent=True, radius=self._point_radius)
                 else:
                     drawer.main_canvas.draw_line(cur_point, next_point, self._line_width)
                 cur_point = next(points_iter, None)
 
-    def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
-        pass
-
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
-        points: list[Point] = []
-        event_iterator = iter(animation_events)
-        next_event = next(event_iterator, None)
-        while next_event is not None:
-            next_event.execute_on(points)
-            self._draw_animation_step(drawer, points)
+        return NotImplemented

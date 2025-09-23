@@ -1,5 +1,5 @@
 from ..drawing import DrawingMode, DEFAULT_HIGHLIGHT_RADIUS, DEFAULT_LINE_WIDTH, DEFAULT_POINT_RADIUS, Drawer
-from ...geometry import Point, AnimationEvent, SetEvent
+from ...geometry import Point, AnimationEvent, AppendEvent
 import time
 from typing import Iterable
 
@@ -28,9 +28,7 @@ class BoundingBoxMode(DrawingMode):
                 return
             drawer.main_canvas.draw_polygon(point_list[0:4], self._line_width)
             if l > 4:
-                drawer.main_canvas.set_colour(255,0,0)
-                drawer.main_canvas.draw_points(point_list[4:l], self._point_radius / 2)
-                drawer.main_canvas.set_colour(0,0,255) #TODO:this assumes the standard color is blue
+                drawer.main_canvas.draw_points(point_list[4:l], self._point_radius)
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         with drawer.main_canvas.hold():
@@ -40,23 +38,18 @@ class BoundingBoxMode(DrawingMode):
                 return
             drawer.main_canvas.draw_polygon(points[0:4], self._line_width)
             if l > 4:
-                drawer.main_canvas.set_colour(255,0,0)
-                drawer.main_canvas.draw_points(points[4:l-1], self._point_radius / 2)
-                drawer.main_canvas.draw_point(points[l-1], self._point_radius)
-                drawer.main_canvas.set_colour(0,0,255) #TODO:this assumes the standard color is blue
+                drawer.main_canvas.draw_points(points[4:l - 1], self._point_radius)
+                drawer.main_canvas.draw_point(points[l - 1], self._point_radius)
+                drawer.main_canvas.draw_point(points[l - 1], self._highlight_radius, transparent=True)
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
         points: list[Point] = []
         event_iterator = iter(animation_events)
         event = next(event_iterator, None)
         while event is not None:
-            if(type(event) is SetEvent):
-                while type(event) is SetEvent:
-                    event.execute_on(points)
-                    event = next(event_iterator, None)
-            else:
-                event.execute_on(points)
-                event = next(event_iterator, None)            
+            event.execute_on(points)
+            event = next(event_iterator, None)
             self._draw_animation_step(drawer, points)
-            time.sleep(animation_time_step)
+            if type(event) is AppendEvent: #only sleep when point is added in the next step
+                time.sleep(animation_time_step)
         self.draw(drawer, points)
