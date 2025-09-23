@@ -19,8 +19,7 @@ from .points import PointsMode
 
 class ArtGalleryMode(PointsMode):
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
-        self._line_width = line_width
-        super().__init__(point_radius, highlight_radius)
+        super().__init__(point_radius, highlight_radius, line_width)
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
         diagonal_points: list[Point] = []

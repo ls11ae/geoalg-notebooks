@@ -19,7 +19,7 @@ class ChansHullMode(PolygonMode):
         return ChansHullMode(
             polygon_mode._mark_closing_edge,
             polygon_mode._draw_interior,
-            vertex_radius = polygon_mode._vertex_radius,
+            point_radius = polygon_mode._point_radius,
             highlight_radius = polygon_mode._highlight_radius,
             line_width = polygon_mode._line_width
         )

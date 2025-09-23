@@ -15,9 +15,7 @@ from ...geometry import (
 
 class LineMode(DrawingMode):
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
-        self._point_radius = point_radius
-        self._highlight_radius = highlight_radius
-        self.line_width = line_width
+        super().__init__(point_radius, highlight_radius, line_width)
 
     def draw(self, drawer:Drawer, points:Iterable[Point]):
         vertex_queue: list[Point] = drawer._get_drawing_mode_state(default = [])
@@ -30,7 +28,7 @@ class LineMode(DrawingMode):
                 if(next_point is None):
                     drawer.main_canvas.draw_point(cur_point, transparent=True, radius=self._point_radius)
                 else:
-                    drawer.main_canvas.draw_line(cur_point, next_point, self.line_width)
+                    drawer.main_canvas.draw_line(cur_point, next_point, self._line_width)
                 cur_point = next(points_iter, None)
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):

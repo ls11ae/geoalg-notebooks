@@ -5,9 +5,7 @@ from typing import Iterable
 
 class IllegalEdgeMode(DrawingMode):
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width = DEFAULT_LINE_WIDTH):
-        self._point_radius = point_radius
-        self._highlight_radius = highlight_radius
-        self._line_width = line_width
+        super().__init__(point_radius, highlight_radius, line_width)
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         with drawer.main_canvas.hold():

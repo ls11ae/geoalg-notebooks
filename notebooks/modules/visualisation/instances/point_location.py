@@ -10,7 +10,7 @@ from .dcel import DCELInstance
 class PointLocationInstance(DCELInstance, InstanceHandle[PointLocation]):
     def __init__(self, drawing_mode: Optional[DrawingMode] = None, drawing_epsilon: float = 5, random_seed: Optional[int] = None):
         if drawing_mode is None:
-            drawing_mode = DCELMode(vertex_radius = 3)
+            drawing_mode = DCELMode(point_radius = 3)
         self._drawing_mode = drawing_mode
         self._drawing_epsilon = drawing_epsilon
         self._last_added_point = None

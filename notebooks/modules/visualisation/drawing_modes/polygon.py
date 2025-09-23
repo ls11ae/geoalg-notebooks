@@ -14,9 +14,9 @@ from ...geometry import (
 from .path import PathMode
 
 class PolygonMode(PathMode):           # TODO: If possible, maybe use composition instead of inheritance.
-    def __init__(self, mark_closing_edge: bool, draw_interior: bool, vertex_radius: int = DEFAULT_POINT_RADIUS,
+    def __init__(self, mark_closing_edge: bool, draw_interior: bool, point_radius: int = DEFAULT_POINT_RADIUS,
     highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
-        super().__init__(vertex_radius = vertex_radius, highlight_radius = highlight_radius, line_width = line_width)
+        super().__init__(point_radius, highlight_radius, line_width)
         self._mark_closing_edge = mark_closing_edge
         self._draw_interior = draw_interior
 
@@ -29,7 +29,7 @@ class PolygonMode(PathMode):           # TODO: If possible, maybe use compositio
             drawer.back_canvas.clear()
 
         with drawer.main_canvas.hold(), drawer.back_canvas.hold():
-            drawer.main_canvas.draw_points(polygon, self._vertex_radius)
+            drawer.main_canvas.draw_points(polygon, self._point_radius)
             if self._mark_closing_edge and polygon:
                 drawer.main_canvas.draw_path(polygon, self._line_width)
                 drawer.main_canvas.draw_path((polygon[0], polygon[-1]), self._line_width, transparent = True)

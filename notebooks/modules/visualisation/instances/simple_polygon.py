@@ -9,7 +9,7 @@ from ..instance_handle import InstanceHandle
 class SimplePolygonInstance(InstanceHandle[DoublyConnectedSimplePolygon]):
     def __init__(self, drawing_mode: Optional[DrawingMode] = None):
         if drawing_mode is None:
-            drawing_mode = PolygonMode(mark_closing_edge = True, draw_interior = False, vertex_radius = 3)
+            drawing_mode = PolygonMode(mark_closing_edge = True, draw_interior = False, point_radius = 3)
         super().__init__(DoublyConnectedSimplePolygon(), drawing_mode, 100)
 
     def add_point(self, point: Point) -> bool:

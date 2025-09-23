@@ -13,22 +13,20 @@ from ...geometry import (
 )
 
 class VerticalExtensionMode(DrawingMode):
-    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH,
+    def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH,
                  animate_inserted_ls: bool = True):
-        self._vertex_radius = vertex_radius
-        self._highlight_radius = highlight_radius
-        self._line_width = line_width
+        super().__init__(point_radius, highlight_radius, line_width)
         self._animate_inserted_ls = animate_inserted_ls
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         with drawer.main_canvas.hold():
             for point in points:
                 if not isinstance(point, PointReference) or len(point.container) == 1:
-                    drawer.main_canvas.draw_point(point, self._vertex_radius)
+                    drawer.main_canvas.draw_point(point, self._point_radius)
                 elif len(point.container) != 3 or point.position != 0:
                     raise Exception(f"Wrong format of the PointReference {point} for drawing vertical extensions.")
                 else:
-                    drawer.main_canvas.draw_point(point, self._vertex_radius)
+                    drawer.main_canvas.draw_point(point, self._point_radius)
                     drawer.main_canvas.draw_path([point.container[1], point.container[2]], self._line_width)
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
@@ -41,14 +39,14 @@ class VerticalExtensionMode(DrawingMode):
                 drawer.front_canvas.draw_point(points[-1], self._highlight_radius, transparent = True)
             for point in points:
                 if not isinstance(point, PointReference) or len(point.container) == 1:
-                    drawer.front_canvas.draw_point(point, self._vertex_radius)
+                    drawer.front_canvas.draw_point(point, self._point_radius)
                 elif len(point.container) == 2:
                     line_segment_list: list[Point] = drawer._get_drawing_mode_state(default = [])
                     line_segment_list.append(point.container)
                 elif len(point.container) != 3 or point.position != 0:
                     raise Exception(f"Wrong format of the PointReference {point} for drawing vertical extensions.")
                 else:
-                    drawer.front_canvas.draw_point(point, self._vertex_radius)
+                    drawer.front_canvas.draw_point(point, self._point_radius)
                     drawer.front_canvas.draw_path([point.container[1], point.container[2]], self._line_width)
             line_segment_list = drawer._get_drawing_mode_state(default = [])
             if self._animate_inserted_ls:

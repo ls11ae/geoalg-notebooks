@@ -15,14 +15,11 @@ from ...geometry import (
 
 
 class FixedVertexNumberPathsMode(DrawingMode):
-    def __init__(self, vertex_number: int, vertex_radius: int = DEFAULT_POINT_RADIUS,
-    highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
+    def __init__(self, vertex_number: int, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
+        super().__init__(point_radius, highlight_radius, line_width)
         if vertex_number < 1:
             raise ValueError("Vertex number needs to be positive.")
         self._vertex_number = vertex_number
-        self._vertex_radius = vertex_radius
-        self._highlight_radius = highlight_radius
-        self._line_width = line_width
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         vertex_queue: list[Point] = drawer._get_drawing_mode_state(default = [])
@@ -33,7 +30,7 @@ class FixedVertexNumberPathsMode(DrawingMode):
             i, j = 0, self._vertex_number
             while j <= len(vertex_queue):
                 path = vertex_queue[i:j]
-                drawer.main_canvas.draw_points(path, self._vertex_radius)
+                drawer.main_canvas.draw_points(path, self._point_radius)
                 drawer.main_canvas.draw_path(path, self._line_width)
                 i, j = j, j + self._vertex_number
 
@@ -44,7 +41,7 @@ class FixedVertexNumberPathsMode(DrawingMode):
                 offset = 0
                 subpath = vertex_queue[i:]
                 drawer._set_drawing_mode_state(subpath)
-            drawer.main_canvas.draw_points(islice(subpath, offset, None), self._vertex_radius, transparent = True)
+            drawer.main_canvas.draw_points(islice(subpath, offset, None), self._point_radius, transparent = True)
             drawer.main_canvas.draw_path(subpath, self._line_width, transparent = True)
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
@@ -54,7 +51,7 @@ class FixedVertexNumberPathsMode(DrawingMode):
             i, j = 0, self._vertex_number
             while j < len(points):
                 path = points[i:j]
-                drawer.main_canvas.draw_points(path, self._vertex_radius)
+                drawer.main_canvas.draw_points(path, self._point_radius)
                 drawer.main_canvas.draw_path(path, self._line_width)
                 i, j = j, j + self._vertex_number
 

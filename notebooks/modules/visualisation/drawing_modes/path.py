@@ -13,10 +13,8 @@ from ...geometry import (
 )
 
 class PathMode(DrawingMode):
-    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
-        self._vertex_radius = vertex_radius
-        self._highlight_radius = highlight_radius
-        self._line_width = line_width
+    def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
+        super().__init__(point_radius, highlight_radius, line_width)
         self._animation_path = []
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
@@ -29,14 +27,14 @@ class PathMode(DrawingMode):
             drawer._set_drawing_mode_state(path[-1])
 
         with drawer.main_canvas.hold():
-            drawer.main_canvas.draw_points(path, self._vertex_radius)
+            drawer.main_canvas.draw_points(path, self._point_radius)
             drawer.main_canvas.draw_path(path, self._line_width)
 
     def _draw_animation_step(self, drawer: Drawer):
         with drawer.main_canvas.hold():
             drawer.main_canvas.clear()
             if self._animation_path:
-                drawer.main_canvas.draw_points(self._animation_path[:-1], self._vertex_radius)
+                drawer.main_canvas.draw_points(self._animation_path[:-1], self._point_radius)
                 drawer.main_canvas.draw_point(self._animation_path[-1], self._highlight_radius, transparent = True)
                 drawer.main_canvas.draw_path(self._animation_path[:-1], self._line_width)
                 drawer.main_canvas.draw_path(self._animation_path[-2:], self._line_width, transparent = True)

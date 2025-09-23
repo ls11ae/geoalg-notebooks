@@ -6,10 +6,8 @@ import time
 
 
 class SmallestAreaTriangleMode(DrawingMode):
-    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
-        self._vertex_radius = vertex_radius
-        self._highlight_radius = highlight_radius
-        self._line_width = line_width
+    def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
+        super().__init__(point_radius, highlight_radius, line_width)
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         point_list = list(points)
@@ -18,7 +16,7 @@ class SmallestAreaTriangleMode(DrawingMode):
             vertices = [point for point in point_list if isinstance(point, PointList)]
             triangle = [point for point in point_list if not isinstance(point, PointList)]
             for point in vertices:
-                drawer.main_canvas.draw_point(point, self._vertex_radius)
+                drawer.main_canvas.draw_point(point, self._point_radius)
                 for neighbor in point.data:
                     drawer.main_canvas.draw_path([point, neighbor], self._line_width)
             if triangle:
@@ -29,7 +27,7 @@ class SmallestAreaTriangleMode(DrawingMode):
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         for point in points:
             # Draw point
-            drawer.main_canvas.draw_point(point, self._vertex_radius)
+            drawer.main_canvas.draw_point(point, self._point_radius)
             # Draw connections of the point
             if isinstance(point, PointList):
                 for neighbor in point.data:

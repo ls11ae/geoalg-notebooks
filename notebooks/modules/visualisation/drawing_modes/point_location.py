@@ -16,8 +16,8 @@ from ...geometry import (
 from .polygon import PolygonMode
 
 class PointLocationMode(PolygonMode):
-    def __init__(self, vertex_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
-        super().__init__(False, False, vertex_radius, highlight_radius, line_width)
+    def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
+        super().__init__(False, False, point_radius, highlight_radius, line_width)
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         points = list(points)
@@ -25,7 +25,7 @@ class PointLocationMode(PolygonMode):
             super().draw(drawer, points[1:])  # Draw the path around the face containing the search point
         if len(points) > 0:
             drawer.front_canvas.set_colour(0, 165, 0)  # green
-            drawer.front_canvas.draw_point(points[0], self._vertex_radius)  # Draw the search point (in green)
+            drawer.front_canvas.draw_point(points[0], self._point_radius)  # Draw the search point (in green)
             drawer.front_canvas.set_colour(0, 0, 0)  # black
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
@@ -38,7 +38,7 @@ class PointLocationMode(PolygonMode):
                 drawer.main_canvas.draw_point(points[-1], self._highlight_radius, transparent = True)  # Mark the last point
             for point in points:
                 if not isinstance(point, PointReference) or len(point.container) == 1:  # x-node or leaf
-                    drawer.front_canvas.draw_point(point, self._vertex_radius)  # Draw the point of the x-node
+                    drawer.front_canvas.draw_point(point, self._point_radius)  # Draw the point of the x-node
                     if self._search_point.horizontal_orientation(point) == HORT.LEFT:  # Safe points for drawing of valid area
                         self._right_point = point
                     else:
@@ -89,7 +89,7 @@ class PointLocationMode(PolygonMode):
                     self._search_point = event.point
                     # Mark the search point in green
                     drawer.front_canvas.set_colour(0, 165, 0)  # green
-                    drawer.front_canvas.draw_point(self._search_point, self._vertex_radius)
+                    drawer.front_canvas.draw_point(self._search_point, self._point_radius)
                     drawer.front_canvas.set_colour(0, 0, 255)  # blue
                     continue
             

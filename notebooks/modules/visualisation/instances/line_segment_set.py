@@ -10,7 +10,7 @@ from ..instance_handle import InstanceHandle
 class LineSegmentSetInstance(InstanceHandle[set[LineSegment]]):
     def __init__(self, drawing_mode: Optional[DrawingMode] = None):
         if drawing_mode is None:
-            drawing_mode = LineSegmentsMode(vertex_radius = 3)
+            drawing_mode = LineSegmentsMode(point_radius = 3)
         super().__init__(set(), drawing_mode, 500)
         self._cached_point: Optional[Point] = None
 

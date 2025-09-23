@@ -14,17 +14,15 @@ from ...geometry import (
 
 
 class MonotonePartitioningMode(DrawingMode):    # TODO: If possible, this could maybe make use of composition too.
-    def __init__(self, animate_sweep_line: bool, vertex_radius: int = DEFAULT_POINT_RADIUS,
+    def __init__(self, animate_sweep_line: bool, point_radius: int = DEFAULT_POINT_RADIUS,
     highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
+        super().__init__(point_radius, highlight_radius, line_width)
         self._animate_sweep_line = animate_sweep_line
-        self._vertex_radius = vertex_radius
-        self._highlight_radius = highlight_radius
-        self._line_width = line_width
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         points: list[Point] = list(points)
         with drawer.main_canvas.hold():
-            drawer.main_canvas.draw_points(points, self._vertex_radius)
+            drawer.main_canvas.draw_points(points, self._point_radius)
             for i in range(0, len(points), 2):
                 drawer.main_canvas.draw_path(points[i:i + 2], self._line_width)
 
@@ -42,7 +40,7 @@ class MonotonePartitioningMode(DrawingMode):    # TODO: If possible, this could 
                 diagonal_points = points[:-1]
                 event_point = points[-1]
 
-            drawer.main_canvas.draw_points(diagonal_points, self._vertex_radius)
+            drawer.main_canvas.draw_points(diagonal_points, self._point_radius)
             drawer.main_canvas.draw_point(event_point, self._highlight_radius, transparent = True)
             for i in range(0, len(diagonal_points), 2):
                 drawer.main_canvas.draw_path(diagonal_points[i:i + 2], self._line_width)

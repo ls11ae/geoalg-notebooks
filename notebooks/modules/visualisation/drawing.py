@@ -164,8 +164,13 @@ class Drawer:
         self.clear()
         self._drawing_mode.animate(self, animation_events, animation_time_step)
 
-
 class DrawingMode(ABC):    # TODO: Maybe we can DRY this file after all...
+
+    def __init__(self, point_radius, highlight_radius, line_width):
+        self._point_radius = point_radius
+        self._highlight_radius = highlight_radius
+        self._line_width = line_width
+
     @abstractmethod
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         pass

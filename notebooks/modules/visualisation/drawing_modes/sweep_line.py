@@ -12,8 +12,7 @@ from .points import PointsMode
 
 class SweepLineMode(PointsMode):
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH / 3):
-        self._line_width = line_width
-        super().__init__(point_radius, highlight_radius)
+        super().__init__(point_radius, highlight_radius, line_width)
         
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         with drawer.main_canvas.hold(), drawer.front_canvas.hold():
