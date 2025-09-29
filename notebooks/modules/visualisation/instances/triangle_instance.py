@@ -1,7 +1,10 @@
+from typing import override
+
 from ...geometry import Point
 from ...data_structures import Triangulation, P0, P1, P2
 from ..instance_handle import InstanceHandle
 from ..drawing_modes import TriangleMode
+
 
 class TriangleInstance(InstanceHandle[Triangulation]):
     def __init__(self, p0 : Point = P0, p1 : Point = P1, p2 : Point = P2):
@@ -12,9 +15,10 @@ class TriangleInstance(InstanceHandle[Triangulation]):
         self._instance : Triangulation = Triangulation(p0,p1,p2)
         self._drawing_mode.set_instance(self._instance)
         super().__init__(self._instance, self._drawing_mode, 10)
-        
-    def add_point(self, point: Point) -> bool:
-        return self._instance.insert_point(point) is not None
+
+    @override
+    def add_point(self, point: Point) -> Point | None:
+        return self._instance.insert_point(point).point
 
     def clear(self):
         self._instance.reset(self._p0, self._p1, self._p2)

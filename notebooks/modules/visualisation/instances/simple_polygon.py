@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, override
 
 from ...data_structures import DoublyConnectedSimplePolygon
 from ...geometry import Point
@@ -12,23 +12,28 @@ class SimplePolygonInstance(InstanceHandle[DoublyConnectedSimplePolygon]):
             drawing_mode = PolygonMode(mark_closing_edge = True, draw_interior = False, point_radius = 3)
         super().__init__(DoublyConnectedSimplePolygon(), drawing_mode, 100)
 
-    def add_point(self, point: Point) -> bool:
+    @override
+    def add_point(self, point: Point) -> Point | None:
         try:
             self._instance.add_vertex(point)
         except Exception:
-            return False
-        return True
+            return None
+        return point
 
+    @override
     def clear(self):
         self._instance.clear()
 
+    @override
     def size(self) -> int:
         return len(self._instance)
 
     @staticmethod
+    @override
     def extract_points_from_raw_instance(instance: DoublyConnectedSimplePolygon) -> list[Point]:
         return [vertex.point for vertex in instance.vertices()]
 
+    @override
     def generate_random_points(self, max_x: float, max_y: float, number: int) -> list[Point]:
         while True:
             points = SimplePolygonInstance.generate_random_points_uniform(max_x, max_y, number)

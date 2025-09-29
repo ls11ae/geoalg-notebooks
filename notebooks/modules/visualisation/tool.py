@@ -1,6 +1,7 @@
 import html
 import os
 import time
+from math import trunc
 from typing import Callable, Generic, Iterable, Optional
 
 from ..geometry.core import Point
@@ -184,20 +185,13 @@ class VisualisationTool(Generic[I]):
         if self._number_of_points >= self._MAX_NUMBER_OF_POINTS or not self._is_point_in_range(point):
             return False
 
-        was_point_added = self._instance.add_point(point)
-        if not isinstance(was_point_added, bool):  # TODO this is not very clean
-            # Changed the point or bonus information (-> PointReference) was added, so the new point is also returned
-            was_point_added, point = was_point_added
-            self._instance_drawer.draw((point,))
-            if was_point_added:
-                self._number_of_points += 1
-            self._update_instance_size_info()
-        elif was_point_added:
+        draw_point = self._instance.add_point(point)
+        if draw_point is not None:
             self._instance_drawer.draw((point,))
             self._number_of_points += 1
             self._update_instance_size_info()
-
-        return was_point_added
+            return True
+        return False
 
     def add_points(self, points: list[Point]):
         added_points: list[Point] = []
@@ -205,8 +199,9 @@ class VisualisationTool(Generic[I]):
         for point in points:
             if self._number_of_points >= self._MAX_NUMBER_OF_POINTS or not self._is_point_in_range(point):
                 break
-            if self._instance.add_point(point):
-                added_points.append(point)
+            draw_point = self._instance.add_point(point)
+            if draw_point is not None:
+                added_points.append(draw_point)
                 self._number_of_points += 1
 
         self._instance_drawer.draw(added_points)

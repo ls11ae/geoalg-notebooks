@@ -38,8 +38,11 @@ class PointsMode(DrawingMode):
             next_event = next(event_iterator, None)
             if points:
                 if isinstance(event, PopEvent) and isinstance(next_event, AppendEvent):    # TODO: Maybe this can be done more elegantly.
+                    #merge popevent and appendevent to setevent
                     event = SetEvent(-1, next_event.point)
                 if isinstance(event, AppendEvent) or (isinstance(event, SetEvent) and event.key == -1):
+                    #skip append/set event if the last point is equal to the point of the next even
+                    #why for append event?
                     if event.point == points[-1]:
                         continue
 

@@ -80,7 +80,7 @@ class InstanceHandle(ABC, Generic[I]):
     # -------- abstact methods --------
 
     @abstractmethod
-    def add_point(self, point: Point) -> Union[bool, tuple[bool, Point]]:
+    def add_point(self, point: Point) -> Point | None:
         """
         Adds a point to the instance.
         The bool return is true if the point was sucessfully added and false otherwise.

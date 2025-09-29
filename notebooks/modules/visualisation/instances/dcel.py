@@ -1,5 +1,4 @@
-
-from typing import Optional
+from typing import Optional, override
 import numpy as np
 
 from ...data_structures import DoublyConnectedEdgeList
@@ -11,13 +10,14 @@ from ..instance_handle import InstanceHandle
 class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
     def __init__(self, drawing_mode: Optional[DrawingMode] = None, drawing_epsilon: float = 5):
         if drawing_mode is None:
-            drawing_mode = DCELMode(vertex_radius = 3)
+            drawing_mode = DCELMode(point_radius = 3)
         self._drawing_epsilon = drawing_epsilon
         self._last_added_point = None
-        self._dcel = self._instance  # This is so that that DCELInstance can be used by the PointLocationInstance where the dcel is not the instance itself
+        self._dcel = self._instance  # This is so that the DCELInstance can be used by the PointLocationInstance where the dcel is not the instance itself
         super().__init__(DoublyConnectedEdgeList(), drawing_mode, 20)
 
-    def add_point(self, point: Point) -> bool:
+    @override
+    def add_point(self, point: Point) -> Point | None:
         # Check if point is already in the DCEL
         is_new_point = True
         for instance_point in self._dcel.points:
@@ -54,16 +54,19 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
         elif not is_new_point:
             self._last_added_point = point
 
-        return is_new_point, point
+        return point if is_new_point else None
 
+    @override
     def clear(self):
         self._instance.clear()
         self._last_added_point = None
 
+    @override
     def size(self) -> int:
         return self._dcel.number_of_vertices
 
     @staticmethod
+    @override
     def extract_points_from_raw_instance(instance: DoublyConnectedEdgeList) -> list[PointReference]:
         point_list: list[PointReference] = []
         for vertex in instance.vertices:
@@ -76,7 +79,8 @@ class DCELInstance(InstanceHandle[DoublyConnectedEdgeList]):
                     edge = edge.twin.next
             point_list.append(PointReference(neighbors, 0))
         return point_list
-    
+
+    @override
     def generate_random_points(self, max_x: float, max_y: float, number: int, min_distance = None) -> list[PointReference]:
         while True:
             # grid pattern with min distance up/down and left/right = 1

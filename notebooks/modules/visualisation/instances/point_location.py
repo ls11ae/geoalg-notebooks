@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, override
 
 from ...data_structures import DoublyConnectedEdgeList, PointLocation
 from ...geometry import PointReference
@@ -19,6 +19,7 @@ class PointLocationInstance(DCELInstance, InstanceHandle[PointLocation]):
         self._default_number_of_random_points = 20
 
     @staticmethod
+    @override
     def extract_points_from_raw_instance(instance: Union[DoublyConnectedEdgeList, PointLocation]) -> list[PointReference]:
         if isinstance(instance, DoublyConnectedEdgeList):
             return DCELInstance.extract_points_from_raw_instance(instance)

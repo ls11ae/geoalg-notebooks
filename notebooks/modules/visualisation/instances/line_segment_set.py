@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, override
 from itertools import chain
 import numpy as np
 
@@ -14,32 +14,37 @@ class LineSegmentSetInstance(InstanceHandle[set[LineSegment]]):
         super().__init__(set(), drawing_mode, 500)
         self._cached_point: Optional[Point] = None
 
-    def add_point(self, point: Point) -> bool:
+    @override
+    def add_point(self, point: Point) -> Point | None:
         if self._cached_point is None:
             self._cached_point = point
-            return True
+            return point
         elif self._cached_point == point:
-            return False
+            return None
 
         line_segment = LineSegment(self._cached_point, point)
         if line_segment in self._instance:
-            return False
+            return None
         self._instance.add(line_segment)
         self._cached_point = None
 
-        return True
+        return point
 
+    @override
     def clear(self):
         self._instance.clear()
         self._cached_point = None
 
+    @override
     def size(self) -> int:
         return len(self._instance)
 
     @staticmethod
+    @override
     def extract_points_from_raw_instance(instance: set[LineSegment]) -> list[Point]:
         return list(chain.from_iterable((segment.upper, segment.lower) for segment in instance))
 
+    @override
     def generate_random_points(self, max_x: float, max_y: float, number: int) -> list[Point]:
         #this might look nicer
         #if number % 2 != 0:
