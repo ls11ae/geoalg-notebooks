@@ -1,17 +1,16 @@
 from __future__ import annotations
 from .objects import HalfEdge, Vertex
-from ..geometry import Point
+from ..geometry import Point, PointList
 from .dcel import DoublyConnectedEdgeList as DCEL
 from numpy import linalg
 
-P0 = Point(-3000, 3000)
-P1 = Point(3000, 3000)
-P2 = Point(200, -3000)
+
 
 class Triangulation(DCEL):
 
-    def __init__(self, p0 : Point = P0, p1 : Point = P1, p2 : Point = P2):
-        super().__init__([p0,p1,p2], [[0,1], [1,2], [2,0]])
+    def __init__(self, p0 : Point, p1 : Point, p2 : Point):
+        super().__init__([p0,p1,p2], [(0,1), (1,2), (2,0)])
+        self._outer_points = [p0,p1,p2]
 
     def insert_point(self, p : Point) -> Vertex | None:
         # this can be done more efficient TODO
@@ -26,7 +25,7 @@ class Triangulation(DCEL):
         if len(v.outgoing_edges()) == 2:
             #point was added on an edge
             for e in v.outgoing_edges():
-                self.add_edge_by_points(p, e.next.destination)
+                self.add_edge_by_points(p, e.next.destination.point)
         elif len(v.outgoing_edges()) == 0:
             #point was added in a face
             for f_p in f.outer_points():
@@ -64,7 +63,7 @@ class Triangulation(DCEL):
             return False
         if not self._edges.__contains__(e):
             return False
-        #save pointers to makes rerouting at least somewhat readable
+        #save pointers to make rerouting at least somewhat readable
         t = e.twin
         e_next = e.next
         e_prev = e.prev
@@ -101,15 +100,19 @@ class Triangulation(DCEL):
         self._edges.remove(e)
         return True
         
-    def edges_as_points(self, include_outer_edges : bool = True) -> list[Point]:
-        #since the edge drawn dont have a direction this will draw every edge twice
-        points = []
-        for e in self.edges:
-            if include_outer_edges or ((not e.origin.point in [P0,P1,P2]) and (not e.destination.point in [P0, P1, P2])):
-                points.append(e.origin.point)
-                points.append(e.destination.point)
+    def to_points(self, include_outer_edges : bool = True) -> list[PointList]:
+        #since the edges drawn dont have a direction, this will draw every edge twice
+        points : list[PointList] = []
+        for v in self.vertices:
+            if include_outer_edges or not v.point in self._outer_points:
+                edges : list[Point] = [e.destination.point for e in v.outgoing_edges() if include_outer_edges or (not e.destination.point in self._outer_points)]
+                points.append(PointList(v.point.x, v.point.y, edges))
         return points
 
-    def reset(self, p0 : Point = P0, p1 : Point = P1, p2 : Point = P2):
+    @property
+    def outer_points(self):
+        return self._outer_points
+
+    def reset(self, p0 : Point, p1 : Point, p2 : Point):
         super().clear()
-        super().__init__([p0,p1,p2], [[0,1], [1,2], [2,0]])
+        super().__init__([p0,p1,p2], [(0,1), (1,2), (2,0)])

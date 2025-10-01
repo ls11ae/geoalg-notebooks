@@ -6,4 +6,4 @@ from .dcel import DoublyConnectedEdgeList
 from .objects import HalfEdge, Vertex, Face
 from .triangulation import monotone_triangulation, recursive_triangulation
 from .vertical_decomposition import PointLocation, VDLineSegment, PLSearchStructure
-from .triangle_tree import Triangulation, P0, P1, P2
+from .triangle_tree import Triangulation

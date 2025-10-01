@@ -9,7 +9,7 @@ class Vertex:
         self._point = point
         self._edge: HalfEdge = HalfEdge(self)
 
-    def outgoing_edges(self) -> Iterable[HalfEdge]:
+    def outgoing_edges(self) -> list[HalfEdge]:
         outgoing_edges = []
         outgoing_edge = self.edge
         if outgoing_edge.destination == self:  # single vertex
@@ -22,7 +22,7 @@ class Vertex:
         return outgoing_edges
 
     #outgoing and ingoing edges
-    def incident_edges(self) -> Iterable[HalfEdge]:
+    def incident_edges(self) -> list[HalfEdge]:
         incident_edges = []
         for out_edge in self.outgoing_edges():
             incident_edges.append(out_edge)
@@ -61,7 +61,7 @@ class HalfEdge:
         self._next: HalfEdge = self
         self._incident_face = None
 
-    def cycle(self) -> Iterable[HalfEdge]:
+    def cycle(self) -> list[HalfEdge]:
         cycle = [self]
         next_edge = self.next
         while next_edge != self:
@@ -159,7 +159,7 @@ class HalfEdge:
         return self.origin.point.distance(self.destination.point)
 
     def __repr__(self) -> str:
-        return f"Edge@{self._origin._point}->{self.destination._point}"
+        return f"Edge@{self.origin.point}->{self.destination.point}"
     
 class Face:
     """ Face with inner components """
@@ -189,14 +189,14 @@ class Face:
     def inner_components(self, inner_components: Iterable[HalfEdge]):
         self._inner_components = list(inner_components)
     
-    def outer_points(self) -> Iterable[Point]:
+    def outer_points(self) -> list[Point]:
         return [edge.origin.point for edge in self.outer_half_edges()]
     
-    def outer_vertices(self) -> Iterable[Vertex]:
+    def outer_vertices(self) -> list[Vertex]:
         return [edge.origin for edge in self.outer_half_edges()]
     
-    def outer_half_edges(self) -> Iterable[HalfEdge]:
-        if self.outer_component == None:
+    def outer_half_edges(self) -> list[HalfEdge]:
+        if self.outer_component is None:
             return []
         outer_edges = [self._outer_component]
         current_edge = self.outer_component.next
@@ -205,7 +205,7 @@ class Face:
             current_edge = current_edge.next
         return outer_edges
     
-    def inner_half_edges(self) -> Iterable[HalfEdge]:
+    def inner_half_edges(self) -> list[HalfEdge]:
         inner_half_edges = []
         for component in self.inner_components:
             inner_half_edges.extend(component.cycle())

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from ..triangle_tree import Triangulation
-from ...geometry import AnimationObject, AnimationEvent, Point, PointFloat, AppendEvent, PopEvent, PointPair
+from ...geometry import AnimationObject, AnimationEvent, Point, PointFloat, AppendEvent, PopEvent, PointPair, PointList
 from typing import Iterator, Iterable
 
 from ..objects import HalfEdge, Vertex
@@ -41,13 +41,13 @@ class EdgeAnimator(AnimationObject):
             points.append(e.destination.point)
         return iter(points)
 
-class Incremental_Construction_Animator(AnimationObject):
-    def __init__(self):
+class IncrementalConstructionAnimator(AnimationObject):
+    def __init__(self, p0 : Point, p1 : Point, p2 : Point):
         super().__init__()
-        self._triangulation = Triangulation()
+        self._triangulation = Triangulation(p0,p1,p2)
 
-    def points(self) -> Iterator[Point]:
-        return self._triangulation.edges_as_points()
+    def points(self) -> list[PointList]:
+        return self._triangulation.to_points(include_outer_edges=False)
     
     def insert_point(self, p : Point):
         v =  self._triangulation.insert_point(p)
@@ -85,6 +85,7 @@ class Incremental_Construction_Animator(AnimationObject):
     
 class EdgeFlipEvent(AnimationEvent):
     def __init__(self, old_p0 : Point, old_p1 : Point, new_p0 : Point, new_p1 : Point):
+        super().__init__()
         self._old_p0 = old_p0
         self._old_p1 = old_p1
         self._new_p0 = new_p0
