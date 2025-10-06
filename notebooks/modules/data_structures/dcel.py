@@ -18,7 +18,6 @@ class DoublyConnectedEdgeList:
             self.add_vertex(point)
         for edge in edges:
             self.add_edge(edge)
-
         self._assert_well_formed()
 
     def add_vertex(self, point: Point) -> Vertex:
@@ -27,23 +26,23 @@ class DoublyConnectedEdgeList:
         for vertex in self._vertices:
             if point is vertex.point:
                 return vertex
-            
+
         on_edge, edge = self._on_edge(point)
         if on_edge:
-            newVertex = self.add_vertex_in_edge(edge, point)
+            new_vertex = self.add_vertex_in_edge(edge, point)
         else:
             # Create vertex
-            newVertex: Vertex = Vertex(point)
-            self._vertices.append(newVertex)
-            self._edges.append(newVertex.edge)
-            newVertex.edge.incident_face = self.find_containing_face(point)
+            new_vertex: Vertex = Vertex(point)
+            self._vertices.append(new_vertex)
+            self._edges.append(new_vertex.edge)
+            new_vertex.edge.incident_face = self.find_containing_face(point)
 
         # First Vertex inserted is the start vertex
         if len(self._vertices) > 0:
             self._start_vertex = self._vertices[0]
         # And new vertex is always the last vertex
-        self._last_added_vertex = newVertex
-        return newVertex
+        self._last_added_vertex = new_vertex
+        return new_vertex
 
     def add_edge(self, edge: Tuple[int, int], check_edge: bool = False) -> bool:
         """Adds a new edge to the DCEL. 
@@ -132,7 +131,7 @@ class DoublyConnectedEdgeList:
         half_edge_0.incident_face = face_0
         half_edge_1.incident_face = face_0  # face_0 == face_1
 
-        # Find correct order around vertex_1
+        # Find correct order around vertex_0
         search_edge = vertex_0.edge.twin
         if vertex_0.edge != vertex_0.edge.twin and vertex_0.edge.twin != vertex_0.edge.prev: # >1 adjacent vertices
             while not DoublyConnectedEdgeList.point_between_edge_and_next(vertex_1.point, search_edge):
@@ -140,7 +139,7 @@ class DoublyConnectedEdgeList:
                 if search_edge == vertex_0.edge.twin:
                     raise Exception(f"Could not find a suitable edge while inserting edge between vertices {vertex_0} and {vertex_1}")
         
-        # Find correct order around vertex_2
+        # Find correct order around vertex_1
         search_edge2 = vertex_1.edge.twin
         if vertex_1.edge != vertex_1.edge.twin and vertex_1.edge.twin != vertex_1.edge.prev: # >1 adjacent vertices
             while not DoublyConnectedEdgeList.point_between_edge_and_next(vertex_0.point, search_edge2):
@@ -183,7 +182,7 @@ class DoublyConnectedEdgeList:
         self._outer_face._is_outer = True
         self._faces.append(self._outer_face)
 
-    def find_vertex(self, point: Point) -> Vertex:
+    def find_vertex(self, point: Point) -> Vertex | None:
         """ Gives a vertex for a point if it is in the DCEL, None otherwise. """
         vertices = list(filter(lambda vertex: vertex.point == point, self._vertices))
         if len(vertices) > 1:
@@ -193,40 +192,40 @@ class DoublyConnectedEdgeList:
         else:
             return None
         
-    def add_vertex_in_edge(self, edge: HalfEdge, point: Point) -> Vertex:
+    def add_vertex_in_edge(self, edge: HalfEdge, point: Point) -> Vertex | None:
         """ Adds a vertex on an existing edge by splitting it. """
         # Checks for correct insertion
         if not edge in self.edges:
             raise Exception(f"Edge {edge} should already be part of the DCEL to add point {point} on it.")
         if not edge.origin.point != edge.destination.point and point.orientation(edge.origin.point, edge.destination.point) == ORT.BETWEEN:
             raise Exception(f"Point {point} should lie on the edge {edge}")
-        if edge.origin.point == point or edge.destination.point == point: # vertex is one of the endpoints of the edge.
-            return # vertex does not need to be added
+        if edge.origin.point == point or edge.destination.point == point:
+            return None #vertex is one of the endpoints of the edge
         
         # Create vertex
-        newVertex = Vertex(point)
-        self._vertices.append(newVertex)
-        self._edges.append(newVertex.edge)
-        newHalfEdge = HalfEdge(newVertex)
-        self._edges.append(newHalfEdge)
+        new_vertex = Vertex(point)
+        self._vertices.append(new_vertex)
+        self._edges.append(new_vertex.edge)
+        new_half_edge = HalfEdge(new_vertex)
+        self._edges.append(new_half_edge)
 
         old_next = edge.next
         old_twin_next = edge.twin.next
 
         # Fix twin and next pointers
-        newVertex.edge.twin = edge.twin
-        newHalfEdge.twin = edge
+        new_vertex.edge.twin = edge.twin
+        new_half_edge.twin = edge
 
-        edge.next = newVertex.edge
-        newVertex.edge.next  = old_next
-        newVertex.edge.twin.next = newHalfEdge
-        newHalfEdge.next = old_twin_next
+        edge.next = new_vertex.edge
+        new_vertex.edge.next  = old_next
+        new_vertex.edge.twin.next = new_half_edge
+        new_half_edge.next = old_twin_next
 
         # Set faces
-        newVertex.edge.incident_face = edge.incident_face
-        newHalfEdge.incident_face = newVertex.edge.twin.incident_face
+        new_vertex.edge.incident_face = edge.incident_face
+        new_half_edge.incident_face = new_vertex.edge.twin.incident_face
 
-        return newVertex
+        return new_vertex
         
     def _possible_edge(self, vertex: Vertex, other_vertex: Vertex) -> bool:
         # Vertices are not part to the same face
@@ -289,12 +288,12 @@ class DoublyConnectedEdgeList:
         if edge_0.twin is edge_1:
             return True
         #point is left of both edges
-        caseA1 = point.orientation(edge_0_origin, edge_0_destination) == ORT.LEFT and point.orientation(edge_1_origin, edge_1_destination) == ORT.LEFT# Case A
+        case_a1 = point.orientation(edge_0_origin, edge_0_destination) == ORT.LEFT and point.orientation(edge_1_origin, edge_1_destination) == ORT.LEFT# Case A
         #point is left of the first edge and edges make a right turn
-        caseA2 = point.orientation(edge_0_origin, edge_0_destination) == ORT.LEFT and edge_1_destination.orientation(edge_0_origin, edge_0_destination) == ORT.RIGHT
+        case_a2 = point.orientation(edge_0_origin, edge_0_destination) == ORT.LEFT and edge_1_destination.orientation(edge_0_origin, edge_0_destination) == ORT.RIGHT
         #point is left of second edge and edges make a right turn
-        caseB = (point.orientation(edge_1_origin, edge_1_destination) == ORT.LEFT and edge_0_origin.orientation(edge_1_origin, edge_1_destination) == ORT.RIGHT)
-        return caseA1 or caseA2 or caseB # Case C (where?)
+        case_b = (point.orientation(edge_1_origin, edge_1_destination) == ORT.LEFT and edge_0_origin.orientation(edge_1_origin, edge_1_destination) == ORT.RIGHT)
+        return case_a1 or case_a2 or case_b # Case C (where?)
 
     def _split_face(self, edge: HalfEdge, face: Face) -> Face:
         inner_edge = edge if not edge.is_cycle_clockwise() else edge.twin
@@ -324,7 +323,7 @@ class DoublyConnectedEdgeList:
             old_face.inner_components.append(edge_0 if edge_0.incident_face == old_face else edge_1)
 
         # redistribute inner components that are now contained inside the new face
-        if new_face != None:
+        if new_face is not None:
             components_to_move = list(filter(
                 lambda e: new_face.contains(e.origin.point) and not (edge_0 in e.cycle() or edge_1 in e.cycle()),
                 old_face.inner_components))
@@ -389,7 +388,7 @@ class DoublyConnectedEdgeList:
             
         for face in self.faces:
             # Check is outer face
-            if face.is_outer and face.outer_component != None:
+            if face.is_outer and face.outer_component is not None:
                 raise Exception(f"Malformed DCEL: outer face has an outer component")
 
             # Check for single outer face
@@ -412,22 +411,22 @@ class DoublyConnectedEdgeList:
         return self._start_vertex
     
     @property
-    def vertices(self) -> Iterable[Vertex]:
+    def vertices(self) -> list[Vertex]:
         return self._vertices
     
     @property
-    def points(self) -> Iterable[Point]:
+    def points(self) -> list[Point]:
         return [vertex.point for vertex in self._vertices]
 
     @property
-    def edges(self) -> Iterable[HalfEdge]:
+    def edges(self) -> list[HalfEdge]:
         return self._edges
     
     @property
-    def faces(self) -> Iterable[Face]:
+    def faces(self) -> list[Face]:
         return self._faces
     
-    def inner_faces(self) -> Iterable[Face]:
+    def inner_faces(self) -> list[Face]:
         return list(filter(lambda face: not face.is_outer, self.faces))
     
     @property
