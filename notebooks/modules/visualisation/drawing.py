@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import time
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from typing import Any, Iterable
@@ -143,12 +145,12 @@ class Drawer:
         self.main_canvas = main_canvas
         self.front_canvas = front_canvas
 
-    def _get_drawing_mode_state(self, default: Any = None) -> Any:    # TODO: This could be generic.
+    def get_drawing_mode_state(self, default: Any = None) -> Any:    # TODO: This could be generic.
         if self._drawing_mode_state is None:
             self._drawing_mode_state = default
         return self._drawing_mode_state
 
-    def _set_drawing_mode_state(self, state: Any):
+    def set_drawing_mode_state(self, state: Any):
         self._drawing_mode_state = state
 
     def clear(self):
@@ -176,5 +178,16 @@ class DrawingMode(ABC):    # TODO: Maybe we can DRY this file after all...
         pass
 
     @abstractmethod
-    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
+    def _draw_animation_step(self, drawer: Drawer, points: Iterable[Point]):
         pass
+
+    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
+        points: list[Point] = []
+        event_iterator = iter(animation_events)
+        event = next(event_iterator, None)
+        while event is not None:
+            event.execute_on(points)
+            self._draw_animation_step(drawer, points)
+            time.sleep(animation_time_step)
+            event = next(event_iterator, None)
+        self.draw(drawer, points)

@@ -11,7 +11,7 @@ class LineSegmentSetInstance(InstanceHandle[set[LineSegment]]):
     def __init__(self, drawing_mode: Optional[DrawingMode] = None):
         if drawing_mode is None:
             drawing_mode = LineSegmentsMode(point_radius = 3)
-        super().__init__(set(), drawing_mode, 500)
+        super().__init__(set(), drawing_mode, 50)
         self._cached_point: Optional[Point] = None
 
     @override
@@ -47,9 +47,9 @@ class LineSegmentSetInstance(InstanceHandle[set[LineSegment]]):
     @override
     def generate_random_points(self, max_x: float, max_y: float, number: int) -> list[Point]:
         #this might look nicer
-        #if number % 2 != 0:
-        #    number = number + 1
-        #return LineSegmentSetInstance.generate_random_points_uniform(max_x, max_y, number)
+        if number % 2 != 0:
+            number = number + 1
+        return LineSegmentSetInstance.generate_random_points_uniform(max_x, max_y, number)
 
         points: list[Point] = []
         for point in LineSegmentSetInstance.generate_random_points_uniform(max_x, max_y, number // 2):

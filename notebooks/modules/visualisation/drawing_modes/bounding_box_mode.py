@@ -41,14 +41,3 @@ class BoundingBoxMode(DrawingMode):
                 drawer.main_canvas.draw_points(points[4:l - 1], self._point_radius)
                 drawer.main_canvas.draw_point(points[l - 1], self._point_radius)
                 drawer.main_canvas.draw_point(points[l - 1], self._highlight_radius, transparent=True)
-
-    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
-        points: list[Point] = []
-        event_iterator = iter(animation_events)
-        event = next(event_iterator, None)
-        while event is not None:
-            event.execute_on(points)
-            event = next(event_iterator, None)
-            self._draw_animation_step(drawer, points)
-            time.sleep(animation_time_step)
-        self.draw(drawer, points)

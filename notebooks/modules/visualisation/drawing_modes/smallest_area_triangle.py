@@ -37,17 +37,15 @@ class SmallestAreaTriangleMode(DrawingMode):
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
         dcel: list[Point] = []
         event_iterator = iter(animation_events)
-        next_event = next(event_iterator, None)
-        while not isinstance(next_event, StateChangedEvent) and next_event is not None:
-            next_event.execute_on(dcel)
-            next_event = next(event_iterator, None)
-
+        event = next(event_iterator, None)
+        while not isinstance(event, StateChangedEvent) and event is not None:
+            event.execute_on(dcel)
+            event = next(event_iterator, None)
         
         triangle = []
         drawer.main_canvas.set_colour(255,0,0)
-        while next_event is not None:
-            next_event.execute_on(triangle)
-
+        while event is not None:
+            event.execute_on(triangle)
             with drawer.main_canvas.hold():
                 drawer.main_canvas.clear()
                 drawer.main_canvas.set_colour(0,0,255)
@@ -55,7 +53,7 @@ class SmallestAreaTriangleMode(DrawingMode):
                 drawer.main_canvas.set_colour(255,0,0)
                 self._draw_animation_step(drawer, triangle)
             
-            next_event = next(event_iterator, None)
+            event = next(event_iterator, None)
             time.sleep(animation_time_step)
 
         drawer.main_canvas.set_colour(0,0,255)

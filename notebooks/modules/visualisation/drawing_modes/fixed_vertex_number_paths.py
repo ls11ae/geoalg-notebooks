@@ -22,7 +22,7 @@ class FixedVertexNumberPathsMode(DrawingMode):
         self._vertex_number = vertex_number
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
-        vertex_queue: list[Point] = drawer._get_drawing_mode_state(default = [])
+        vertex_queue: list[Point] = drawer.get_drawing_mode_state(default = [])
         initial_queue_length = len(vertex_queue)
         vertex_queue.extend(points)
 
@@ -40,7 +40,7 @@ class FixedVertexNumberPathsMode(DrawingMode):
             else:
                 offset = 0
                 subpath = vertex_queue[i:]
-                drawer._set_drawing_mode_state(subpath)
+                drawer.set_drawing_mode_state(subpath)
             drawer.main_canvas.draw_points(islice(subpath, offset, None), self._point_radius, transparent = True)
             drawer.main_canvas.draw_path(subpath, self._line_width, transparent = True)
 

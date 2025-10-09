@@ -50,7 +50,7 @@ class ChansHullMode(PolygonMode):
             event.execute_on(self._animation_path)
             if isinstance(event, PopEvent) and next_event is None:
                 break
-            self._draw_animation_step(drawer)
+            self._draw_animation_step(drawer, [])
             time.sleep(animation_time_step)
 
         drawer.clear()

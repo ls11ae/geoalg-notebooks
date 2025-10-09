@@ -39,13 +39,3 @@ class IllegalEdgeMode(DrawingMode):
                 elif isinstance(cur_point, Point):
                     drawer.main_canvas.draw_point(cur_point, self._point_radius)
                 cur_point = next(iterator, None)
-
-    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
-        points: list[Point] = []
-        event_iterator = iter(animation_events)
-        cur_event = next(event_iterator, None)
-        while cur_event is not None:
-            cur_event.execute_on(points)
-            self._draw_animation_step(drawer, points)
-            time.sleep(animation_time_step)
-            cur_event = next(event_iterator, None)

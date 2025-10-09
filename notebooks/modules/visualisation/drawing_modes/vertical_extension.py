@@ -41,21 +41,21 @@ class VerticalExtensionMode(DrawingMode):
                 if not isinstance(point, PointReference) or len(point.container) == 1:
                     drawer.front_canvas.draw_point(point, self._point_radius)
                 elif len(point.container) == 2:
-                    line_segment_list: list[Point] = drawer._get_drawing_mode_state(default = [])
+                    line_segment_list: list[Point] = drawer.get_drawing_mode_state(default = [])
                     line_segment_list.append(point.container)
                 elif len(point.container) != 3 or point.position != 0:
                     raise Exception(f"Wrong format of the PointReference {point} for drawing vertical extensions.")
                 else:
                     drawer.front_canvas.draw_point(point, self._point_radius)
                     drawer.front_canvas.draw_path([point.container[1], point.container[2]], self._line_width)
-            line_segment_list = drawer._get_drawing_mode_state(default = [])
+            line_segment_list = drawer.get_drawing_mode_state(default = [])
             if self._animate_inserted_ls:
                 drawer.main_canvas.set_colour(0, 0, 0)  # black
                 for line_segment in line_segment_list[:-1]:
                     drawer.main_canvas.draw_path(line_segment, self._line_width / 3)
                 drawer.main_canvas.set_colour(0, 165, 0)  # green
             if len(line_segment_list) > 0:
-                drawer.main_canvas.draw_path(drawer._get_drawing_mode_state(default = [])[-1], self._line_width)
+                drawer.main_canvas.draw_path(drawer.get_drawing_mode_state(default = [])[-1], self._line_width)
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
         drawer.main_canvas.set_colour(0, 165, 0)  # green

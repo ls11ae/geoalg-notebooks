@@ -21,7 +21,7 @@ class PolygonMode(PathMode):           # TODO: If possible, maybe use compositio
         self._draw_interior = draw_interior
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
-        polygon: list[Point] = drawer._get_drawing_mode_state(default = [])
+        polygon: list[Point] = drawer.get_drawing_mode_state(default = [])
         polygon.extend(points)
 
         drawer.main_canvas.clear()    # TODO: A clear is needed because the polygon can change. This is inconsistent with other modes.

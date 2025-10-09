@@ -19,18 +19,18 @@ class PathMode(DrawingMode):
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         path = []
-        previous_vertex: Optional[Point] = drawer._get_drawing_mode_state()
+        previous_vertex: Optional[Point] = drawer.get_drawing_mode_state()
         if previous_vertex is not None:
             path.append(previous_vertex)
         path.extend(points)
         if path:
-            drawer._set_drawing_mode_state(path[-1])
+            drawer.set_drawing_mode_state(path[-1])
 
         with drawer.main_canvas.hold():
             drawer.main_canvas.draw_points(path, self._point_radius)
             drawer.main_canvas.draw_path(path, self._line_width)
 
-    def _draw_animation_step(self, drawer: Drawer):
+    def _draw_animation_step(self, drawer: Drawer, points: Iterable[Point]):
         with drawer.main_canvas.hold():
             drawer.main_canvas.clear()
             if self._animation_path:
@@ -57,7 +57,7 @@ class PathMode(DrawingMode):
             event.execute_on(self._animation_path)
             if isinstance(event, PopEvent) and next_event is None:
                 break
-            self._draw_animation_step(drawer)
+            self._draw_animation_step(drawer, [])
             time.sleep(animation_time_step)
 
         drawer.clear()

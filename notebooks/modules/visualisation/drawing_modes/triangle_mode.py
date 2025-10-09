@@ -30,14 +30,3 @@ class TriangleMode(DrawingMode):
                 else:
                     drawer.main_canvas.draw_point(cur, self._line_width)
                 cur = next(it, None)
-
-    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
-        points: list[Point] = []
-        event_iterator = iter(animation_events)
-        event = next(event_iterator, None)
-        while event is not None:
-            event.execute_on(points)           
-            self._draw_animation_step(drawer, points)
-            time.sleep(animation_time_step)
-            event = next(event_iterator, None) 
-        self.draw(drawer, points)

@@ -40,7 +40,7 @@ class DualityPointsMode(DrawingMode):
         super().__init__(point_radius, highlight_radius, line_width)
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
-        vertex_queue: list[Point] = drawer._get_drawing_mode_state(default = [])
+        vertex_queue: list[Point] = drawer.get_drawing_mode_state(default = [])
         vertex_queue.extend(points)
         with drawer.main_canvas.hold():
             #draw axis in black
@@ -55,8 +55,8 @@ class DualityPointsMode(DrawingMode):
                 dual = offset_line(dual_point(offset_point(point, False)), True)
                 drawer.main_canvas.draw_line(dual.p1, dual.p2, line_width=self._line_width)  
 
-    def animate(self, drawer, animation_events, animation_time_step):
-        pass
+    def _draw_animation_step(self, drawer: Drawer, points: Iterable[Point]):
+        return NotImplemented
 
 
 class DualityMode(DrawingMode):
@@ -73,7 +73,7 @@ class DualityMode(DrawingMode):
         super().__init__(point_radius, highlight_radius, line_width)
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
-        vertex_queue: list[Point] = drawer._get_drawing_mode_state(default=[])
+        vertex_queue: list[Point] = drawer.get_drawing_mode_state(default=[])
         vertex_queue.extend(points)
         with drawer.main_canvas.hold():
             # draw axis
@@ -99,11 +99,12 @@ class DualityMode(DrawingMode):
     def handle_points(self, drawer: Drawer, cur_point: Point, next_point: Point):
         pass
 
-    def animate(self, drawer: Drawer, animation_events, animation_time_step):
+    def _draw_animation_step(self, drawer: Drawer, points: Iterable[Point]):
         return NotImplemented
 
 
 class DualityLineMode(DualityMode):
+
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
         super().__init__(point_radius, highlight_radius, line_width)
 
