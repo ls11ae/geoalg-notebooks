@@ -50,6 +50,5 @@ class BoundingBoxMode(DrawingMode):
             event.execute_on(points)
             event = next(event_iterator, None)
             self._draw_animation_step(drawer, points)
-            if type(event) is AppendEvent: #only sleep when point is added in the next step
-                time.sleep(animation_time_step)
+            time.sleep(animation_time_step)
         self.draw(drawer, points)
