@@ -25,8 +25,8 @@ class PointFloat(PointExtension[float]):
 class PointPair(PointExtension[Point]):
     """A point with an additonal point."""
 
-    def __init__(self, x, y, data):
-        super().__init__(x, y, data)
+    def __init__(self, x, y, data, tag = 0):
+        super().__init__(x, y, data, tag)
 
     def __eq__(self, other):
         return super().__eq__(other)

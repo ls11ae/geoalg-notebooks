@@ -9,7 +9,7 @@ from ..drawing import (
 
 from ...geometry import (
     AnimationEvent, AppendEvent, PopEvent,
-    Point, PointReference, PointList
+    Point, PointReference, PointList, PointPair
 )
 
 #TODO: this should probably be unified to either use pointreference or pointlist instead of both
@@ -38,48 +38,24 @@ class DCELMode(DrawingMode):
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         with drawer.main_canvas.hold():
             drawer.main_canvas.clear()
-            last : Point = None
             for point in points:
-                # Draw point
-                drawer.main_canvas.draw_point(point, self._point_radius)
                 # Draw connections of the point
                 if isinstance(point, PointReference):
+                    drawer.main_canvas.draw_point(point, self._point_radius)
                     for i, neighbor in enumerate(point.container):
                         if i != point.position:
                             drawer.main_canvas.draw_path([point, neighbor], self._line_width)
+                #part used by arrangements
                 elif isinstance(point, PointList):
+                    drawer.main_canvas.draw_point(point, self._point_radius)
                     for neighbor in point.data:
                         drawer.main_canvas.draw_path([point, neighbor], self._line_width)
-                elif isinstance(point, Point) and point.tag < 4:
-                    if(last is None):
-                        last = point
-                    else:
-                        drawer.main_canvas.set_colour(255,0,0)
-                        drawer.main_canvas.draw_path([last, point], self._line_width)
-                        drawer.main_canvas.set_colour(0,0,255)
-                        last = None
-
-
-    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
-        points: list[Point] = []
-        event_iterator = iter(animation_events)
-        next_event = next(event_iterator, None)
-        while next_event is not None:
-            next_event.execute_on(points)
-            if type(next_event) is AppendEvent:
-                next_event = next(event_iterator, None)
-                while(type(next_event) is AppendEvent):
-                    next_event.execute_on(points)
-                    next_event = next(event_iterator, None)
-            elif type(next_event) is PopEvent:
-                next_event = next(event_iterator, None)
-                while(type(next_event) is PopEvent):
-                    next_event.execute_on(points)
-                    next_event = next(event_iterator, None)
-            else:
-                next_event = next(event_iterator, None)
-            self._draw_animation_step(drawer, points)
-            time.sleep(animation_time_step)
-        with drawer.main_canvas.hold():
-            drawer.main_canvas.clear()
-            self.draw(drawer,points)
+                elif isinstance(point, PointPair):
+                    if point.tag == 0:
+                        drawer.main_canvas.draw_line(point, point.data, self._highlight_radius, True, True)
+                    if point.tag == 1:
+                        drawer.main_canvas.set_colour(255, 0, 0)
+                        drawer.main_canvas.draw_path([point, point.data], self._line_width)
+                        drawer.main_canvas.set_colour(0, 0, 255)
+                elif isinstance(point, Point):
+                    drawer.main_canvas.draw_point(point, self._point_radius)

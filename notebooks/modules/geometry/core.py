@@ -275,8 +275,8 @@ class PointExtension(Point, Generic[P]):
     data : P
         generic data object to hold any necessary information (eg.: outgoing edges)
     """
-    def __init__(self, x: SupportsFloat, y: SupportsFloat, data : P = None):
-        super().__init__(x, y)
+    def __init__(self, x: SupportsFloat, y: SupportsFloat, data : P = None, tag : int = 0):
+        super().__init__(x, y, tag)
         self._data = data
     
     @property
@@ -290,7 +290,7 @@ class PointExtension(Point, Generic[P]):
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, PointExtension):
             return NotImplemented
-        return self._x == other._x and self._y == other._y#TODO: check if data is also equal -> this might break notebook 5
+        return self._x == other._x and self._y == other._y and self._data.__eq__(other.data)
 
 
 class Line:
