@@ -7,7 +7,7 @@ from itertools import chain
 class DCELAnimator(AnimationObject):
     def __init__(self, boundingBox : Rectangle):
         super().__init__()
-        self._dcel : DoublyConnectedEdgeList = DoublyConnectedEdgeList()
+        self._dcel : DoublyConnectedEdgeList = DoublyConnectedEdgeList([],[])
         self._points : list[Point] = []
         self._animation_events = []
         self._illformed : bool = False

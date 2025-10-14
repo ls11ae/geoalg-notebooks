@@ -51,9 +51,9 @@ class DCELMode(DrawingMode):
                     for neighbor in point.data:
                         drawer.main_canvas.draw_path([point, neighbor], self._line_width)
                 elif isinstance(point, PointPair):
-                    if point.tag == 0:
+                    if point._tag == 0:
                         drawer.main_canvas.draw_line(point, point.data, self._highlight_radius, True, True)
-                    if point.tag == 1:
+                    if point._tag == 1:
                         drawer.main_canvas.set_colour(255, 0, 0)
                         drawer.main_canvas.draw_path([point, point.data], self._line_width)
                         drawer.main_canvas.set_colour(0, 0, 255)

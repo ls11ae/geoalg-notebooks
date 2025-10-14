@@ -16,7 +16,7 @@ class PlanarSubdivision(ABC):
 
 class PointLocation:
     def __init__(self, bounding_box: Rectangle = Rectangle(Point(0, 0), Point(400, 400)),
-                 dcel: Optional[DoublyConnectedEdgeList] = DoublyConnectedEdgeList(),
+                 dcel: Optional[DoublyConnectedEdgeList] = DoublyConnectedEdgeList([],[]),
                  random_seed: Optional[int] = None) -> None:
         self._bounding_box = bounding_box
         self._dcel = dcel

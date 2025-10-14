@@ -69,10 +69,10 @@ class Point:
 
         self._x = float(x)
         self._y = float(y)
-        self.tag = tag
+        self._tag = tag
 
     def copy(self) -> Point:
-        return Point(self._x, self._y, self.tag)
+        return Point(self._x, self._y, self._tag)
 
     # -------- methods --------
 
@@ -219,6 +219,14 @@ class Point:
     @y.setter
     def y(self,value):
         self._y = value
+
+    @property
+    def tag(self) -> int:
+        return self._tag
+
+    @tag.setter
+    def tag(self,value):
+        self._tag = value
 
     ## -------- magic methods --------
         

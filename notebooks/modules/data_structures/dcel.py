@@ -12,7 +12,7 @@ class DoublyConnectedEdgeList:
     """
     # TODO: constructors for bounding-box (init with boundingbox, init with linesegments and bounding box) (see ruler of the plane):
     # methods: addsegment, addline
-    def __init__(self, points: Iterable[Point] = [], edges: Iterable[Tuple[int, int]] = []):
+    def __init__(self, points: Iterable[Point], edges: Iterable[Tuple[int, int]]):
         self.clear()
         for point in points:
             self.add_vertex(point)

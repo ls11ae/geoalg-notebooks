@@ -30,12 +30,11 @@ class IllegalEdgeMode(DrawingMode):
             iterator = iter(points)
             cur_point = next(iterator, None)
             while cur_point is not None:
-                if isinstance(cur_point, PointFloat):
-                    drawer.main_canvas.set_colour(255,0,0)
-                    drawer.main_canvas.draw_circle(cur_point, cur_point.data, self._line_width)
-                    drawer.main_canvas.set_colour(0,0,255)
-                elif isinstance(cur_point, PointPair):
-                    drawer.main_canvas.draw_path([cur_point, cur_point.data], self._line_width)
+                if isinstance(cur_point, PointPair):
+                    if cur_point._tag == 0:
+                        drawer.main_canvas.draw_path([cur_point, cur_point.data], self._highlight_radius, transparent=True)
+                    if cur_point._tag == 1:
+                        drawer.main_canvas.draw_path([cur_point, cur_point.data], self._line_width)
                 elif isinstance(cur_point, Point):
                     drawer.main_canvas.draw_point(cur_point, self._point_radius)
                 cur_point = next(iterator, None)

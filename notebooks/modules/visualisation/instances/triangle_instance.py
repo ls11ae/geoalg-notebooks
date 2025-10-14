@@ -8,7 +8,7 @@ from ..drawing_modes import TriangleMode
 
 class TriangleInstance(InstanceHandle[Triangulation]):
     def __init__(self, p0 : Point, p1 : Point, p2 : Point):
-        self._drawing_mode = TriangleMode()
+        self._drawing_mode = TriangleMode(p0,p1,p2)
         self._instance : Triangulation = Triangulation(p0,p1,p2)
         super().__init__(self._instance, self._drawing_mode, 10)
 
@@ -17,12 +17,14 @@ class TriangleInstance(InstanceHandle[Triangulation]):
         vertex = self._instance.insert_point(point)
         if vertex is None:
             return None
-        return PointList(vertex.point.x, vertex.point.y, [e.destination.point for e in vertex.outgoing_edges()])
+        print(str(len(vertex.outgoing_edges())))
+        return PointList(vertex.point.x, vertex.point.y, [e.destination.point for e in vertex.outgoing_edges()], 0)
 
     @override
     def clear(self):
         outer_points = self._instance.outer_points
         self._instance = Triangulation(outer_points[0], outer_points[1], outer_points[2])
+        self._drawing_mode.outer_triangle_drawn = False
 
     @override
     def size(self) -> int:
@@ -39,4 +41,5 @@ class TriangleInstance(InstanceHandle[Triangulation]):
 
     @override
     def generate_random_points(self, max_x: float, max_y: float, number: int) -> list[Point]:
+        self._drawing_mode.outer_triangle_drawn = False
         return TriangleInstance.generate_random_points_uniform(max_x, max_y, number)

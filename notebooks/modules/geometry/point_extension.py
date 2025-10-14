@@ -5,8 +5,8 @@ from typing import Any, SupportsFloat
 class PointList(PointExtension[list[Point]]):
     """A point with an additonal list of points."""
     
-    def __init__(self, x: SupportsFloat, y: SupportsFloat, data : list[Point] = []):
-        super().__init__(x, y, data)
+    def __init__(self, x: SupportsFloat, y: SupportsFloat, data : list[Point], tag : int = 0):
+        super().__init__(x, y, data, tag)
 
     def __eq__(self, other: Any) -> bool:
         return super().__eq__(other)

@@ -187,7 +187,7 @@ class VisualisationTool(Generic[I]):
 
         draw_point = self._instance.add_point(point)
         if draw_point is not None:
-            self._instance_drawer.draw((point,))
+            self._instance_drawer.draw((draw_point,))
             self._number_of_points += 1
             self._update_instance_size_info()
             return True

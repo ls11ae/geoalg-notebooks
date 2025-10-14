@@ -1,6 +1,6 @@
 from __future__ import annotations
 from .objects import HalfEdge, Vertex
-from ..geometry import Point, PointList
+from ..geometry import Point, PointList, PointPair
 from .dcel import DoublyConnectedEdgeList as DCEL
 from numpy import linalg
 
@@ -100,13 +100,16 @@ class Triangulation(DCEL):
         self._edges.remove(e)
         return True
         
-    def to_points(self, include_outer_edges : bool = True) -> list[PointList]:
+    def to_points(self) -> list[PointList]:
         #since the edges drawn dont have a direction, this will draw every edge twice
         points : list[PointList] = []
         for v in self.vertices:
-            if include_outer_edges or not v.point in self._outer_points:
-                edges : list[Point] = [e.destination.point for e in v.outgoing_edges() if include_outer_edges or (not e.destination.point in self._outer_points)]
-                points.append(PointList(v.point.x, v.point.y, edges))
+            v_tag = 1 if v.point in self._outer_points else 0
+            edges : list[Point] = []
+            for e in v.outgoing_edges():
+                e_tag = 1 if e.destination.point in self._outer_points else 0
+                edges.append(Point(e.destination.point.x, e.destination.point.y, e_tag))
+            points.append(PointList(v.point.x, v.point.y, edges, v_tag))
         return points
 
     @property
