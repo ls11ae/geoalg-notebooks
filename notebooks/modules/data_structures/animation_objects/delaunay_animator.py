@@ -1,74 +1,9 @@
 from __future__ import annotations
 from ..triangle_tree import Triangulation
-from ...geometry import AnimationObject, AnimationEvent, Point, PointFloat, AppendEvent, PopEvent, PointPair, PointList, MultiEvent
+from ...geometry import AnimationObject, AnimationEvent, Point, PointFloat, AppendEvent, PopEvent, PointPair, PointList, MultiEvent, DeleteAtEvent
 from typing import Iterator, Iterable
 
-from ..objects import HalfEdge, Vertex
-
-class EdgeAnimator(AnimationObject):
-    def __init__(self):
-        super().__init__()
-        self._illegal_edges : list[HalfEdge] = []
-        self._checked_edges : list[HalfEdge] = []
-        self._highlighted_edge : HalfEdge | None = None
-
-
-    def highlight_triangle(self, e : HalfEdge):
-        if self._highlighted_edge is not None:
-            return
-        self._highlighted_edge = e
-        events = []
-        origin = e.origin
-        destination = e.destination
-        opposing_point = e.next.destination
-        events.append(AppendEvent(PointPair(origin.point.x, origin.point.y, destination.point, 1)))
-        events.append(AppendEvent(PointPair(destination.point.x, destination.point.y, opposing_point.point, 0)))
-        events.append(AppendEvent(PointPair(opposing_point.point.x, opposing_point.point.y, origin.point, 0)))
-        origin = e.twin.origin
-        destination = e.twin.destination
-        opposing_point = e.twin.next.destination
-        events.append(AppendEvent(PointPair(destination.point.x, destination.point.y, opposing_point.point, 0)))
-        events.append(AppendEvent(PointPair(opposing_point.point.x, opposing_point.point.y, origin.point, 0)))
-        self._animation_events.append(MultiEvent(events))
-
-    def un_highlight_triangle(self, is_legal: bool):
-        if self._highlighted_edge is not None:
-            events = [PopEvent(), PopEvent(), PopEvent(), PopEvent()]
-            if is_legal:
-                events.append(PopEvent())
-            self._animation_events.append(MultiEvent(events))
-            self._highlighted_edge = None
-
-
-    def _animate_circumcircle(self, e : HalfEdge):
-        center = Triangulation.center_of_circumcircle(e)
-        self._animation_events.append(AppendEvent(PointFloat(center.x, center.y, center.distance(e.origin.point))))
-        self._animation_events.append(AppendEvent(Point(e.twin.next.destination.point.x, e.twin.next.destination.point.y)))
-        self._animation_events.append(PopEvent())
-        self._animation_events.append(PopEvent())
-
-    def _highlight_edge(self, e : HalfEdge):
-        self._animation_events.append(AppendEvent(PointPair(e.origin.point.x, e.origin.point.y, e.destination.point)))
-
-    def _unhighlight_edge(self):
-        self._animation_events.append(PopEvent())
-
-    def add_illegal_edge(self, e : HalfEdge):
-        self._illegal_edges.append(e)
-
-    def edge_or_twin_checked(self, e : HalfEdge) -> bool:
-        return self._checked_edges.__contains__(e) or self._checked_edges.__contains__(e.twin)
-
-    def add_checked_edge(self, e : HalfEdge):
-        self._checked_edges.append(e)
-        self._checked_edges.append(e.twin)
-
-    def points(self) -> Iterator[Point]:
-        points = []
-        for e in self._illegal_edges:
-            points.append(e.origin.point)
-            points.append(e.destination.point)
-        return iter(points)
+from ..objects import HalfEdge, Vertex, Face
 
 class IncrementalConstructionAnimator(AnimationObject):
     def __init__(self, p0 : Point, p1 : Point, p2 : Point):
@@ -114,9 +49,20 @@ class IncrementalConstructionAnimator(AnimationObject):
             self._animation_events.append(EdgeFlipEvent(old_p0, old_p1, new_p0, new_p1, new_tag))
     
     @property
-    def edges(self) -> Iterable[HalfEdge]:
+    def edges(self) -> list[HalfEdge]:
         return self._triangulation.edges
-    
+
+    @property
+    def faces(self) -> list[Face]:
+        return self._triangulation.faces
+
+    @property
+    def outer_face(self) -> Face:
+        return self._triangulation.outer_face
+
+
+
+
 class EdgeFlipEvent(AnimationEvent):
     def __init__(self, old_p0 : Point, old_p1 : Point, new_p0 : Point, new_p1 : Point, new_tag : int):
         super().__init__()

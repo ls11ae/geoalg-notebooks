@@ -19,14 +19,23 @@ class TriangleMode(DrawingMode):
                 drawer.main_canvas.draw_path([self._outer_points[2], self._outer_points[0]], self._line_width)
                 self._outer_triangle_drawn = True
             for point in points:
-                drawer.main_canvas.draw_point(point, self._line_width)
                 if isinstance(point, PointList):
+                    if point.tag > 3:
+                        drawer.main_canvas.draw_point(point, self._line_width)
+
                     for connected_point in point.data:
-                        #drawer.main_canvas.draw_point(connected_point, self._line_width)
-                        if point._tag == 0 and connected_point._tag == 0:
+                        if point.tag == 0 and connected_point.tag == 0:
                             drawer.main_canvas.draw_path([point, connected_point], self._line_width)
-                        else:
+                        elif point.tag == 1 or connected_point.tag == 1:
                             drawer.main_canvas.draw_path([point, connected_point], self._line_width, transparent=True)
+                        #voronoi
+                        elif point.tag == 2 and connected_point.tag == 2:
+                            drawer.main_canvas.set_colour(255, 165, 0)
+                            drawer.main_canvas.draw_path([point, connected_point], self._line_width, transparent=True)
+                            drawer.main_canvas.set_colour(0, 0, 255)
+                        elif point.tag > 3:
+                            drawer.main_canvas.draw_path([point, connected_point], self._line_width)
+
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         with drawer.main_canvas.hold():

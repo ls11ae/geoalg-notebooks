@@ -40,14 +40,11 @@ class Triangulation(DCEL):
             return True
         opposite_vertex = e.twin.next.destination
         
-        center = self.center_of_circumcircle(e)
+        center = self.center_of_circumcircle(e.origin.point, e.destination.point, e.next.destination.point)
         return center.distance(e.origin.point) < center.distance(opposite_vertex.point)
     
     @staticmethod
-    def center_of_circumcircle(e : HalfEdge) -> Point:
-        p0 = e.origin.point
-        p1 = e.destination.point
-        p2 = e.next.destination.point
+    def center_of_circumcircle(p0 : Point, p1 : Point, p2 : Point) -> Point:
         a = linalg.det([[p0.x, p0.y, 1],[p1.x, p1.y, 1],[p2.x, p2.y, 1]])
         b_x = -linalg.det([[pow(p0.x,2) + pow(p0.y,2), p0.y, 1],
                           [pow(p1.x,2) + pow(p1.y,2), p1.y, 1],
@@ -92,12 +89,6 @@ class Triangulation(DCEL):
         t.next.next.incident_face = t.incident_face
         e.incident_face.outer_component = e
         t.incident_face.outer_component = t
-        return True
-
-    def _remove_edge(self, e : HalfEdge) -> bool:
-        if not self._edges.__contains__(e):
-            return False
-        self._edges.remove(e)
         return True
         
     def to_points(self) -> list[PointList]:
