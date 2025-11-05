@@ -16,3 +16,4 @@ from .smallest_area_triangle import SmallestAreaTriangleMode
 from .sweep_line import SweepLineMode
 from .triangle_mode import TriangleMode
 from .vertical_extension import VerticalExtensionMode
+from .voronoi import VoronoiMode

@@ -1,5 +1,6 @@
 from ..drawing import DrawingMode, DEFAULT_HIGHLIGHT_RADIUS, DEFAULT_LINE_WIDTH, DEFAULT_POINT_RADIUS, Drawer
-from ...geometry import Point, PointPair, PointList
+from ... import AnimationEvent
+from ...geometry import Point, PointPair, PointList, PointFloat
 from typing import Iterable
 
 class TriangleMode(DrawingMode):
@@ -7,6 +8,7 @@ class TriangleMode(DrawingMode):
         super().__init__(point_radius, highlight_radius, line_width)
         self._outer_points = [p0,p1,p2]
         self._outer_triangle_drawn = False
+        self._first_animation_step = True
     
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         with drawer.main_canvas.hold():
@@ -22,35 +24,27 @@ class TriangleMode(DrawingMode):
                 if isinstance(point, PointList):
                     if point.tag > 3:
                         drawer.main_canvas.draw_point(point, self._line_width)
-
                     for connected_point in point.data:
                         if point.tag == 0 and connected_point.tag == 0:
                             drawer.main_canvas.draw_path([point, connected_point], self._line_width)
                         elif point.tag == 1 or connected_point.tag == 1:
                             drawer.main_canvas.draw_path([point, connected_point], self._line_width, transparent=True)
-                        #voronoi
-                        elif point.tag == 2 and connected_point.tag == 2:
-                            drawer.main_canvas.set_colour(255, 165, 0)
-                            drawer.main_canvas.draw_path([point, connected_point], self._line_width, transparent=True)
-                            drawer.main_canvas.set_colour(0, 0, 255)
-                        elif point.tag > 3:
-                            drawer.main_canvas.draw_path([point, connected_point], self._line_width)
 
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         with drawer.main_canvas.hold():
             drawer.main_canvas.clear()
             it = iter(points)
-            cur = next(it, None)
-            while cur is not None:
-                if isinstance(cur, PointPair):
-                    if cur._tag == 0:
-                        drawer.main_canvas.draw_path([cur, cur.data], self._line_width)
-                    if cur._tag == 1:
-                        drawer.main_canvas.draw_path([cur, cur.data], self._line_width, transparent=True)
+            point = next(it, None)
+            while point is not None:
+                if isinstance(point, PointPair):
+                    if point.tag == 0:
+                        drawer.main_canvas.draw_path([point, point.data], self._line_width)
+                    if point.tag == 1:
+                        drawer.main_canvas.draw_path([point, point.data], self._line_width, transparent=True)
                 else:
-                    drawer.main_canvas.draw_point(cur, self._line_width)
-                cur = next(it, None)
+                    drawer.main_canvas.draw_point(point, self._line_width)
+                point = next(it, None)
 
     @property
     def outer_triangle_drawn(self) -> bool:
