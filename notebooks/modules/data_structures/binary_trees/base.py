@@ -53,6 +53,19 @@ class Node(Generic[K, V], ABC):
         self._right : Optional[Node[K,V]] = None
         self._parent : Optional[Node[K,V]] = None
         self._level : int = 1
+        self._balance : int = 0
+
+    @staticmethod
+    def keys(nodes: List[Optional[Node[K, V]]]) -> List[Optional[K]]:
+        return [None if node is None else node.key for node in nodes]
+
+    @staticmethod
+    def values(nodes: List[Optional[Node[K, V]]]) -> List[Optional[V]]:
+        return [None if node is None else node.value for node in nodes]
+
+    @staticmethod
+    def keys_and_values(nodes: List[Optional[Node[K, V]]]) -> List[Optional[Tuple[K, V]]]:
+        return [None if node is None else (node.key, node.value) for node in nodes]
 
     def is_leaf(self) -> bool:
         return self._left is None and self._right is None
@@ -61,24 +74,16 @@ class Node(Generic[K, V], ABC):
         return self._parent is None
 
     @abstractmethod
-    def insert(self, key: K, value: V, comparator : Comparator[K]):
+    def insert(self, key: K, value: V, comparator : Comparator[K], auto_balance: bool) -> bool:
         pass
 
     @abstractmethod
-    def delete(self, key : K , comparator : Comparator[K]):
+    def delete(self, key : K , comparator : Comparator[K]) -> bool:
         pass
 
-    @staticmethod
-    def keys(nodes: List[Optional[Node[K, V]]]) -> List[Optional[K]]:
-        return [None if node is None else node.key for node in nodes]
-
-    @staticmethod
-    def values(nodes : List[Optional[Node[K, V]]]) -> List[Optional[V]]:
-        return [None if node is None else node.value for node in nodes]
-
-    @staticmethod
-    def keys_and_values(nodes: List[Optional[Node[K, V]]]) -> List[Optional[Tuple[K, V]]]:
-        return [None if node is None else (node.key, node.value) for node in nodes]
+    @abstractmethod
+    def path(self, key : K, comparator : Comparator[K]) -> list[Node[K, V]]:
+        pass
 
     def pre_order(self) -> List[Optional[Node[K, V]]]:
         return ([self] +
@@ -95,26 +100,63 @@ class Node(Generic[K, V], ABC):
                 [self] +
                 ([None] if self._right is None else self._right.in_order()))
 
-    def reverse_pre_order(self) -> List[Node[K, V]]:
-        return ([self] +
-                ([None] if self._right is None else self._right.reverse_pre_order()) +
-                ([None] if self._left is None else self._left.reverse_pre_order()))
-
-    def reverse_post_order(self) -> List[Node[K, V]]:
-        return (([None] if self._right is None else self._right.reverse_post_order()) +
-                ([None] if self._left is None else self._left.reverse_post_order()) +
-                [self])
-
-    def reverse_in_order(self) -> List[Node[K, V]]:
-        return (([None] if self._right is None else self._right.reverse_in_order()) +
-                [self] +
-                ([None] if self._left is None else self._left.reverse_in_order()))
-
     def leaves(self) -> List[Node[K, V]]:
         if self.is_leaf():
             return [self]
         return (([] if self._left is None else self._left.leaves()) +
                 ([] if self._right is None else self._right.leaves()))
+
+    def _update_after_insert(self, auto_balance : bool):
+        self._update_level()
+        self._update_balance()
+        if auto_balance:
+            if self._balance > 1:
+                 self._rotate_right()
+            elif self._balance < -1:
+                self._rotate_left()
+                return
+        if self._parent is not None:
+            self._parent._update_after_insert(auto_balance)
+
+    def _update_level(self):
+        self._level = max(0 if self._left is None else self._left._level, 0 if self._right is None else self._right._level) + 1
+
+    def _update_balance(self):
+        self._balance = (0 if self._left is None else self._left._level) - (0 if self._right is None else self._right._level)
+
+    def _rotate_right(self):
+        pivot = self._left
+        if pivot._balance < 0:
+            pivot._rotate_left()
+            pivot = self._left #pivot changed
+        if self._parent is not None:
+            if self._parent._left is self:
+                self._parent.left = pivot
+            else:
+                self._parent.right = pivot
+        else:
+            pivot._parent = None
+        self.left = pivot._right
+        pivot.right = self
+        self._update_level()
+        self._update_balance()
+
+    def _rotate_left(self):
+        pivot = self._right
+        if pivot._balance > 0:
+            pivot._rotate_right()
+            pivot = self._right #pivot changed
+        if self._parent is not None:
+            if self._parent._left is self:
+                self._parent.left = pivot
+            else:
+                self._parent.right = pivot
+        else:
+            pivot._parent = None
+        self.right = pivot._left
+        pivot.left = self
+        self._update_level()
+        self._update_balance()
 
     @property
     def key(self) -> K:
@@ -131,7 +173,8 @@ class Node(Generic[K, V], ABC):
     @left.setter
     def left(self, left: Node[K, V]):
         self._left = left
-        left._parent = self
+        if left is not None:
+            left._parent = self
 
     @property
     def right(self) -> Node[K, V]:
@@ -140,7 +183,8 @@ class Node(Generic[K, V], ABC):
     @right.setter
     def right(self, right: Node[K, V]):
         self._right = right
-        right._parent = self
+        if right is not None:
+            right._parent = self
 
     @property
     def parent(self) -> Node[K, V]:
@@ -150,7 +194,56 @@ class Node(Generic[K, V], ABC):
     def level(self) -> int:
         return self._level
 
-    @level.setter
-    def level(self, level: int):
-        self._level = level
-        self._parent.level = max(self._parent._left._level, self._parent._right._level)
+    @property
+    def balance(self) -> int:
+        return self._balance
+
+    @property
+    def root(self) -> Node[K, V]:
+        if self._parent is not None:
+            return self._parent.root
+        return self
+
+class BinaryTree(Generic[K], ABC):
+    """Binary search tree"""
+    def __init__(self, comparator: Comparator[K], auto_balance : bool):
+        self._root : Optional[Node[K, None]] = None
+        self._comparator = comparator
+        self._auto_balance = auto_balance
+
+    @abstractmethod
+    def insert(self, key: K) -> bool:
+        pass
+
+    def delete(self, key : K) -> bool:
+        if self._root is not None:
+            return self._root.delete(key, self._comparator)
+        return False
+
+    def pre_order(self) -> List[K]:
+        if self._root is not None:
+            return Node.keys(self._root.pre_order())
+        return []
+
+    def post_order(self) -> List[K]:
+        if self._root is not None:
+            return Node.keys(self._root.post_order())
+        return []
+
+    def in_order(self) -> List[K]:
+        if self._root is not None:
+            return Node.keys(self._root.in_order())
+        return []
+
+    def leaves(self) -> List[K]:
+        if self._root is not None:
+            return Node.keys(self._root.leaves())
+        return []
+
+    @property
+    def comparator(self) -> Comparator[K]:
+        return self._comparator
+
+    @comparator.setter
+    def comparator(self, comparator: Comparator[K]):
+        self._comparator = comparator
