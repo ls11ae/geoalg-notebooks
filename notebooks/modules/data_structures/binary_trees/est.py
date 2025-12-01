@@ -41,19 +41,59 @@ class ESTNode(Node[K, V]):
     def delete(self, key: K, comparator: Comparator[K]) -> bool:
         raise NotImplementedError()
 
-    @override
-    def path(self, key : K, comparator : Comparator[K]) -> list[Node[K, V]]:
-        pass
-
 class EST(BinaryTree[K]):
     """external search tree"""
-    def __init__(self, comparator: Comparator[K], auto_balance: bool):
+    def __init__(self, comparator : Comparator[K], auto_balance : bool):
         super().__init__(comparator, auto_balance)
 
     @override
     def insert(self, key: K) -> bool:
         if self._root is None:
             self._root = ESTNode(key, None)
+            return True
+        if self._root.insert(key, None, self._comparator, self._auto_balance):
             self._root = self._root.root
             return True
-        return self._root.insert(key, None, self._comparator, self._auto_balance)
+        return False
+
+    def range_query(self, r : tuple[K,K]) -> list[Node[K, V]]:
+        leaves = []
+        split_node = self._find_split_node(r)
+        if split_node is None:
+            return leaves
+        left_path = split_node.left.path_to_leaf(r[0], self._comparator)
+        right_path = split_node.right.path_to_leaf(r[1], self._comparator)
+        for node in left_path:
+            if node.is_leaf():
+                cr_left = self._comparator.compare(node.key, r[0])
+                cr_right = self._comparator.compare(node.key, r[1])
+                if (cr_left == ComparisonResult.BEFORE or cr_left == ComparisonResult.MATCH) and (cr_right == ComparisonResult.BEFORE or cr_right == ComparisonResult.MATCH):
+                    leaves.append(node)
+            else:
+                if node.right is not None:
+                    leaves.extend(node.right.leaves())
+        for node in right_path:
+            if node.is_leaf():
+                cr_left = self._comparator.compare(node.key, r[0])
+                cr_right = self._comparator.compare(node.key, r[1])
+                if (cr_left == ComparisonResult.BEFORE or cr_left == ComparisonResult.MATCH) and (cr_right == ComparisonResult.BEFORE or cr_right == ComparisonResult.MATCH):
+                    leaves.append(node)
+            else:
+                if node.left is not None:
+                    leaves.extend(node.left.leaves())
+        return leaves
+
+    def _find_split_node(self, r : tuple[K,K]) -> Optional[Node[K, None]]:
+        if self._root is None:
+            return None
+        node = self._root
+        while node is not None and not node.is_leaf():
+            cr_left = self._comparator.compare(r[0], node.key)
+            cr_right = self._comparator.compare(r[1], node.key)
+            if cr_right is ComparisonResult.BEFORE or cr_right is ComparisonResult.MATCH:
+                node = node.left #range fully left of node
+            elif cr_left is ComparisonResult.AFTER:
+                node = node.right #range fully right of node
+            else:
+                return node #node within the range
+        return node

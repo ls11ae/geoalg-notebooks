@@ -35,10 +35,6 @@ class BSTNode(Node[K, V]):
     def delete(self, key: K, comparator: Comparator[K]) -> bool:
         raise NotImplementedError()
 
-    @override
-    def path(self, key: K, comparator: Comparator[K]) -> list[Node[K, V]]:
-        pass
-
 class BST(BinaryTree[K]):
     """Binary search tree"""
     def __init__(self, comparator: Comparator[K], auto_balance: bool):
