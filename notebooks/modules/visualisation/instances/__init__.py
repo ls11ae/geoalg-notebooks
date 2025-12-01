@@ -1,3 +1,4 @@
+from .binary_tree import BinaryTreeInstance
 from .dcel import DCELInstance
 from .line_segment_set import LineSegmentSetInstance
 from .line_set import LineSetInstance

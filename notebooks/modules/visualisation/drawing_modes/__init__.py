@@ -1,4 +1,5 @@
 from .art_gallery import ArtGalleryMode
+from .binary_tree import BinaryTreeMode
 from .bounding_box_mode import BoundingBoxMode
 from .chans_hull import ChansHullMode
 from .dcel import DCELMode

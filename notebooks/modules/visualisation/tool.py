@@ -195,7 +195,6 @@ class VisualisationTool(Generic[I]):
 
     def add_points(self, points: list[Point]):
         added_points: list[Point] = []
-
         for point in points:
             if self._number_of_points >= self._MAX_NUMBER_OF_POINTS or not self._is_point_in_range(point):
                 break
@@ -203,7 +202,6 @@ class VisualisationTool(Generic[I]):
             if draw_point is not None:
                 added_points.append(draw_point)
                 self._number_of_points += 1
-
         self._instance_drawer.draw(added_points)
         self._update_instance_size_info()
 

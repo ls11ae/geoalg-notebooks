@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import time
+import time, math
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from typing import Any, Iterable
@@ -109,9 +109,9 @@ class CanvasDrawingHandle:
             self._canvas.stroke_style = self.opaque_style
             self._canvas.fill_style  = self.opaque_style
 
-
     def draw_circle(self, center : Point, radius : float, line_width: int, stroke: bool = True,
     fill: bool = False, transparent: bool = False):
+        self._canvas.line_width = abs(line_width)
         self._canvas.begin_path()
         self._canvas.arc(center.x, center.y, radius, 0, 360)
         if transparent:
@@ -126,6 +126,14 @@ class CanvasDrawingHandle:
     def draw_polygon(self, points: Iterable[Point], line_width: int, stroke: bool = True,
     fill: bool = False, transparent: bool = False):
         self.draw_path(points, line_width, close = True, stroke = stroke, fill = fill, transparent = transparent)
+
+    def draw_string(self, x : int, y : int, text : str):
+        self._canvas.text_align = "center"
+        self._canvas.save()
+        self._canvas.scale(1, -1)
+        self._canvas.fill_text(text,x,-y)
+        self._canvas.restore()
+
 
     @property
     def width(self) -> float:
