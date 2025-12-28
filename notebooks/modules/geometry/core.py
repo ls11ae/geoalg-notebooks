@@ -329,14 +329,10 @@ class Line:
     def intersection(self, other : Line, epsilon: float = EPSILON) -> Line | LineSegment | Point | None :
         #https://en.wikipedia.org/wiki/Line–line_intersection#Given_two_points_on_each_line
         denominator = (self.p1.x - self.p2.x) * (other.p1.y - other.p2.y) - (self.p1.y - self.p2.y) * (other.p1.x - other.p2.x)
-        if(abs(denominator) < epsilon): #lines are parallel/identical
-            #check if other.p1 is on self using cross product
-            dxp1, dyp1 = other.p1.x - self.p1.x, other.p1.y - self.p1.y
-            if dxp1 == dyp1 == 0: #p1 == other.p1, use p2 instead since p1 != p2 is guaranteed from construction
-                dxp1, dyp1 = other.p1.x - self.p2.x, other.p1.y - self.p2.y
-            dxl, dyl = self.p2.x - self.p1.x, self.p2.y - self.p1.y
-            cross = dxp1 * dyp1 - dxl * dyl
-            if(abs(cross) < epsilon):
+        if abs(denominator) < epsilon: #lines are parallel/identical
+            # check if other.p1 is on self using cross product
+            cross = (other.p1.x - self.p1.x) * (self.p2.y - self.p1.y) - (other.p1.y - self.p1.y) * (self.p2.x - self.p1.x)
+            if abs(cross) < epsilon:
                 #lines are identical
                 if isinstance(other, LineSegment):
                     return LineSegment(other.p1, other.p2)
@@ -350,13 +346,13 @@ class Line:
         if isinstance(other, LineSegment):
             #to avoid problems with vertical/horizontal segments, check the coordinate with larger difference
             dxo, dyo = other.upper.x - other.lower.x, other.upper.y - other.lower.y
-            if (abs(dxo) > abs(dyo)):
+            if abs(dxo) > abs(dyo):
                 #x increases more than y
-                if xNumerator >= (other.lower.x * denominator) and xNumerator <= (other.upper.x * denominator):
+                if (other.lower.x * denominator) <= xNumerator <= (other.upper.x * denominator):
                     return Point(xNumerator / denominator, yNumerator / denominator)
             else:
                 #x increases more than y
-                if yNumerator >= (other.lower.y * denominator) and yNumerator <= (other.upper.y * denominator):
+                if (other.lower.y * denominator) <= yNumerator <= (other.upper.y * denominator):
                     return Point(xNumerator / denominator, yNumerator / denominator)
             return None
         return Point(xNumerator / denominator, yNumerator / denominator)
@@ -398,11 +394,11 @@ class Line:
             return True
         #lines can be the same even if they are defined by different points
         denominator = (self.p1.x - self.p2.x) * (other.p1.y - other.p2.y) - (self.p1.y - self.p2.y) * (other.p1.x - other.p2.x)
-        if(abs(denominator) < EPSILON):
+        if abs(denominator) < EPSILON:
             ##check if p1, p2 are collinear with other.p1
             x1, y1 = self.p2.x - self.p1.x, self.p2.y - self.p1.y
             x2, y2 = other.p1.x - self.p1.x, other.p1.y - self.p1.y
-            if(abs(x1 * y1 - x2 * y2) < EPSILON):
+            if abs(x1 * y1 - x2 * y2) < EPSILON:
                 return True
         return False
 
@@ -421,7 +417,6 @@ class Line:
 
 class LineSegment(Line):
     """A linesegment represented by a lower and upper point
-    TODO:make into sublcass of line
     
     Attributes
     ----------
@@ -481,7 +476,8 @@ class LineSegment(Line):
         return Line(self.left, self.right)
 
     def intersection(self, other: LineSegment, epsilon: float = EPSILON) -> Union[Point, LineSegment, None]:
-        #TODO: could be generalized for Lines and LineSegments
+        if type(other) is Line and not type(other) is LineSegment:
+            return other.intersection(self)
         self_direction = self._upper - self._lower
         other_direction = other._upper - other._lower
         lower_offset = other._lower - self._lower
@@ -525,11 +521,11 @@ class LineSegment(Line):
             return NotImplemented
         return self.upper == other.upper and self.lower == other.lower
     
-    def __copy__(self, other : Any) -> bool:
+    def __copy__(self, other : Any) -> LineSegment:
         return LineSegment(self.lower, self.upper)
     
-    def __deepcopy__(self, other : Any, memo) -> bool:
-        return LineSegment(Point(self.left, self.lower), Point(self.right, self.upper))
+    def __deepcopy__(self, other : Any, memo) -> LineSegment:
+        return LineSegment(Point(self.left.x, self.lower.y), Point(self.right.x, self.upper.y))
     
     def __hash__(self) -> int:
         return hash((self.upper, self.lower))
