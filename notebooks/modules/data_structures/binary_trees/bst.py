@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Generic, Optional, override, List, Tuple
-from .base import Node, BinaryTree, Comparator, ComparisonResult, K, V
-
+from typing import override
+from .base import Node, BinaryTree, K, V
+from ...geometry import Comparator, ComparisonResult
 """
 implementation of a binary search tree
 """

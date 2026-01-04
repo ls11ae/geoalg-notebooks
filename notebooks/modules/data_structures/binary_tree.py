@@ -1,10 +1,12 @@
 from __future__ import annotations
 from typing import TypeVar, Generic, Optional, Iterator, Callable, Any
-from enum import Enum
 from itertools import chain
-from abc import ABC, abstractmethod
+from ..geometry import Point, PointSequence, Comparator, ComparisonResult
 
-from ..geometry import Point, PointSequence
+''' TODO: replace with BST in all cases since it is more generic. 
+Currently BST lacks a lot of methods and functionality to achieve this. 
+'''
+
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -12,16 +14,6 @@ V = TypeVar("V")
 Updater = Callable[[Optional[V]], V]
 
 PointMapper = Callable[[K], Point]
-
-class ComparisonResult(Enum):
-    BEFORE = -1
-    MATCH = 0
-    AFTER = 1
-
-class Comparator(ABC, Generic[K]):
-    @abstractmethod
-    def compare(self, item: Any, key: K) -> ComparisonResult:
-        pass
 
 
 # TODO: More methods like contains(key) and pop_last() could be implemented.

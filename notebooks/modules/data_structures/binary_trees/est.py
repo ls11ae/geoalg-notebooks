@@ -1,6 +1,7 @@
 from __future__ import annotations
-from typing import Generic, Optional, override, List, Tuple
-from .base import Node, BinaryTree, Comparator, ComparisonResult, K, V
+from typing import Optional, override
+from .base import Node, BinaryTree, K, V
+from ...geometry import Comparator, ComparisonResult
 
 """
 Implementation of an external search tree. All data is stored in the leaves

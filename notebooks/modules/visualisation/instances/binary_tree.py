@@ -1,7 +1,7 @@
 from typing import Optional, override
 
-from ...data_structures.binary_trees import EST, PointXComparator
-from ...geometry import Point
+from ...data_structures.binary_trees import EST
+from ...geometry import Point, PointXComparator
 from ..drawing import DrawingMode
 from ..drawing_modes import BinaryTreeMode
 from ..instance_handle import InstanceHandle

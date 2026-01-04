@@ -1,7 +1,7 @@
-from typing_extensions import override
+from __future__ import annotations
+from .core import Comparator, ComparisonResult, Point
 
-from .base import Comparator, ComparisonResult
-from ...geometry import Point
+from typing_extensions import override
 
 class IntComparator(Comparator[int]):
     def compare(self, key: int, other: int) -> ComparisonResult :

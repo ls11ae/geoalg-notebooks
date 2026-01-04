@@ -1,20 +1,13 @@
 from __future__ import annotations
-from typing import TypeVar, Generic, Optional, Any, override, List, Tuple
-from enum import Enum
+from typing import TypeVar, Generic, Optional, List
 from abc import ABC, abstractmethod
+from ...geometry import Comparator, ComparisonResult
+
+'''Note: compared to the other implementation in data_structures.binary_tree.py this one is more generalized, but lacks
+    a lot of functionality. If the missing methods are added, remember to generalize the use of PointSequence to AnimationObject'''
 
 K = TypeVar("K")
 V = TypeVar("V")
-
-class ComparisonResult(Enum):
-    BEFORE = -1
-    MATCH = 0
-    AFTER = 1
-
-class Comparator(ABC, Generic[K]):
-    @abstractmethod
-    def compare(self, key: K, other: K) -> ComparisonResult:
-        pass
 
 class Node(Generic[K, V], ABC):
     """Abstract node that implements a tree structure.

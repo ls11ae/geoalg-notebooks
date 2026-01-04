@@ -1,11 +1,13 @@
 from __future__ import annotations
 from typing import Any, Optional, SupportsFloat, Union, Generic, TypeVar
 from enum import auto, Enum
+from abc import ABC, abstractmethod
 import math
 
 EPSILON: float = 1e-9 # Chosen by testing currently implemented algorithms with the visualisation tool.
 
 P = TypeVar("P") # type variable for points with generic data
+K = TypeVar("K") # type variable for generic comparator
 
 class Orientation(Enum):
     "locates a point relative to the endpoints of a line segment"
@@ -15,14 +17,15 @@ class Orientation(Enum):
     BEFORE_SOURCE = auto()
     BEHIND_TARGET = auto()
 
+#TODO: these two should probably be replaced by the generalized ComparisonResult as the context makes clear what is meant anyways
 class VerticalOrientation(Enum):
-    "locates a point relative to a line"
+    """locates a point relative to a line"""
     ON = auto()
     ABOVE = auto()
     BELOW = auto()
 
 class HorizontalOrientation(Enum):
-    "locates a point relative to another point (lexicograhical order)"
+    """locates a point relative to another point (lexicographical order)"""
     LEFT = auto()
     RIGHT = auto()
     EQUAL = auto()
@@ -641,3 +644,17 @@ class Rectangle:
 
     def __str__(self) -> str:
         return f"Rectangle({Point(self.left, self.lower)}, {Point(self.right, self.upper)})"
+
+
+class Comparator(ABC, Generic[K]):
+    """
+    generic comparator object. Implementations can be found in the comparator file
+    """
+    @abstractmethod
+    def compare(self, key: K, other: K) -> ComparisonResult:
+        pass
+
+class ComparisonResult(Enum):
+    BEFORE = -1
+    MATCH = 0
+    AFTER = 1
