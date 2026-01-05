@@ -129,6 +129,7 @@ class CanvasDrawingHandle:
 
     def draw_string(self, x : int, y : int, text : str):
         self._canvas.text_align = "center"
+        self._canvas.text_baseline = "middle"
         self._canvas.save()
         self._canvas.scale(1, -1)
         self._canvas.fill_text(text,x,-y)
