@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TypeVar, Generic, Optional, List
+from typing import TypeVar, Generic, Optional, List, Callable
 from abc import ABC, abstractmethod
 from ...geometry import Comparator, ComparisonResult
 
@@ -8,6 +8,8 @@ from ...geometry import Comparator, ComparisonResult
 
 K = TypeVar("K")
 V = TypeVar("V")
+
+A = TypeVar("A")
 
 class Node(Generic[K, V], ABC):
     """Abstract node that implements a tree structure.
@@ -102,27 +104,26 @@ class Node(Generic[K, V], ABC):
                 path = self._right.path_to_leaf(key, comparator)
         return [] if path is [] else [self] + path
 
+    def pre_order(self, f : Callable[[Node[K,V]], A]) -> list[A]:
+        return ([f(self)] +
+                ([None] if self._left is None else (self._left.pre_order(f))) +
+                ([None] if self._right is None else self._right.pre_order(f)))
 
-    def pre_order(self) -> List[Optional[Node[K, V]]]:
-        return ([self] +
-                ([None] if self._left is None else self._left.pre_order())+
-                ([None] if self._right is None else self._right.pre_order()))
+    def post_order(self, f : Callable[[Node[K,V]], A]) -> list[A]:
+        return (([None] if self._left is None else self._left.post_order(f)) +
+                ([None] if self._right is None else self._right.post_order(f)) +
+                [f(self)])
 
-    def post_order(self) -> List[Node[K, V]]:
-        return (([None] if self._left is None else self._left.post_order()) +
-                ([None] if self._right is None else self._right.post_order()) +
-                [self])
+    def in_order(self, f : Callable[[Node[K,V]], A]) -> list[A]:
+        return (([None] if self._left is None else self._left.in_order(f)) +
+                [f(self)] +
+                ([None] if self._right is None else self._right.in_order(f)))
 
-    def in_order(self) -> List[Node[K, V]]:
-        return (([None] if self._left is None else self._left.in_order()) +
-                [self] +
-                ([None] if self._right is None else self._right.in_order()))
-
-    def leaves(self) -> List[Node[K, V]]:
+    def leaves(self, f : Callable[[Node[K,V]], A]) -> list[A]:
         if self.is_leaf():
-            return [self]
-        return (([] if self._left is None else self._left.leaves()) +
-                ([] if self._right is None else self._right.leaves()))
+            return [f(self)]
+        return (([] if self._left is None else self._left.leaves(f)) +
+                ([] if self._right is None else self._right.leaves(f)))
 
     def _update_after_insert(self, auto_balance : bool):
         self._update_level()
@@ -133,7 +134,6 @@ class Node(Generic[K, V], ABC):
                  self._rotate_right()
             elif self._balance < -1:
                 self._rotate_left()
-                return
         if self._parent is not None:
             self._parent._update_after_insert(auto_balance)
 
@@ -256,19 +256,56 @@ class BinaryTree(Generic[K], ABC):
             return self._root.path(key, self._comparator)
         return []
 
-    def pre_order(self) -> List[K]:
+    def pre_order(self, f : Callable[[Node[K,V]], A] = lambda n : n.key) -> list[A]:
+        """
+        Returns the tree in pre-order. Instead of returning the nodes directly, each is instead passed through f.
+
+        Parameters
+        ----------
+        f : Callable[[Node[K,V]], A]
+            transforms node
+        """
         if self._root is not None:
-            return [None if node is None else node.key for node in self._root.pre_order()]
+            return self._root.pre_order(f)
         return []
 
-    def post_order(self) -> List[K]:
+    def post_order(self, f : Callable[[Node[K,V]], A] = lambda n : n.key) -> list[A]:
+        """
+        Returns the tree in post-order. Instead of returning the nodes directly, each is instead passed through f.
+
+        Parameters
+        ----------
+        f : Callable[[Node[K,V]], A]
+            transforms node
+        """
         if self._root is not None:
-            return [None if node is None else node.key for node in self._root.post_order()]
+            return self._root.post_order(f)
         return []
 
-    def in_order(self) -> List[K]:
+    def in_order(self, f : Callable[[Node[K,V]], A] = lambda n : n.key) -> list[A]:
+        """
+        Returns the tree in in-order. Instead of returning the nodes directly, each is instead passed through f.
+
+        Parameters
+        ----------
+        f : Callable[[Node[K,V]], A]
+            transforms node
+        """
         if self._root is not None:
-            return [None if node is None else node.key for node in self._root.in_order()]
+            return self._root.in_order(f)
+        return []
+
+    def leaves(self, f : Callable[[Node[K,V]], A] = lambda n : n.key) -> list[A]:
+        """
+        Returns the leaves of the tree. Instead of returning the nodes directly, each is instead passed through f.
+
+        Parameters
+        ----------
+        f : Callable[[Node[K,V]], A]
+            transforms node
+        """
+        if self._root is not None:
+            return self._root.leaves(f)
         return []
 
     def level_order(self) -> list[list[K]]:
@@ -289,11 +326,6 @@ class BinaryTree(Generic[K], ABC):
                     layer.append(None)
             nodes.append(layer)
         return nodes
-
-    def leaves(self) -> List[K]:
-        if self._root is not None:
-            return [None if node is None else node.key for node in self._root.leaves()]
-        return []
 
     @property
     def comparator(self) -> Comparator[K]:
