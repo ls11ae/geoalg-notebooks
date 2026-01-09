@@ -125,6 +125,39 @@ class Node(Generic[K, V], ABC):
         return (([] if self._left is None else self._left.leaves(f)) +
                 ([] if self._right is None else self._right.leaves(f)))
 
+    def level_order(self, levels : list[list[A]], f : Callable[[Node[K,V]], A], depth : int,  root_level : int):
+        """
+        Returns a list containing each level of the tree in a list. Missing entries are filled None so the
+        size of the outer list is always 2^size.
+        Each Node is transformed by f before being added to the list
+
+        Parameters
+        ----------
+        levels : list[list[A]]
+
+        f : Callable[[Node[K,V]], A]
+            transforms node
+        depth : int
+            how far down from the root the current node is
+        root_level : int
+            level of the root/total height of the tree
+
+        """
+        cur_level = root_level - depth #level of the node assuming a full tree
+        levels[depth].append(f(self))
+        if self._left is not None:
+            self._left.level_order(levels, f, depth + 1, root_level)
+        else:
+            for i in range(0, cur_level):
+                for j in range(0, 2**i):
+                    levels[i+depth+1].append(None)
+        if self._right is not None:
+            self._right.level_order(levels, f, depth + 1, root_level)
+        else:
+            for i in range(0, cur_level):
+                for j in range(0, 2**i):
+                    levels[i + depth + 1].append(None)
+
     def _update_after_insert(self, auto_balance : bool):
         self._update_level()
         self._update_balance()
@@ -308,7 +341,7 @@ class BinaryTree(Generic[K], ABC):
             return self._root.leaves(f)
         return []
 
-    def level_order(self) -> list[list[K]]:
+    def level_order_old(self) -> list[list[K]]:
         if self._root is None:
             return []
         queue = [self._root]
@@ -326,6 +359,25 @@ class BinaryTree(Generic[K], ABC):
                     layer.append(None)
             nodes.append(layer)
         return nodes
+
+    def level_order(self, f : Callable[[Node[K,V]], A] = lambda n : n.key) -> list[list[A]]:
+        """
+        Returns a list containing each level of the tree in a list. Missing entries are filled None so the
+        size of the outer list is always 2^size.
+        Each Node is transformed by f before being added to the list
+
+        Parameters
+        ----------
+        f : Callable[[Node[K,V]], A]
+            transforms node
+        """
+        if self._root is None:
+            return []
+        levels : list[list[A]] = []
+        for i in range(0, self._root.level + 1):
+            levels.append([])
+        self._root.level_order(levels, f, 0, self._root.level)
+        return levels
 
     @property
     def comparator(self) -> Comparator[K]:
