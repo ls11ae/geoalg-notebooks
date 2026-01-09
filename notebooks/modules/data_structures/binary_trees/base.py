@@ -164,9 +164,9 @@ class Node(Generic[K, V], ABC):
         self._update_size()
         if auto_balance:
             if self._balance > 1:
-                 self._rotate_right()
+                self._rotate_right(True)
             elif self._balance < -1:
-                self._rotate_left()
+                self._rotate_left(True)
         if self._parent is not None:
             self._parent._update_after_insert(auto_balance)
 
@@ -174,15 +174,15 @@ class Node(Generic[K, V], ABC):
         self._level = max(0 if self._left is None else self._left._level, 0 if self._right is None else self._right._level) + 1
 
     def _update_balance(self):
-        self._balance = (0 if self._left is None else self._left._level) - (0 if self._right is None else self._right._level)
+        self._balance = (0 if self._left is None else self._left._level+1) - (0 if self._right is None else self._right._level+1)
 
     def _update_size(self):
         self._size = (0 if self._left is None else self._left._size) + (0 if self._right is None else self._right._size) + 1
 
-    def _rotate_right(self):
+    def _rotate_right(self, perform_subrotation : bool):
         pivot = self._left
-        if pivot._balance < 0:
-            pivot._rotate_left()
+        if pivot._balance < 0 and perform_subrotation:
+            pivot._rotate_left(False)
             pivot = self._left #pivot changed
         if self._parent is not None:
             if self._parent._left is self:
@@ -197,10 +197,10 @@ class Node(Generic[K, V], ABC):
         self._update_balance()
         self._update_size()
 
-    def _rotate_left(self):
+    def _rotate_left(self, perform_subrotation : bool):
         pivot = self._right
-        if pivot._balance > 0:
-            pivot._rotate_right()
+        if pivot._balance > 0 and perform_subrotation:
+            pivot._rotate_right(False)
             pivot = self._right #pivot changed
         if self._parent is not None:
             if self._parent._left is self:
@@ -340,25 +340,6 @@ class BinaryTree(Generic[K], ABC):
         if self._root is not None:
             return self._root.leaves(f)
         return []
-
-    def level_order_old(self) -> list[list[K]]:
-        if self._root is None:
-            return []
-        queue = [self._root]
-        nodes = []
-        while queue:
-            layer = []
-            layer_size = len(queue)
-            for n in range(0, layer_size):
-                node = queue.pop(0)
-                if node is not None:
-                    layer.append(node.key)
-                    queue.append(node.left)
-                    queue.append(node.right)
-                else:
-                    layer.append(None)
-            nodes.append(layer)
-        return nodes
 
     def level_order(self, f : Callable[[Node[K,V]], A] = lambda n : n.key) -> list[list[A]]:
         """
