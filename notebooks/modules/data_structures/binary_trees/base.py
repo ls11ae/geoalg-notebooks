@@ -186,13 +186,13 @@ class Node(Generic[K, V], ABC):
             pivot = self._left #pivot changed
         if self._parent is not None:
             if self._parent._left is self:
-                self._parent.left = pivot
+                self._parent._update_left(pivot)
             else:
-                self._parent.right = pivot
+                self._parent._update_right(pivot)
         else:
             pivot._parent = None
-        self.left = pivot._right
-        pivot.right = self
+        self._update_left(pivot._right)
+        pivot._update_right(self)
         self._update_level()
         self._update_balance()
         self._update_size()
@@ -204,16 +204,30 @@ class Node(Generic[K, V], ABC):
             pivot = self._right #pivot changed
         if self._parent is not None:
             if self._parent._left is self:
-                self._parent.left = pivot
+                self._parent._update_left(pivot)
             else:
-                self._parent.right = pivot
+                self._parent._update_right(pivot)
         else:
             pivot._parent = None
-        self.right = pivot._left
-        pivot.left = self
+        self._update_right(pivot._left)
+        pivot._update_left(self)
         self._update_level()
         self._update_balance()
         self._update_size()
+
+    def _update_left(self, left : Node[V,K]):
+        self._left = left
+        if left is not None:
+            left._parent = self
+        self._update_level()
+        self._update_balance()
+
+    def _update_right(self, right : Node[V,K]):
+        self._right = right
+        if right is not None:
+            right._parent = self
+        self._update_level()
+        self._update_balance()
 
     @property
     def key(self) -> K:
@@ -227,25 +241,9 @@ class Node(Generic[K, V], ABC):
     def left(self) -> Node[K, V]:
         return self._left
 
-    @left.setter
-    def left(self, left: Node[K, V]):
-        self._left = left
-        if left is not None:
-            left._parent = self
-        self._update_level()
-        self._update_balance()
-
     @property
     def right(self) -> Node[K, V]:
         return self._right
-
-    @right.setter
-    def right(self, right: Node[K, V]):
-        self._right = right
-        if right is not None:
-            right._parent = self
-        self._update_level()
-        self._update_balance()
 
     @property
     def parent(self) -> Node[K, V]:

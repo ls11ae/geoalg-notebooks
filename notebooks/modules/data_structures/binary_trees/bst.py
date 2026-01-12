@@ -16,14 +16,14 @@ class BSTNode(Node[K, V]):
         cr = comparator.compare(key, self._key)
         if cr == ComparisonResult.BEFORE:
             if self._left is None:
-                self.left = BSTNode(key, value)
+                self._update_left(BSTNode(key, value))
                 self._update_after_insert(auto_balance)
                 return True
             else:
                 return self._left.insert(key, value, comparator, auto_balance)
         elif cr == ComparisonResult.AFTER:
             if self._right is None:
-                self.right = BSTNode(key, value)
+                self._update_right(BSTNode(key, value))
                 self._update_after_insert(auto_balance)
                 return True
             else:

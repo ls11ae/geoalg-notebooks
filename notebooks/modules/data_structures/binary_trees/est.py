@@ -17,8 +17,8 @@ class ESTNode(Node[K, V]):
         if cr == ComparisonResult.BEFORE or cr == ComparisonResult.MATCH:
             # Note: every node that isn't a leaf has exactly 2 children
             if self.is_leaf():
-                self.left = ESTNode(key, value)
-                self.right = ESTNode(self._key, self._value)
+                self._update_left(ESTNode(key, value))
+                self._update_right(ESTNode(self._key, self._value))
                 self._key = key
                 self._value = value
                 self._update_after_insert(auto_balance)
@@ -27,8 +27,8 @@ class ESTNode(Node[K, V]):
                 return self._left.insert(key, value, comparator, auto_balance)
         elif cr == ComparisonResult.AFTER:
             if self.is_leaf():
-                self.left = ESTNode(self._key, self._value)
-                self.right = ESTNode(key, value)
+                self._update_left(ESTNode(self._key, self._value))
+                self._update_right(ESTNode(key, value))
                 self._key = key
                 self._value = value
                 self._update_after_insert(auto_balance)

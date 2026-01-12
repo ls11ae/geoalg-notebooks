@@ -1,17 +1,15 @@
-from typing import Optional, override
+from typing import override
 
 from ...data_structures.binary_trees import EST
 from ...geometry import Point, PointXComparator
-from ..drawing import DrawingMode
 from ..drawing_modes import BinaryTreeMode
 from ..instance_handle import InstanceHandle
 
 class BinaryTreeInstance(InstanceHandle[EST[Point]]):
-    def __init__(self, drawing_mode: Optional[DrawingMode] = None):
+    def __init__(self):
         self._instance = EST[Point](PointXComparator(), True)
-        if drawing_mode is None:
-            drawing_mode = BinaryTreeMode()
-            drawing_mode.binary_tree = self._instance
+        drawing_mode = BinaryTreeMode()
+        drawing_mode.binary_tree = self._instance
         super().__init__(set(), drawing_mode, 15)
 
     @override
