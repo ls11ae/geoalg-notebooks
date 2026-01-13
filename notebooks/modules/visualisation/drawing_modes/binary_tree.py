@@ -27,8 +27,6 @@ class BinaryTreeMode(DrawingMode):
         self._node_radius = 11
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
-
-
         if self.binary_tree is None:
             '''
             drawing when the range search algorithm is used.
@@ -42,6 +40,7 @@ class BinaryTreeMode(DrawingMode):
             '''
             binary_tree = self.binary_tree.level_order()
             with drawer.main_canvas.hold():
+                drawer.main_canvas.clear()
                 cur_level = 0
                 y_node = 0
                 space_per_level = drawer.main_canvas.height / (self.binary_tree.height + 1)

@@ -159,9 +159,7 @@ class Node(Generic[K, V], ABC):
                     levels[i + depth + 1].append(None)
 
     def _update_after_insert(self, auto_balance : bool):
-        self._update_level()
-        self._update_balance()
-        self._update_size()
+        self._update_lbs()
         if auto_balance:
             if self._balance > 1:
                 self._rotate_right(True)
@@ -170,14 +168,18 @@ class Node(Generic[K, V], ABC):
         if self._parent is not None:
             self._parent._update_after_insert(auto_balance)
 
-    def _update_level(self):
-        self._level = max(0 if self._left is None else self._left._level, 0 if self._right is None else self._right._level) + 1
+    def _update_lbs(self):
+        """
+        updates level, balance and size of the binary tree
+        """
+        self._level = max(0 if self._left is None else self._left._level,
+                          0 if self._right is None else self._right._level) + 1
 
-    def _update_balance(self):
-        self._balance = (0 if self._left is None else self._left._level+1) - (0 if self._right is None else self._right._level+1)
+        self._balance = (0 if self._left is None else self._left._level + 1) - (
+            0 if self._right is None else self._right._level + 1)
 
-    def _update_size(self):
-        self._size = (0 if self._left is None else self._left._size) + (0 if self._right is None else self._right._size) + 1
+        self._size = (0 if self._left is None else self._left._size) + (
+            0 if self._right is None else self._right._size) + 1
 
     def _rotate_right(self, perform_subrotation : bool):
         pivot = self._left
@@ -193,9 +195,6 @@ class Node(Generic[K, V], ABC):
             pivot._parent = None
         self._update_left(pivot._right)
         pivot._update_right(self)
-        self._update_level()
-        self._update_balance()
-        self._update_size()
 
     def _rotate_left(self, perform_subrotation : bool):
         pivot = self._right
@@ -211,23 +210,18 @@ class Node(Generic[K, V], ABC):
             pivot._parent = None
         self._update_right(pivot._left)
         pivot._update_left(self)
-        self._update_level()
-        self._update_balance()
-        self._update_size()
 
     def _update_left(self, left : Node[V,K]):
         self._left = left
         if left is not None:
             left._parent = self
-        self._update_level()
-        self._update_balance()
+        self._update_lbs()
 
     def _update_right(self, right : Node[V,K]):
         self._right = right
         if right is not None:
             right._parent = self
-        self._update_level()
-        self._update_balance()
+        self._update_lbs()
 
     @property
     def key(self) -> K:

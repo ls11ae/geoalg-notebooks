@@ -10,7 +10,7 @@ class BinaryTreeInstance(InstanceHandle[EST[Point]]):
         self._instance = EST[Point](PointXComparator(), True)
         drawing_mode = BinaryTreeMode()
         drawing_mode.binary_tree = self._instance
-        super().__init__(set(), drawing_mode, 15)
+        super().__init__(set(), drawing_mode, 10)
 
     @override
     def add_point(self, point: Point) -> Point | None:
