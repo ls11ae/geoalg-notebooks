@@ -158,6 +158,22 @@ class Node(Generic[K, V], ABC):
                 for j in range(0, 2**i):
                     levels[i + depth + 1].append(None)
 
+    def first_in_range(self, left_bound: K, right_bound: K, comparator : Comparator[K]) -> Node[K, V] | None:
+        cr_left = comparator.compare(left_bound, self._key)
+        cr_right = comparator.compare(right_bound, self._key)
+        if cr_right is ComparisonResult.BEFORE or cr_right is ComparisonResult.MATCH:
+            #range fully left of node
+            if self._left is None:
+                return None
+            return self._left.first_in_range(left_bound, right_bound, comparator)
+        elif cr_left is ComparisonResult.AFTER:
+            #range fully right of node
+            if self._right is None:
+                return None
+            return self._right.first_in_range(left_bound, right_bound, comparator)
+        else:
+            return self
+
     def _update_after_insert(self, auto_balance : bool):
         self._update_lbs()
         if auto_balance:
@@ -351,6 +367,11 @@ class BinaryTree(Generic[K], ABC):
             levels.append([])
         self._root.level_order(levels, f, 0, self._root.level)
         return levels
+
+    def first_in_range(self, left_bound : K, right_bound : K) -> Node[K,V] | None:
+        if self._root is None:
+            return None
+        return self._root.first_in_range(left_bound, right_bound, self._comparator)
 
     @property
     def comparator(self) -> Comparator[K]:

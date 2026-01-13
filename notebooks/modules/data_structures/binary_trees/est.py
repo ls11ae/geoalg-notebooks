@@ -72,7 +72,7 @@ class EST(BinaryTree[K]):
                     leaves.append(node)
             else:
                 if node.right is not None:
-                    leaves.extend(node.right.leaves())
+                    leaves.extend(node.right.leaves(lambda n : n))
         for node in right_path:
             if node.is_leaf():
                 cr_left = self._comparator.compare(node.key, r[0])
@@ -81,7 +81,7 @@ class EST(BinaryTree[K]):
                     leaves.append(node)
             else:
                 if node.left is not None:
-                    leaves.extend(node.left.leaves())
+                    leaves.extend(node.left.leaves(lambda n : n))
         return leaves
 
     def _find_split_node(self, r : tuple[K,K]) -> Optional[Node[K, None]]:
