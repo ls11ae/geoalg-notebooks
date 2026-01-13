@@ -23,7 +23,7 @@ class BinaryTreeMode(DrawingMode):
     """
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
         super().__init__(point_radius, highlight_radius, line_width)
-        self.binary_tree : Optional[BinaryTree[float]] = None
+        self.binary_tree : Optional[BinaryTree[int]] = None
         self._node_radius = 11
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
@@ -52,7 +52,7 @@ class BinaryTreeMode(DrawingMode):
                     for node in level:
                         if node is not None:
                             x_node = space_per_node/2 + (space_per_node * cur_node)
-                            drawer.main_canvas.draw_string(int(x_node), int(y_node), str(int(node)))
+                            drawer.main_canvas.draw_string(int(x_node), int(y_node), str(node))
                             drawer.main_canvas.draw_circle(Point(x_node,y_node), self._node_radius, self._line_width/3)
                             if cur_level > 0:
                                 # draw line between child and parent node

@@ -1,13 +1,13 @@
 from typing import override
 
 from ...data_structures.binary_trees import EST
-from ...geometry import Point, PointXComparator, FloatComparator
+from ...geometry import Point, IntComparator
 from ..drawing_modes import BinaryTreeMode
 from ..instance_handle import InstanceHandle
 
 class BinaryTreeInstance(InstanceHandle[EST[Point]]):
     def __init__(self):
-        self._instance = EST[float](FloatComparator(), True)
+        self._instance = EST[int](IntComparator(), True)
         drawing_mode = BinaryTreeMode()
         drawing_mode.binary_tree = self._instance
         super().__init__(set(), drawing_mode, 10)
@@ -15,13 +15,13 @@ class BinaryTreeInstance(InstanceHandle[EST[Point]]):
     @override
     def add_point(self, point: Point) -> Point | None:
         point.__round__()
-        if self._instance.insert(point.x):
+        if self._instance.insert(int(point.x)):
             return point
         return None
 
     @override
     def clear(self):
-        self._instance = EST[float](FloatComparator(), True)
+        self._instance = EST[int](IntComparator(), True)
         self._drawing_mode.binary_tree = self._instance
 
     @override
