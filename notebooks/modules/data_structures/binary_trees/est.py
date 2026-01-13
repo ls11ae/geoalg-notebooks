@@ -1,6 +1,6 @@
 from __future__ import annotations
-from typing import Optional, override
-from .base import Node, BinaryTree, K, V
+from typing import Optional, override, Callable
+from .base import Node, BinaryTree, K, V, A
 from ...geometry import Comparator, ComparisonResult
 
 """
@@ -37,6 +37,39 @@ class ESTNode(Node[K, V]):
                 return self._right.insert(key, value, comparator, auto_balance)
         else:
             return False
+
+    @override
+    def report_leq(self, upper_bound : K, comparator : Comparator[K], f : Callable[[Node[K,V]], A]) -> list[A]:
+        cr = comparator.compare(upper_bound, self._key)
+        if cr is ComparisonResult.MATCH or cr is ComparisonResult.AFTER:
+            #less than search term
+            if not self.is_leaf():
+                return self._left.leaves(f) + self._right.report_leq(upper_bound, comparator, f)
+            else:
+                return [f(self)]
+        else:
+            #more than search term
+            if not self.is_leaf():
+                return self._left.report_leq(upper_bound, comparator, f)
+            else:
+                return []
+
+    @override
+    def report_geq(self, upper_bound : K, comparator : Comparator[K], f : Callable[[Node[K,V]], A]) -> list[A]:
+        cr = comparator.compare(upper_bound, self._key)
+        if cr is ComparisonResult.BEFORE or cr is ComparisonResult.MATCH:
+            #less than search term
+            if not self.is_leaf():
+                return  self._left.report_geq(upper_bound, comparator, f) + self._right.leaves(f)
+            else:
+                return [f(self)]
+        else:
+            #more than search term
+            if not self.is_leaf():
+                return self._right.report_geq(upper_bound, comparator, f)
+            else:
+                return []
+
 
     @override
     def delete(self, key: K, comparator: Comparator[K]) -> bool:

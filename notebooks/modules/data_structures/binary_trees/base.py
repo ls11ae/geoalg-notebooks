@@ -1,6 +1,9 @@
 from __future__ import annotations
 from typing import TypeVar, Generic, Optional, List, Callable
 from abc import ABC, abstractmethod
+
+from prompt_toolkit.filters import control_is_searchable
+
 from ...geometry import Comparator, ComparisonResult
 
 '''Note: compared to the other implementation in data_structures.binary_tree.py this one is more generalized, but lacks
@@ -59,11 +62,19 @@ class Node(Generic[K, V], ABC):
 
     @abstractmethod
     def insert(self, key: K, value: V, comparator : Comparator[K], auto_balance: bool) -> bool:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def delete(self, key : K , comparator : Comparator[K]) -> bool:
-        pass
+        raise NotImplementedError
+
+    @abstractmethod
+    def report_leq(self, upper_bound: K, comparator: Comparator[K], f: Callable[[Node[K, V]], A]) -> list[A]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def report_geq(self, lower_bound: K, comparator: Comparator[K], f: Callable[[Node[K, V]], A]) -> list[A]:
+        raise NotImplementedError
 
     def path(self, key : K, comparator : Comparator[K]) -> list[Node[K, V]]:
         """
@@ -158,21 +169,21 @@ class Node(Generic[K, V], ABC):
                 for j in range(0, 2**i):
                     levels[i + depth + 1].append(None)
 
-    def first_in_range(self, left_bound: K, right_bound: K, comparator : Comparator[K]) -> Node[K, V] | None:
+    def first_in_range(self, left_bound: K, right_bound: K, comparator : Comparator[K], f : Callable[[Node[K,V]], A]) -> A | None:
         cr_left = comparator.compare(left_bound, self._key)
         cr_right = comparator.compare(right_bound, self._key)
-        if cr_right is ComparisonResult.BEFORE or cr_right is ComparisonResult.MATCH:
+        if cr_right is ComparisonResult.BEFORE:
             #range fully left of node
             if self._left is None:
                 return None
-            return self._left.first_in_range(left_bound, right_bound, comparator)
+            return self._left.first_in_range(left_bound, right_bound, comparator, f)
         elif cr_left is ComparisonResult.AFTER:
             #range fully right of node
             if self._right is None:
                 return None
-            return self._right.first_in_range(left_bound, right_bound, comparator)
+            return self._right.first_in_range(left_bound, right_bound, comparator, f)
         else:
-            return self
+            return f(self)
 
     def _update_after_insert(self, auto_balance : bool):
         self._update_lbs()
@@ -368,10 +379,20 @@ class BinaryTree(Generic[K], ABC):
         self._root.level_order(levels, f, 0, self._root.level)
         return levels
 
-    def first_in_range(self, left_bound : K, right_bound : K) -> Node[K,V] | None:
+    def first_in_range(self, left_bound : K, right_bound : K, f: Callable[[Node[K, V]], A] = lambda n: n.key) -> Node[K,V] | None:
         if self._root is None:
             return None
-        return self._root.first_in_range(left_bound, right_bound, self._comparator)
+        return self._root.first_in_range(left_bound, right_bound, self._comparator, f)
+
+    def report_leq(self, upper_bound: K, f: Callable[[Node[K, V]], A] = lambda n: n.key) -> list[A]:
+        if self._root is None:
+            return []
+        return self._root.report_leq(upper_bound, self._comparator, f)
+
+    def report_geq(self, lower_bound: K, f: Callable[[Node[K, V]], A] = lambda n: n.key) -> list[A]:
+        if self._root is None:
+            return []
+        return self._root.report_geq(lower_bound, self._comparator, f)
 
     @property
     def comparator(self) -> Comparator[K]:

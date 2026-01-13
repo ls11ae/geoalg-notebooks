@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import override
-from .base import Node, BinaryTree, K, V
+from typing import override, Callable
+from .base import Node, BinaryTree, K, V, A
 from ...geometry import Comparator, ComparisonResult
 """
 implementation of a binary search tree
@@ -34,6 +34,14 @@ class BSTNode(Node[K, V]):
     @override
     def delete(self, key: K, comparator: Comparator[K]) -> bool:
         raise NotImplementedError()
+
+    @override
+    def report_leq(self, upper_bound: K, comparator: Comparator[K], f: Callable[[Node[K, V]], A]) -> list[A]:
+        raise NotImplementedError
+
+    @override
+    def report_geq(self, lower_bound: K, comparator: Comparator[K], f: Callable[[Node[K, V]], A]) -> list[A]:
+        raise NotImplementedError
 
 class BST(BinaryTree[K]):
     """Binary search tree"""
