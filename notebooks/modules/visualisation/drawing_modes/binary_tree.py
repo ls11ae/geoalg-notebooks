@@ -1,8 +1,7 @@
 from __future__ import annotations
-import time
 from typing import Iterable, Optional
 import math
-from ...data_structures.binary_trees.base import BinaryTree
+from ...data_structures import EST
 
 from ..drawing import (
     DEFAULT_POINT_RADIUS, DEFAULT_HIGHLIGHT_RADIUS, DEFAULT_LINE_WIDTH,
@@ -23,7 +22,7 @@ class BinaryTreeMode(DrawingMode):
     """
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
         super().__init__(point_radius, highlight_radius, line_width)
-        self.binary_tree : Optional[BinaryTree[int]] = None
+        self.binary_tree : Optional[EST[int]] = None
         self._node_radius = 11
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):

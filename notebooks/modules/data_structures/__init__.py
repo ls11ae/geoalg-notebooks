@@ -1,5 +1,5 @@
 from .binary_tree import (
-    ComparisonResult, Comparator, BinaryTree, BinaryTreeDict, AnimationBinaryTree, AnimationBinaryTreeDict
+    BinaryTree, BinaryTreeDict, AnimationBinaryTree, AnimationBinaryTreeDict
 )
 from .dcsp import DoublyConnectedSimplePolygon
 from .dcel import DoublyConnectedEdgeList

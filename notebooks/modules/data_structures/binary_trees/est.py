@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, override, Callable
+from typing import override, Callable
 from .base import Node, BinaryTree, K, V, A
 from ...geometry import Comparator, ComparisonResult
 

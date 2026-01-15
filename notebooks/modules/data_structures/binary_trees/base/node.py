@@ -1,17 +1,15 @@
 from __future__ import annotations
-from typing import TypeVar, Generic, Optional, List, Callable
+from enum import Enum
+from typing import TypeVar, Generic, Optional, Callable, Any
 from abc import ABC, abstractmethod
 
-from prompt_toolkit.filters import control_is_searchable
-
-from ...geometry import Comparator, ComparisonResult
+from ....geometry import Comparator, ComparisonResult
 
 '''Note: compared to the other implementation in data_structures.binary_tree.py this one is more generalized, but lacks
     a lot of functionality. If the missing methods are added, remember to generalize the use of PointSequence to AnimationObject'''
 
 K = TypeVar("K")
 V = TypeVar("V")
-
 A = TypeVar("A")
 
 class Node(Generic[K, V], ABC):
@@ -130,21 +128,32 @@ class Node(Generic[K, V], ABC):
                 for j in range(0, 2**i):
                     levels[i + depth + 1].append(None)
 
-    def first_in_range(self, lower_bound: K, upper_bound: K, comparator : Comparator[K], f : Callable[[Node[K,V]], A]) -> A | None:
+    def first_in_range(self, lower_bound: K, upper_bound: K, comparator : Comparator[K], tracker : TreeTracker[K,V], f : Callable[[Node[K,V]], A]) -> A | None:
+        tracker.node_visited(self)
         cr_left = comparator.compare(lower_bound, self._key)
         cr_right = comparator.compare(upper_bound, self._key)
+        t = [lower_bound, upper_bound, self._key, cr_left, cr_right]
         if cr_right is ComparisonResult.BEFORE:
             #range fully left of node
             if self._left is None:
+                tracker.result_added(None)
                 return None
-            return self._left.first_in_range(lower_bound, upper_bound, comparator, f)
+            result = self._left.first_in_range(lower_bound, upper_bound, comparator, tracker, f)
+            tracker.node_visited(self)
+            return result
         elif cr_left is ComparisonResult.AFTER:
             #range fully right of node
             if self._right is None:
+                #tracker.result_added(None)
                 return None
-            return self._right.first_in_range(lower_bound, upper_bound, comparator, f)
+            result = self._right.first_in_range(lower_bound, upper_bound, comparator, tracker, f)
+            tracker.node_visited(self)
+            return result
         else:
-            return f(self)
+            #node in range
+            result = f(self)
+            tracker.result_added(result)
+            return t
 
     def _update_after_insert(self, auto_balance : bool):
         self._update_lbs()
@@ -249,145 +258,100 @@ class Node(Generic[K, V], ABC):
             return self._parent.root
         return self
 
-class BinaryTree(Generic[K], ABC):
-    """Binary search tree"""
-    def __init__(self, comparator: Comparator[K], auto_balance : bool):
-        self._root : Optional[Node[K, None]] = None
-        self._comparator = comparator
-        self._auto_balance = auto_balance
-    @abstractmethod
-    def insert(self, key: K) -> bool:
+
+class TreeTracker(Generic[K,V]):
+    """
+    can be given to certain methods of the binary tree implementations to track actions happening in those methods.
+    """
+
+    def __init__(self):
+        self._events : list[TransitionEvent] = []
+        self._last_node : Optional[Node[K,V]] = None
+
+    def node_visited(self, node : Node[K,V]):
+        """
+        called at the start of each recursive function to track descent into tree
+        called after each recursive call to track ascend to top
+        """
+        transition_type = TransitionType.START
+        if self._last_node is not None:
+            if self._last_node.parent is node:
+                transition_type = TransitionType.PARENT
+            elif self._last_node.left is node:
+                transition_type = TransitionType.LEFT
+            elif self._last_node.right is node:
+                transition_type = TransitionType.RIGHT
+            else:
+                transition_type = TransitionType.OTHER
+        self._events.append(NodeVisitedEvent(node, transition_type))
+        self._last_node = node
+
+    def result_added(self, result : Any):
+        """
+        called when the return value of a method is changed, either storing the new value
+        or the changed value
+        """
+        self._events.append(ResultAddedEvent(self._last_node, result))
+
+    @property
+    def events(self) -> list[TransitionEvent]:
+        return self._events
+
+    @property
+    def visited_nodes(self, f: Callable[[Node[K, V]], A] = lambda n : n.key) -> list[A]:
+        return [f(event.node) for event in self._events if isinstance(event, NodeVisitedEvent)]
+
+    @property
+    def transition_types(self) -> list[TransitionType]:
+        return [event.transition_type for event in self._events if isinstance(event, NodeVisitedEvent)]
+
+    @property
+    def transition_events(self) -> list[NodeVisitedEvent]:
+        return [event for event in self._events if isinstance(event, NodeVisitedEvent)]
+
+    @property
+    def results(self) -> Any:
+        return [event.result for event in self._events if isinstance(event, ResultAddedEvent)]
+
+
+class TransitionType(Enum):
+    START = 0
+    LEFT = 1
+    RIGHT = 2
+    PARENT = 3
+    OTHER = 4
+
+
+class TransitionEvent:
+    def __init__(self):
         pass
 
-    def delete(self, key : K) -> bool:
-        if self._root is not None:
-            return self._root.delete(key, self._comparator)
-        return False
 
-    def pre_order(self, f : Callable[[Node[K,V]], A] = lambda n : n.key) -> list[A]:
-        """
-        Returns the tree in pre-order. Instead of returning the nodes directly, each is instead passed through f.
-
-        Parameters
-        ----------
-        f : Callable[[Node[K,V]], A]
-            transforms node
-        """
-        if self._root is not None:
-            return self._root.pre_order(f)
-        return []
-
-    def post_order(self, f : Callable[[Node[K,V]], A] = lambda n : n.key) -> list[A]:
-        """
-        Returns the tree in post-order. Instead of returning the nodes directly, each is instead passed through f.
-
-        Parameters
-        ----------
-        f : Callable[[Node[K,V]], A]
-            transforms node
-        """
-        if self._root is not None:
-            return self._root.post_order(f)
-        return []
-
-    def in_order(self, f : Callable[[Node[K,V]], A] = lambda n : n.key) -> list[A]:
-        """
-        Returns the tree in in-order. Instead of returning the nodes directly, each is instead passed through f.
-
-        Parameters
-        ----------
-        f : Callable[[Node[K,V]], A]
-            transforms node
-        """
-        if self._root is not None:
-            return self._root.in_order(f)
-        return []
-
-    def leaves(self, f : Callable[[Node[K,V]], A] = lambda n : n.key) -> list[A]:
-        """
-        Returns the leaves of the tree. Instead of returning the nodes directly, each is instead passed through f.
-
-        Parameters
-        ----------
-        f : Callable[[Node[K,V]], A]
-            transforms node
-        """
-        if self._root is not None:
-            return self._root.leaves(f)
-        return []
-
-    def level_order(self, f : Callable[[Node[K,V]], A] = lambda n : n.key) -> list[list[A]]:
-        """
-        Returns a list containing each level of the tree in a list. Missing entries are filled None so the
-        size of the outer list is always 2^size.
-        Each Node is transformed by f before being added to the list
-
-        Parameters
-        ----------
-        f : Callable[[Node[K,V]], A]
-            transforms node
-        """
-        if self._root is None:
-            return []
-        levels : list[list[A]] = []
-        for i in range(0, self._root.level + 1):
-            levels.append([])
-        self._root.level_order(levels, f, 0, self._root.level)
-        return levels
-
-    def first_in_range(self, lower_bound : K, upper_bound : K, f: Callable[[Node[K, V]], A] = lambda n: n.key) -> Node[K,V] | None:
-        if self._root is None:
-            return None
-        return self._root.first_in_range(lower_bound, upper_bound, self._comparator, f)
-
-    def report_leq(self, upper_bound: K, f: Callable[[Node[K, V]], A] = lambda n: n.key) -> list[A]:
-        if self._root is None:
-            return []
-        return self._root.report_leq(upper_bound, self._comparator, f)
-
-    def report_geq(self, lower_bound: K, f: Callable[[Node[K, V]], A] = lambda n: n.key) -> list[A]:
-        if self._root is None:
-            return []
-        return self._root.report_geq(lower_bound, self._comparator, f)
-
-    def report_in_range(self, lower_bound: K, upper_bound: K, f: Callable[[Node[K, V]], A] = lambda n: n.key) -> list[A]:
-        if self._root is None:
-            return []
-        splitting_node = self._root.first_in_range(lower_bound, upper_bound, self._comparator, lambda n: n)
-        if splitting_node is None:
-            return []
-        if splitting_node.is_leaf():
-            return [splitting_node]
-        else:
-            ret = []
-            if splitting_node.left is not None:
-                ret += splitting_node.left.report_geq(lower_bound, self._comparator, f)
-            if splitting_node.right is not None:
-                ret += splitting_node.right.report_leq(upper_bound, self._comparator, f)
-            return ret
-
+class NodeVisitedEvent(Generic[K,V], TransitionEvent):
+    def __init__(self, node : Node[K,V], transition_type : TransitionType):
+        super().__init__()
+        self._node : Node[V,K] = node
+        self._transition_type : TransitionType = transition_type
 
     @property
-    def comparator(self) -> Comparator[K]:
-        return self._comparator
-
-    @comparator.setter
-    def comparator(self, comparator: Comparator[K]):
-        self._comparator = comparator
+    def node(self) -> Node[K,V]:
+        return self._node
 
     @property
-    def size(self) -> int:
-        if self._root is None:
-            return 0
-        else:
-            return self._root.size
+    def transition_type(self) -> TransitionType:
+        return self._transition_type
+
+
+class ResultAddedEvent(Generic[K,V], TransitionEvent):
+    def __init__(self, node : Node[K,V], result : Any):
+        super().__init__()
+        self._node: Node[V, K] = node
+        self._result : Any = result
 
     @property
-    def height(self) -> int:
-        if self._root is None:
-            return 0
-        else:
-            return self._root.level
+    def node(self) -> Node[K, V]:
+        return self._node
 
-    def draw(self):
-        pass
+    @property
+    def result(self):
+        return self._result
