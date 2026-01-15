@@ -67,11 +67,11 @@ class Node(Generic[K, V], ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def report_leq(self, upper_bound: K, comparator: Comparator[K], f: Callable[[Node[K, V]], A]) -> list[A]:
+    def report_leq(self, upper_bound: K, comparator: Comparator[K], t : TreeTracker[V,K],f: Callable[[Node[K, V]], A]) -> list[A]:
         raise NotImplementedError
 
     @abstractmethod
-    def report_geq(self, lower_bound: K, comparator: Comparator[K], f: Callable[[Node[K, V]], A]) -> list[A]:
+    def report_geq(self, lower_bound: K, comparator: Comparator[K], t : TreeTracker[V,K],f: Callable[[Node[K, V]], A]) -> list[A]:
         raise NotImplementedError
 
     def pre_order(self, f : Callable[[Node[K,V]], A]) -> list[A]:
@@ -89,11 +89,17 @@ class Node(Generic[K, V], ABC):
                 [f(self)] +
                 ([None] if self._right is None else self._right.in_order(f)))
 
-    def leaves(self, f : Callable[[Node[K,V]], A]) -> list[A]:
+    def leaves(self,tracker : TreeTracker[K,V], f : Callable[[Node[K,V]], A]) -> list[A]:
+        tracker.node_visited(self)
         if self.is_leaf():
-            return [f(self)]
-        return (([] if self._left is None else self._left.leaves(f)) +
-                ([] if self._right is None else self._right.leaves(f)))
+            result = [f(self)]
+            tracker.result_added(result)
+            return result
+        result_left = [] if self._left is None else self._left.leaves(tracker, f)
+        tracker.node_visited(self)
+        result_right = [] if self._right is None else self._right.leaves(tracker, f)
+        tracker.node_visited(self)
+        return result_left + result_right
 
     def level_order(self, levels : list[list[A]], f : Callable[[Node[K,V]], A], depth : int,  root_level : int):
         """
@@ -132,7 +138,6 @@ class Node(Generic[K, V], ABC):
         tracker.node_visited(self)
         cr_left = comparator.compare(lower_bound, self._key)
         cr_right = comparator.compare(upper_bound, self._key)
-        t = [lower_bound, upper_bound, self._key, cr_left, cr_right]
         if cr_right is ComparisonResult.BEFORE:
             #range fully left of node
             if self._left is None:
@@ -153,7 +158,7 @@ class Node(Generic[K, V], ABC):
             #node in range
             result = f(self)
             tracker.result_added(result)
-            return t
+            return result
 
     def _update_after_insert(self, auto_balance : bool):
         self._update_lbs()
@@ -293,6 +298,12 @@ class TreeTracker(Generic[K,V]):
         """
         self._events.append(ResultAddedEvent(self._last_node, result))
 
+    def subroutine_called(self, routine_name : str):
+        self._events.append(SubroutineCalledEvent(routine_name))
+
+    def reset_last_node(self):
+        self._last_node = None
+
     @property
     def events(self) -> list[TransitionEvent]:
         return self._events
@@ -341,6 +352,9 @@ class NodeVisitedEvent(Generic[K,V], TransitionEvent):
     def transition_type(self) -> TransitionType:
         return self._transition_type
 
+    def __str__(self):
+        return str(self._transition_type)+ "|" + str(self._node.key)
+
 
 class ResultAddedEvent(Generic[K,V], TransitionEvent):
     def __init__(self, node : Node[K,V], result : Any):
@@ -355,3 +369,12 @@ class ResultAddedEvent(Generic[K,V], TransitionEvent):
     @property
     def result(self):
         return self._result
+
+class SubroutineCalledEvent(TransitionEvent):
+    def __init__(self, name : str):
+        super().__init__()
+        self._name = name
+
+    @property
+    def name(self) -> str:
+        return self._name

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import override, Callable
-from .base import Node, BinaryTree, K, V, A
+from .base import Node, BinaryTree, K, V, A, TreeTracker
 from ...geometry import Comparator, ComparisonResult
 
 """
@@ -39,34 +39,52 @@ class ESTNode(Node[K, V]):
             return False
 
     @override
-    def report_leq(self, upper_bound : K, comparator : Comparator[K], f : Callable[[Node[K,V]], A]) -> list[A]:
+    def report_leq(self, upper_bound : K, comparator : Comparator[K], tracker : TreeTracker[V,K], f : Callable[[Node[K,V]], A]) -> list[A]:
+        tracker.node_visited(self)
         cr = comparator.compare(upper_bound, self._key)
         if cr is ComparisonResult.MATCH or cr is ComparisonResult.AFTER:
             #less than search term
             if not self.is_leaf():
-                return self._left.leaves(f) + self._right.report_leq(upper_bound, comparator, f)
+                result_left = self._left.leaves(tracker, f)
+                tracker.node_visited(self)
+                result_right = self._right.report_leq(upper_bound, comparator, tracker, f)
+                tracker.node_visited(self)
+                return result_left + result_right
             else:
-                return [f(self)]
+                result = [f(self)]
+                tracker.result_added(result)
+                return result
         else:
             #more than search term
             if not self.is_leaf():
-                return self._left.report_leq(upper_bound, comparator, f)
+                result = self._left.report_leq(upper_bound, comparator, tracker, f)
+                tracker.node_visited(self)
+                return result
             else:
                 return []
 
     @override
-    def report_geq(self, upper_bound : K, comparator : Comparator[K], f : Callable[[Node[K,V]], A]) -> list[A]:
+    def report_geq(self, upper_bound : K, comparator : Comparator[K], tracker : TreeTracker[V,K], f : Callable[[Node[K,V]], A]) -> list[A]:
+        tracker.node_visited(self)
         cr = comparator.compare(upper_bound, self._key)
         if cr is ComparisonResult.BEFORE or cr is ComparisonResult.MATCH:
             #less than search term
             if not self.is_leaf():
-                return  self._left.report_geq(upper_bound, comparator, f) + self._right.leaves(f)
+                result_left = self._left.report_geq(upper_bound, comparator, tracker, f)
+                tracker.node_visited(self)
+                result_right = self._right.leaves(tracker, f)
+                tracker.node_visited(self)
+                return result_left + result_right
             else:
-                return [f(self)]
+                result = [f(self)]
+                tracker.result_added(result)
+                return result
         else:
             #more than search term
             if not self.is_leaf():
-                return self._right.report_geq(upper_bound, comparator, f)
+                result = self._right.report_geq(upper_bound, comparator, tracker, f)
+                tracker.node_visited(self)
+                return result
             else:
                 return []
 
