@@ -3,11 +3,12 @@ from typing import override, Callable
 from .base import Node, BinaryTree, K, V, A, TreeTracker
 from ...geometry import Comparator, ComparisonResult
 
-"""
-Implementation of an external search tree. All data is stored in the leaves
-"""
 
 class ESTNode(Node[K, V]):
+    """
+    Implementation of an external search tree. Keys are repeated more than once such that every appears in the leaves
+    exactly once. This ensures every node has either 0 or 2 children
+    """
     def __init__(self, key: K, value: V):
         super().__init__(key, value)
 
@@ -15,7 +16,6 @@ class ESTNode(Node[K, V]):
     def insert(self, key: K, value: V, comparator: Comparator[K], auto_balance : bool) -> bool:
         cr = comparator.compare(key, self._key)
         if cr == ComparisonResult.BEFORE or cr == ComparisonResult.MATCH:
-            # Note: every node that isn't a leaf has exactly 2 children
             if self.is_leaf():
                 self._update_left(ESTNode(key, value))
                 self._update_right(ESTNode(self._key, self._value))
@@ -105,7 +105,4 @@ class EST(BinaryTree[K]):
         if self._root is None:
             self._root = ESTNode(key, None)
             return True
-        if self._root.insert(key, None, self._comparator, self._auto_balance):
-            self._root = self._root.root
-            return True
-        return False
+        return super().insert(key)

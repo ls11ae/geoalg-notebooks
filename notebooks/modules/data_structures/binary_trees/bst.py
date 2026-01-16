@@ -53,7 +53,4 @@ class BST(BinaryTree[K]):
         if self._root is None:
             self._root = BSTNode(key, None)
             return True
-        if self._root.insert(key, None, self._comparator, self._auto_balance):
-            self._root = self._root.root
-            return True
-        return False
+        return super().insert(key)

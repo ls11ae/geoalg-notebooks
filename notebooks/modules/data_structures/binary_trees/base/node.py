@@ -90,12 +90,10 @@ class Node(Generic[K, V], ABC):
                 ([None] if self._right is None else self._right.in_order(f)))
 
     def leaves(self,tracker : TreeTracker[K,V], f : Callable[[Node[K,V]], A]) -> list[A]:
-        if tracker:
-            tracker.track_node_visit(self)
+        tracker.track_node_visit(self)
         if self.is_leaf():
             result = [f(self)]
-            if tracker:
-                tracker.track_result(result)
+            tracker.track_result(result)
             return result
         result_left = [] if self._left is None else self._left.leaves(tracker, f)
         tracker.track_node_visit(self)
@@ -104,34 +102,19 @@ class Node(Generic[K, V], ABC):
         return result_left + result_right
 
     def level_order(self, levels : list[list[A]], f : Callable[[Node[K,V]], A], depth : int,  root_level : int):
-        """
-        Returns a list containing each level of the tree in a list. Missing entries are filled None so the
-        size of the outer list is always 2^size.
-        Each Node is transformed by f before being added to the list
-
-        Parameters
-        ----------
-        levels : list[list[A]]
-
-        f : Callable[[Node[K,V]], A]
-            transforms node
-        depth : int
-            how far down from the root the current node is
-        root_level : int
-            level of the root/total height of the tree
-
-        """
         cur_level = root_level - depth #level of the node assuming a full tree
         levels[depth].append(f(self))
         if self._left is not None:
             self._left.level_order(levels, f, depth + 1, root_level)
         else:
+            #fill missing left children entries with None
             for i in range(0, cur_level):
                 for j in range(0, 2**i):
                     levels[i+depth+1].append(None)
         if self._right is not None:
             self._right.level_order(levels, f, depth + 1, root_level)
         else:
+            #fill missing right children entries with None
             for i in range(0, cur_level):
                 for j in range(0, 2**i):
                     levels[i + depth + 1].append(None)
@@ -143,7 +126,6 @@ class Node(Generic[K, V], ABC):
         if cr_right is ComparisonResult.BEFORE:
             #range fully left of node
             if self._left is None:
-                tracker.track_result(None)
                 return None
             result = self._left.first_in_range(lower_bound, upper_bound, comparator, tracker, f)
             tracker.track_node_visit(self)
@@ -151,7 +133,6 @@ class Node(Generic[K, V], ABC):
         elif cr_left is ComparisonResult.AFTER:
             #range fully right of node
             if self._right is None:
-                #tracker.result_added(None)
                 return None
             result = self._right.first_in_range(lower_bound, upper_bound, comparator, tracker, f)
             tracker.track_node_visit(self)
@@ -163,6 +144,14 @@ class Node(Generic[K, V], ABC):
             return result
 
     def _update_after_insert(self, auto_balance : bool):
+        """
+        tracks a path upwards from the new node, updating the level, balance and size of all nodes.
+
+        Parameters
+        ----------
+        auto_balance : bool
+            If is true, the tree is rotated for nodes with a balance outside [-1,1]. See _rotate_right/_rotate_left
+        """
         self._update_lbs()
         if auto_balance:
             if self._balance > 1:
@@ -186,6 +175,15 @@ class Node(Generic[K, V], ABC):
             0 if self._right is None else self._right._size) + 1
 
     def _rotate_right(self, perform_subrotation : bool):
+        """
+        replaces the current node with its left child.
+        For a more detailed overview: https://en.wikipedia.org/wiki/Tree_rotation
+
+        Parameters
+        ----------
+        perform_subrotation : bool
+            If True, the tree will check if the pivots balance is -1 and call pivot._rotate_left before rotating
+        """
         pivot = self._left
         if pivot._balance < 0 and perform_subrotation:
             pivot._rotate_left(False)
@@ -201,6 +199,15 @@ class Node(Generic[K, V], ABC):
         pivot._update_right(self)
 
     def _rotate_left(self, perform_subrotation : bool):
+        """
+        replaces the current node with its right child.
+        For a more detailed overview: https://en.wikipedia.org/wiki/Tree_rotation
+
+        Parameters
+        ----------
+        perform_subrotation : bool
+            If True, the tree will check if the pivots balance is -1 and call pivot._rotate_right before rotating
+        """
         pivot = self._right
         if pivot._balance > 0 and perform_subrotation:
             pivot._rotate_right(False)
@@ -268,7 +275,7 @@ class Node(Generic[K, V], ABC):
 
 class TreeTracker(Generic[K,V]):
     """
-    can be given to certain methods of the binary tree implementations to track actions happening in those methods.
+    Can be given to certain methods of the different binary tree implementations to track operations within the method.
     """
 
     def __init__(self):
@@ -277,8 +284,8 @@ class TreeTracker(Generic[K,V]):
 
     def track_node_visit(self, node : Node[K,V]):
         """
-        called at the start of each recursive function to track descent into tree
-        called after each recursive call to track ascend to top
+        Should be called at the start of each recursive method to track descent into the tree
+        and after each recursive call finishes to track ascent
         """
         transition_type = TransitionType.START
         if self._last_node is not None:
@@ -295,15 +302,27 @@ class TreeTracker(Generic[K,V]):
 
     def track_result(self, result : Any):
         """
-        called when the return value of a method is changed, either storing the new value
-        or the changed value
+        Should be called whenever a new result is added/created/expanded.
+        Should NOT be called when a result is simply passed upwards.
         """
         self._events.append(ResultAddedEvent(result))
 
     def track_subroutine_call(self, routine_name : str):
+        """
+        Should be used in complex methods in the binary_tree class so different method calls
+        can be distinguished later.
+
+        Depending on the situation, the reset_last_node method should also be called
+        """
         self._events.append(SubroutineCalledEvent(routine_name))
 
     def reset_last_node(self):
+        """
+        Resets the internal last_node variable to None.
+        The last_node variable is used to determine the type of transition between nodes (see TransitionType enum below).
+        Complex methods consisting of multiple sub-calls often do not have a clear transition type associated and
+        this method can be used to enforce a default to the START transition.
+        """
         self._last_node = None
 
     @property
@@ -311,7 +330,7 @@ class TreeTracker(Generic[K,V]):
         return self._events
 
     @property
-    def visited_nodes(self, f: Callable[[Node[K, V]], A] = lambda n : n.key) -> list[A]:
+    def nodes(self, f: Callable[[Node[K, V]], A] = lambda n : n.key) -> list[A]:
         return [f(event.node) for event in self._events if isinstance(event, NodeVisitedEvent)]
 
     @property
@@ -328,17 +347,19 @@ class TreeTracker(Generic[K,V]):
 
 
 class TransitionType(Enum):
-    START = 0
-    LEFT = 1
-    RIGHT = 2
-    PARENT = 3
-    OTHER = 4
+    """
+    used to track the transition between different nodes
+    """
+    START = 0 # the last_node is not set, usually at the start of a method or after calling reset_last_node
+    LEFT = 1 # new node is a left child of the last one
+    RIGHT = 2 # new node is a right child of the last one
+    PARENT = 3 # new node is a parent of the last one
+    OTHER = 4 # fail-save
 
 
 class TransitionEvent:
     def __init__(self):
         pass
-
 
 class NodeVisitedEvent(Generic[K,V], TransitionEvent):
     def __init__(self, node : Node[K,V], transition_type : TransitionType):
@@ -356,7 +377,6 @@ class NodeVisitedEvent(Generic[K,V], TransitionEvent):
 
     def __str__(self):
         return "Node " + str(self._node.key) + " visited via " + str(self._transition_type)
-
 
 class ResultAddedEvent(TransitionEvent):
     def __init__(self, result : Any):
