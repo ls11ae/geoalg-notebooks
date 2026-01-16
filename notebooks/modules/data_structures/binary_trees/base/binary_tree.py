@@ -113,24 +113,24 @@ class BinaryTree(Generic[K], ABC):
     def report_in_range(self, lower_bound: K, upper_bound: K, tracker : TreeTracker[K,V], f : Callable[[Node[K, V]], A] = lambda n: n.key) -> list[A]:
         if self._root is None:
             return []
-        tracker.subroutine_called("first_in_range")
+        tracker.track_subroutine_call("first_in_range")
         splitting_node = self._root.first_in_range(lower_bound, upper_bound, self._comparator, tracker, lambda n: n)
         if splitting_node is None:
-            tracker.result_added([])
+            tracker.track_result([])
             return []
         if splitting_node.is_leaf():
             result = [f(splitting_node)]
-            tracker.result_added(result)
+            tracker.track_result(result)
             return result
         else:
             result = []
             if splitting_node.left is not None:
                 tracker.reset_last_node()
-                tracker.subroutine_called("report_geq")
+                tracker.track_subroutine_call("report_geq")
                 result += splitting_node.left.report_geq(lower_bound, self._comparator,tracker, f)
             if splitting_node.right is not None:
                 tracker.reset_last_node()
-                tracker.subroutine_called("report_leq")
+                tracker.track_subroutine_call("report_leq")
                 result += splitting_node.right.report_leq(upper_bound,self._comparator, tracker, f)
             return result
 

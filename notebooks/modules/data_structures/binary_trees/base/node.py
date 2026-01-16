@@ -90,15 +90,17 @@ class Node(Generic[K, V], ABC):
                 ([None] if self._right is None else self._right.in_order(f)))
 
     def leaves(self,tracker : TreeTracker[K,V], f : Callable[[Node[K,V]], A]) -> list[A]:
-        tracker.node_visited(self)
+        if tracker:
+            tracker.track_node_visit(self)
         if self.is_leaf():
             result = [f(self)]
-            tracker.result_added(result)
+            if tracker:
+                tracker.track_result(result)
             return result
         result_left = [] if self._left is None else self._left.leaves(tracker, f)
-        tracker.node_visited(self)
+        tracker.track_node_visit(self)
         result_right = [] if self._right is None else self._right.leaves(tracker, f)
-        tracker.node_visited(self)
+        tracker.track_node_visit(self)
         return result_left + result_right
 
     def level_order(self, levels : list[list[A]], f : Callable[[Node[K,V]], A], depth : int,  root_level : int):
@@ -135,16 +137,16 @@ class Node(Generic[K, V], ABC):
                     levels[i + depth + 1].append(None)
 
     def first_in_range(self, lower_bound: K, upper_bound: K, comparator : Comparator[K], tracker : TreeTracker[K,V], f : Callable[[Node[K,V]], A]) -> A | None:
-        tracker.node_visited(self)
+        tracker.track_node_visit(self)
         cr_left = comparator.compare(lower_bound, self._key)
         cr_right = comparator.compare(upper_bound, self._key)
         if cr_right is ComparisonResult.BEFORE:
             #range fully left of node
             if self._left is None:
-                tracker.result_added(None)
+                tracker.track_result(None)
                 return None
             result = self._left.first_in_range(lower_bound, upper_bound, comparator, tracker, f)
-            tracker.node_visited(self)
+            tracker.track_node_visit(self)
             return result
         elif cr_left is ComparisonResult.AFTER:
             #range fully right of node
@@ -152,12 +154,12 @@ class Node(Generic[K, V], ABC):
                 #tracker.result_added(None)
                 return None
             result = self._right.first_in_range(lower_bound, upper_bound, comparator, tracker, f)
-            tracker.node_visited(self)
+            tracker.track_node_visit(self)
             return result
         else:
             #node in range
             result = f(self)
-            tracker.result_added(result)
+            tracker.track_result(result)
             return result
 
     def _update_after_insert(self, auto_balance : bool):
@@ -273,7 +275,7 @@ class TreeTracker(Generic[K,V]):
         self._events : list[TransitionEvent] = []
         self._last_node : Optional[Node[K,V]] = None
 
-    def node_visited(self, node : Node[K,V]):
+    def track_node_visit(self, node : Node[K,V]):
         """
         called at the start of each recursive function to track descent into tree
         called after each recursive call to track ascend to top
@@ -291,14 +293,14 @@ class TreeTracker(Generic[K,V]):
         self._events.append(NodeVisitedEvent(node, transition_type))
         self._last_node = node
 
-    def result_added(self, result : Any):
+    def track_result(self, result : Any):
         """
         called when the return value of a method is changed, either storing the new value
         or the changed value
         """
-        self._events.append(ResultAddedEvent(self._last_node, result))
+        self._events.append(ResultAddedEvent(result))
 
-    def subroutine_called(self, routine_name : str):
+    def track_subroutine_call(self, routine_name : str):
         self._events.append(SubroutineCalledEvent(routine_name))
 
     def reset_last_node(self):
@@ -353,22 +355,20 @@ class NodeVisitedEvent(Generic[K,V], TransitionEvent):
         return self._transition_type
 
     def __str__(self):
-        return str(self._transition_type)+ "|" + str(self._node.key)
+        return "Node " + str(self._node.key) + " visited via " + str(self._transition_type)
 
 
-class ResultAddedEvent(Generic[K,V], TransitionEvent):
-    def __init__(self, node : Node[K,V], result : Any):
+class ResultAddedEvent(TransitionEvent):
+    def __init__(self, result : Any):
         super().__init__()
-        self._node: Node[V, K] = node
         self._result : Any = result
-
-    @property
-    def node(self) -> Node[K, V]:
-        return self._node
 
     @property
     def result(self):
         return self._result
+
+    def __str__(self):
+        return "Result " + str(self._result) + " added"
 
 class SubroutineCalledEvent(TransitionEvent):
     def __init__(self, name : str):
@@ -378,3 +378,6 @@ class SubroutineCalledEvent(TransitionEvent):
     @property
     def name(self) -> str:
         return self._name
+
+    def __str__(self):
+        return "Subroutine " + self._name + " called"

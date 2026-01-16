@@ -40,50 +40,52 @@ class ESTNode(Node[K, V]):
 
     @override
     def report_leq(self, upper_bound : K, comparator : Comparator[K], tracker : TreeTracker[V,K], f : Callable[[Node[K,V]], A]) -> list[A]:
-        tracker.node_visited(self)
+        tracker.track_node_visit(self)
         cr = comparator.compare(upper_bound, self._key)
         if cr is ComparisonResult.MATCH or cr is ComparisonResult.AFTER:
             #less than search term
             if not self.is_leaf():
+                tracker.track_subroutine_call("leaves")
                 result_left = self._left.leaves(tracker, f)
-                tracker.node_visited(self)
+                tracker.track_node_visit(self)
                 result_right = self._right.report_leq(upper_bound, comparator, tracker, f)
-                tracker.node_visited(self)
+                tracker.track_node_visit(self)
                 return result_left + result_right
             else:
                 result = [f(self)]
-                tracker.result_added(result)
+                tracker.track_result(result)
                 return result
         else:
             #more than search term
             if not self.is_leaf():
                 result = self._left.report_leq(upper_bound, comparator, tracker, f)
-                tracker.node_visited(self)
+                tracker.track_node_visit(self)
                 return result
             else:
                 return []
 
     @override
     def report_geq(self, upper_bound : K, comparator : Comparator[K], tracker : TreeTracker[V,K], f : Callable[[Node[K,V]], A]) -> list[A]:
-        tracker.node_visited(self)
+        tracker.track_node_visit(self)
         cr = comparator.compare(upper_bound, self._key)
         if cr is ComparisonResult.BEFORE or cr is ComparisonResult.MATCH:
             #less than search term
             if not self.is_leaf():
                 result_left = self._left.report_geq(upper_bound, comparator, tracker, f)
-                tracker.node_visited(self)
+                tracker.track_node_visit(self)
+                tracker.track_subroutine_call("leaves")
                 result_right = self._right.leaves(tracker, f)
-                tracker.node_visited(self)
+                tracker.track_node_visit(self)
                 return result_left + result_right
             else:
                 result = [f(self)]
-                tracker.result_added(result)
+                tracker.track_result(result)
                 return result
         else:
             #more than search term
             if not self.is_leaf():
                 result = self._right.report_geq(upper_bound, comparator, tracker, f)
-                tracker.node_visited(self)
+                tracker.track_node_visit(self)
                 return result
             else:
                 return []
