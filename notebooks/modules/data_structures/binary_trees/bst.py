@@ -36,11 +36,11 @@ class BSTNode(Node[K, V]):
         raise NotImplementedError()
 
     @override
-    def report_leq(self, upper_bound: K, comparator: Comparator[K], tracker : TreeTracker, f: Callable[[Node[K, V]], A]) -> list[A]:
+    def leq(self, upper_bound: K, comparator: Comparator[K], tracker : TreeTracker, f: Callable[[Node[K, V]], A]) -> list[A]:
         raise NotImplementedError
 
     @override
-    def report_geq(self, lower_bound: K, comparator: Comparator[K], tracker : TreeTracker,f: Callable[[Node[K, V]], A]) -> list[A]:
+    def geq(self, lower_bound: K, comparator: Comparator[K], tracker : TreeTracker, f: Callable[[Node[K, V]], A]) -> list[A]:
         raise NotImplementedError
 
 class BST(BinaryTree[K]):

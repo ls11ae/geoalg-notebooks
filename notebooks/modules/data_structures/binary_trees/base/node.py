@@ -67,11 +67,11 @@ class Node(Generic[K, V], ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def report_leq(self, upper_bound: K, comparator: Comparator[K], t : TreeTracker[V,K],f: Callable[[Node[K, V]], A]) -> list[A]:
+    def leq(self, upper_bound: K, comparator: Comparator[K], t : TreeTracker[V,K], f: Callable[[Node[K, V]], A]) -> list[A]:
         raise NotImplementedError
 
     @abstractmethod
-    def report_geq(self, lower_bound: K, comparator: Comparator[K], t : TreeTracker[V,K],f: Callable[[Node[K, V]], A]) -> list[A]:
+    def geq(self, lower_bound: K, comparator: Comparator[K], t : TreeTracker[V,K], f: Callable[[Node[K, V]], A]) -> list[A]:
         raise NotImplementedError
 
     def pre_order(self, f : Callable[[Node[K,V]], A]) -> list[A]:
@@ -93,7 +93,7 @@ class Node(Generic[K, V], ABC):
         tracker.track_node_visit(self)
         if self.is_leaf():
             result = [f(self)]
-            tracker.track_result(result)
+            tracker.track_partial_result(result)
             return result
         result_left = [] if self._left is None else self._left.leaves(tracker, f)
         tracker.track_node_visit(self)
@@ -140,7 +140,7 @@ class Node(Generic[K, V], ABC):
         else:
             #node in range
             result = f(self)
-            tracker.track_result(result)
+            tracker.track_partial_result(result)
             return result
 
     def _update_after_insert(self, auto_balance : bool):
@@ -281,10 +281,31 @@ class TreeTracker(Generic[K,V]):
     def __init__(self):
         self._events : list[TransitionEvent] = []
         self._last_node : Optional[Node[K,V]] = None
+        self._call_stack_depth = 0
+        self._last_method_called : str = ""
+
+    def track_method_call(self, routine_name : str):
+        """
+        Called at the start of every method in the binary_tree and its subclasses or when those methods call subroutines
+        """
+        self._events.append(MethodCalledEvent(routine_name, self._call_stack_depth))
+        self._last_method_called = routine_name
+        self._call_stack_depth += 1
+
+    def track_method_return(self, result : Any) -> Any:
+        """
+        Called at the end of every method in the binary_tree and its subclasses or when those methods call subroutines.
+
+        The return value is used to simply write "return tracker.track_method_return(result)" instead of having
+        to create a buffer variable
+        """
+        self._call_stack_depth -= 1
+        self._events.append(MethodReturnedEvent(result, self._last_method_called))
+        return result
 
     def track_node_visit(self, node : Node[K,V]):
         """
-        Should be called at the start of each recursive method to track descent into the tree
+        Called at the start of each recursive method call to track descent into the tree
         and after each recursive call finishes to track ascent
         """
         transition_type = TransitionType.START
@@ -300,21 +321,12 @@ class TreeTracker(Generic[K,V]):
         self._events.append(NodeVisitedEvent(node, transition_type))
         self._last_node = node
 
-    def track_result(self, result : Any):
+    def track_partial_result(self, result : Any):
         """
-        Should be called whenever a new result is added/created/expanded.
-        Should NOT be called when a result is simply passed upwards.
+        Called whenever a result is added/created/expanded.
+        NOT called when a result is simply passed up the tree.
         """
         self._events.append(ResultAddedEvent(result))
-
-    def track_subroutine_call(self, routine_name : str):
-        """
-        Should be used in complex methods in the binary_tree class so different method calls
-        can be distinguished later.
-
-        Depending on the situation, the reset_last_node method should also be called
-        """
-        self._events.append(SubroutineCalledEvent(routine_name))
 
     def reset_last_node(self):
         """
@@ -325,25 +337,65 @@ class TreeTracker(Generic[K,V]):
         """
         self._last_node = None
 
+    def get_methods(self) -> list[MethodCalledEvent]:
+        return [event for event in self._events if isinstance(event, MethodCalledEvent) and event.call_stack_depth == 1]
+
+    def get_method_events(self) -> list[list[TransitionEvent]]:
+        """
+        returns a list containing a list for each method that was called
+        """
+        result : list[list[TransitionEvent]] = []
+        current : list[TransitionEvent] = []
+        for event in self._events:
+            if isinstance(event, MethodCalledEvent) and event.call_stack_depth == 0:
+                result.append(current)
+                current = []
+            current.append(event)
+        if current:
+            result.append(current)
+        return result
+
+    def get_routine_events(self, routine_name : str) -> list[list[TransitionEvent]]:
+        """
+        returns all events that happened the during calls of the given routine.
+        Each list in the returned list corresponds to one call of the subroutine
+        """
+        routine_active = False
+        call_stack_depth = 0
+        result: list[list[TransitionEvent]] = []
+        current: list[TransitionEvent] = []
+        for event in self._events:
+            if routine_active:
+                if isinstance(event, MethodCalledEvent):
+                    call_stack_depth += 1
+                if isinstance(event, MethodReturnedEvent):
+                    call_stack_depth -=1
+                    if call_stack_depth == 0:
+                        routine_active = False
+                        result.append(current)
+                        current = []
+                        continue
+                current.append(event)
+            if isinstance(event, MethodCalledEvent) and event.name is routine_name:
+                routine_active = True
+                call_stack_depth += 1
+        return result
+
+    def get_nodes(self, f: Callable[[Node[K, V]], A] = lambda n : n.key) -> list[A]:
+        return [f(event.node) for event in self._events if isinstance(event, NodeVisitedEvent)]
+
+    def get_transition_types(self) -> list[TransitionType]:
+        return [event.transition_type for event in self._events if isinstance(event, NodeVisitedEvent)]
+
+    def get_transition_events(self) -> list[NodeVisitedEvent]:
+        return [event for event in self._events if isinstance(event, NodeVisitedEvent)]
+
+    def get_results(self) -> Any:
+        return [event.result for event in self._events if isinstance(event, ResultAddedEvent)]
+
     @property
     def events(self) -> list[TransitionEvent]:
         return self._events
-
-    @property
-    def nodes(self, f: Callable[[Node[K, V]], A] = lambda n : n.key) -> list[A]:
-        return [f(event.node) for event in self._events if isinstance(event, NodeVisitedEvent)]
-
-    @property
-    def transition_types(self) -> list[TransitionType]:
-        return [event.transition_type for event in self._events if isinstance(event, NodeVisitedEvent)]
-
-    @property
-    def transition_events(self) -> list[NodeVisitedEvent]:
-        return [event for event in self._events if isinstance(event, NodeVisitedEvent)]
-
-    @property
-    def results(self) -> Any:
-        return [event.result for event in self._events if isinstance(event, ResultAddedEvent)]
 
 
 class TransitionType(Enum):
@@ -360,6 +412,36 @@ class TransitionType(Enum):
 class TransitionEvent:
     def __init__(self):
         pass
+
+class MethodCalledEvent(TransitionEvent):
+    def __init__(self, name : str, call_stack_depth : int):
+        super().__init__()
+        self._name = name
+        self._call_stack_depth = call_stack_depth
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def call_stack_depth(self) -> int:
+        return self._call_stack_depth
+
+    def __str__(self):
+        return ("Method " if self._call_stack_depth == 0 else "Subroutine ") + self._name + " called"
+
+class MethodReturnedEvent(TransitionEvent):
+    def __init__(self, result : Any, name : str):
+        super().__init__()
+        self._result = result
+        self._name = name
+
+    @property
+    def result(self) -> Any:
+        return self._result
+
+    def __str__(self):
+        return "Method " + self._name + " finished with result " + str(self._result)
 
 class NodeVisitedEvent(Generic[K,V], TransitionEvent):
     def __init__(self, node : Node[K,V], transition_type : TransitionType):
@@ -389,15 +471,3 @@ class ResultAddedEvent(TransitionEvent):
 
     def __str__(self):
         return "Result " + str(self._result) + " added"
-
-class SubroutineCalledEvent(TransitionEvent):
-    def __init__(self, name : str):
-        super().__init__()
-        self._name = name
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    def __str__(self):
-        return "Subroutine " + self._name + " called"
