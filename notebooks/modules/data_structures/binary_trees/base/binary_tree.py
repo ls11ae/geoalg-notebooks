@@ -93,7 +93,7 @@ class BinaryTree(Generic[K], ABC):
         tracker.track_method_call(self.leq.__name__)
         if self._root is None:
             return tracker.track_method_return([])
-        return tracker.track_method_return(self._root.leq(upper_bound, self._comparator, tracker, f))
+        return tracker.track_method_return(self._root.less_or_equal(upper_bound, self._comparator, tracker, f))
 
     def geq(self, lower_bound: K, tracker: TreeTracker[K, V], f: Callable[[Node[K, V]], A] = lambda n: n.key) -> \
     list[A]:
@@ -105,7 +105,7 @@ class BinaryTree(Generic[K], ABC):
         tracker.track_method_call(self.geq.__name__)
         if self._root is None:
             return tracker.track_method_return([])
-        return tracker.track_method_return(self._root.geq(lower_bound, self._comparator, tracker, f))
+        return tracker.track_method_return(self._root.greater_or_equal(lower_bound, self._comparator, tracker, f))
 
     def first_in_range(self, lower_bound: K, upper_bound: K, tracker: TreeTracker[K, V],
                        f: Callable[[Node[K, V]], A] = lambda n: n.key) -> Node[K, V] | None:
@@ -131,11 +131,11 @@ class BinaryTree(Generic[K], ABC):
         else:
             result = []
             if splitting_node.left is not None:
-                tracker.track_method_call(splitting_node.left.geq.__name__)
-                result += tracker.track_method_return(splitting_node.left.geq(lower_bound, self._comparator, tracker, f))
+                tracker.track_method_call(splitting_node.left.greater_or_equal.__name__)
+                result += tracker.track_method_return(splitting_node.left.greater_or_equal(lower_bound, self._comparator, tracker, f))
             if splitting_node.right is not None:
-                tracker.track_method_call(splitting_node.left.leq.__name__)
-                result += tracker.track_method_return(splitting_node.right.leq(upper_bound, self._comparator, tracker, f))
+                tracker.track_method_call(splitting_node.left.less_or_equal.__name__)
+                result += tracker.track_method_return(splitting_node.right.less_or_equal(upper_bound, self._comparator, tracker, f))
             return tracker.track_method_return(result)
 
     @property

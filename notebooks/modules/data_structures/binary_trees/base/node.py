@@ -67,11 +67,11 @@ class Node(Generic[K, V], ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def leq(self, upper_bound: K, comparator: Comparator[K], t : TreeTracker[V,K], f: Callable[[Node[K, V]], A]) -> list[A]:
+    def less_or_equal(self, upper_bound: K, comparator: Comparator[K], t : TreeTracker[V,K], f: Callable[[Node[K, V]], A]) -> list[A]:
         raise NotImplementedError
 
     @abstractmethod
-    def geq(self, lower_bound: K, comparator: Comparator[K], t : TreeTracker[V,K], f: Callable[[Node[K, V]], A]) -> list[A]:
+    def greater_or_equal(self, lower_bound: K, comparator: Comparator[K], t : TreeTracker[V,K], f: Callable[[Node[K, V]], A]) -> list[A]:
         raise NotImplementedError
 
     def pre_order(self, f : Callable[[Node[K,V]], A]) -> list[A]:

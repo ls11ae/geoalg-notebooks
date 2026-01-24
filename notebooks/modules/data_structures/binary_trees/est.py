@@ -39,7 +39,7 @@ class ESTNode(Node[K, V]):
             return False
 
     @override
-    def leq(self, upper_bound : K, comparator : Comparator[K], tracker : TreeTracker[V,K], f : Callable[[Node[K,V]], A]) -> list[A]:
+    def less_or_equal(self, upper_bound : K, comparator : Comparator[K], tracker : TreeTracker[V,K], f : Callable[[Node[K,V]], A]) -> list[A]:
         tracker.track_node_visit(self)
         cr = comparator.compare(upper_bound, self._key)
         if cr is ComparisonResult.MATCH or cr is ComparisonResult.AFTER:
@@ -48,7 +48,7 @@ class ESTNode(Node[K, V]):
                 tracker.track_method_call("leaves")
                 result_left = self._left.leaves(tracker, f)
                 tracker.track_node_visit(self)
-                result_right = self._right.leq(upper_bound, comparator, tracker, f)
+                result_right = self._right.less_or_equal(upper_bound, comparator, tracker, f)
                 tracker.track_node_visit(self)
                 return result_left + result_right
             else:
@@ -58,20 +58,20 @@ class ESTNode(Node[K, V]):
         else:
             #more than search term
             if not self.is_leaf():
-                result = self._left.leq(upper_bound, comparator, tracker, f)
+                result = self._left.less_or_equal(upper_bound, comparator, tracker, f)
                 tracker.track_node_visit(self)
                 return result
             else:
                 return []
 
     @override
-    def geq(self, upper_bound : K, comparator : Comparator[K], tracker : TreeTracker[V,K], f : Callable[[Node[K,V]], A]) -> list[A]:
+    def greater_or_equal(self, lower_bound : K, comparator : Comparator[K], tracker : TreeTracker[V,K], f : Callable[[Node[K,V]], A]) -> list[A]:
         tracker.track_node_visit(self)
-        cr = comparator.compare(upper_bound, self._key)
+        cr = comparator.compare(lower_bound, self._key)
         if cr is ComparisonResult.BEFORE or cr is ComparisonResult.MATCH:
-            #less than search term
+            #more than or equal  to search term
             if not self.is_leaf():
-                result_left = self._left.geq(upper_bound, comparator, tracker, f)
+                result_left = self._left.greater_or_equal(lower_bound, comparator, tracker, f)
                 tracker.track_node_visit(self)
                 tracker.track_method_call("leaves")
                 result_right = self._right.leaves(tracker, f)
@@ -84,7 +84,7 @@ class ESTNode(Node[K, V]):
         else:
             #more than search term
             if not self.is_leaf():
-                result = self._right.geq(upper_bound, comparator, tracker, f)
+                result = self._right.greater_or_equal(lower_bound, comparator, tracker, f)
                 tracker.track_node_visit(self)
                 return result
             else:
