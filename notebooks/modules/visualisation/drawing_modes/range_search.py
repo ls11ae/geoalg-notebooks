@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Iterable, Optional
+from .binary_tree import BinaryTreeMode
 import math
 from ...data_structures import EST
 
@@ -12,7 +13,7 @@ from ...geometry import (
     Point
 )
 
-class RangeTreeMode(DrawingMode):
+class RangeSearchMode(BinaryTreeMode):
     """
     this is a very ugly fix but there just isn't another way :(
     """
@@ -20,7 +21,24 @@ class RangeTreeMode(DrawingMode):
         super().__init__(point_radius, highlight_radius, line_width)
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
-        pass
+        level_order = []
+        cur_level = []
+        nodes_on_level = 2**len(level_order)
+        for point in points:
+            if len(cur_level) >= nodes_on_level:
+                level_order.append(cur_level)
+                cur_level = [point]
+                nodes_on_level = 2 ** len(level_order)
+            else:
+                cur_level.append(point)
+        if cur_level:
+            level_order.append(cur_level)
+        drawer.main_canvas.clear()
+        drawer.front_canvas.clear()
+        drawer.back_canvas.clear()
+
+        self._draw_tree(drawer, level_order)
+
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         pass

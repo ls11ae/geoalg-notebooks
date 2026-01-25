@@ -12,10 +12,9 @@ from ...geometry import (
     Point
 )
 
+COLOR_SCHEME = [255, 165, 0], [0,0,255], [165,0,38], [215,48,39], [244,109,67], [253,174,97], [254,224,144], [171,217,233], [116,173,209], [69,117,180], [49,54,149]
+
 class BinaryTreeMode(DrawingMode):
-    """
-    this is a very ugly fix but there just isn't another way :(
-    """
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
         super().__init__(point_radius, highlight_radius, line_width)
         self.binary_tree : Optional[EST[int]] = None
@@ -43,6 +42,7 @@ class BinaryTreeMode(DrawingMode):
                 for node in level:
                     if node is not None:
                         x_node = space_per_node / 2 + (space_per_node * cur_node)
+                        self._set_node_color(drawer, node.tag)
                         drawer.main_canvas.draw_string(int(x_node), int(y_node), str(int(node.x)))
                         drawer.main_canvas.draw_circle(Point(x_node, y_node), self._node_radius, self._line_width / 3)
                         if cur_level > 0:
@@ -57,6 +57,9 @@ class BinaryTreeMode(DrawingMode):
                                 self._line_width)
                     cur_node += 1
                 cur_level += 1
+
+    def _set_node_color(self, drawer : Drawer, tag : int):
+        drawer.main_canvas.set_colour(COLOR_SCHEME[tag][0], COLOR_SCHEME[tag][1], COLOR_SCHEME[tag][2])
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         pass

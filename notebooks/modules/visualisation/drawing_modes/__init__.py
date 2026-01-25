@@ -13,6 +13,7 @@ from .path import PathMode
 from .point_location import PointLocationMode
 from .points import PointsMode
 from .polygon import PolygonMode
+from .range_search import RangeSearchMode
 from .smallest_area_triangle import SmallestAreaTriangleMode
 from .sweep_line import SweepLineMode
 from .triangle_mode import TriangleMode

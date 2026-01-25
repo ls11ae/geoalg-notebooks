@@ -32,6 +32,6 @@ class RangeSearchAnimator(AnimationObject):
         cur_level = 0
         for level in self._est:
             for tup in level:
-                points.append(Point(tup[0], cur_level, tup[1]))
+                points.append(Point(tup[0], cur_level, tup[1]) if tup[0] is not None else None)
             cur_level += 1
         return iter(points)

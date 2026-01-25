@@ -43,7 +43,7 @@ class InstanceHandle(ABC, Generic[I]):
 
     def run_algorithm(self, algorithm: Algorithm[I]) -> tuple[AnimationObject, float]:
         """
-        Runs the algorithm with this instance as input. Returns the algoriths output and the time taken.
+        Runs the algorithm with this instance as input. Returns the algorithms output and the time taken.
         """
         instance_points = self.extract_points_from_raw_instance(self._instance)
 
@@ -77,7 +77,7 @@ class InstanceHandle(ABC, Generic[I]):
 
         return algorithm_output, 1000 * (end_time - start_time)
 
-    # -------- abstact methods --------
+    # -------- abstract methods --------
 
     @abstractmethod
     def add_point(self, point: Point) -> Point | None:

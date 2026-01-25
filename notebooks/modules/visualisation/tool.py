@@ -246,7 +246,6 @@ class VisualisationTool(Generic[I]):
         def algorithm_callback():
             self.clear_algorithm_drawings()
             self._algorithm_messages[index].value = "<b>RUNNING</b>"
-
             try:
                 if preprocessing is None:
                     algorithm_output, algorithm_running_time = self._instance.run_algorithm(algorithm)
@@ -254,9 +253,11 @@ class VisualisationTool(Generic[I]):
                     algorithm_output, algorithm_running_time = self._instance.run_algorithm_with_preprocessing(preprocessing, algorithm)
             except Exception as exception:
                 #ERROR
+                raise exception
                 os.write(1, (str(exception) + "\n").encode())
                 title = html.escape(str(exception), quote = True)
                 self._algorithm_messages[index].value = f"<b title='{title}'><font color='red'>'{exception}'</font></b>"
+
                 return
 
             if not self._animation_checkbox.value:
