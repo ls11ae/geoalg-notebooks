@@ -135,7 +135,6 @@ class CanvasDrawingHandle:
         self._canvas.fill_text(text,x,-y)
         self._canvas.restore()
 
-
     @property
     def width(self) -> float:
         return self._canvas.width

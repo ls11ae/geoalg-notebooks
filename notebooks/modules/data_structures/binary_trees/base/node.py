@@ -272,7 +272,6 @@ class Node(Generic[K, V], ABC):
             return self._parent.root
         return self
 
-
 class TreeTracker(Generic[K,V]):
     """
     Can be given to certain methods of the different binary tree implementations to track operations within the method.

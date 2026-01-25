@@ -24,10 +24,10 @@ class BinaryTreeMode(DrawingMode):
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         if self.binary_tree is not None:
             '''
-            drawing when a new point is added. Since the three rotates this can change the entire
-            layout and the full tree need to be redrawn
+            drawing when a new point is added. Since the tree rotates this can change the entire
+            layout and the full tree needs to be redrawn
             '''
-            self._draw_tree(drawer, self.binary_tree.level_order())
+            self._draw_tree(drawer, self.binary_tree.level_order(lambda n : Point(n.key, 0, 0)))
 
     def _draw_tree(self, drawer: Drawer, tree : list[list[Point]]):
         with drawer.main_canvas.hold():
@@ -43,7 +43,7 @@ class BinaryTreeMode(DrawingMode):
                 for node in level:
                     if node is not None:
                         x_node = space_per_node / 2 + (space_per_node * cur_node)
-                        drawer.main_canvas.draw_string(int(x_node), int(y_node), str(node))
+                        drawer.main_canvas.draw_string(int(x_node), int(y_node), str(int(node.x)))
                         drawer.main_canvas.draw_circle(Point(x_node, y_node), self._node_radius, self._line_width / 3)
                         if cur_level > 0:
                             # draw line between child and parent node

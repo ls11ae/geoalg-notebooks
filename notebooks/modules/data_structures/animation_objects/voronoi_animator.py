@@ -2,8 +2,7 @@ from operator import indexOf
 
 from typing_extensions import override
 
-from ... import AnimationEvent
-from ...geometry import AnimationObject, AppendEvent, DeleteAtEvent, MultiEvent, PointPair, Point, PointFloat, PointList
+from ...geometry import AnimationObject, AppendEvent, DeleteAtEvent, MultiEvent, PointPair, Point, PointFloat, PointList, AnimationEvent
 from ..objects import Vertex, Face, HalfEdge
 from ..triangle_tree import Triangulation
 from .delaunay_animator import IncrementalConstructionAnimator
