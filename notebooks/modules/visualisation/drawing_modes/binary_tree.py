@@ -12,7 +12,7 @@ from ...geometry import (
     Point
 )
 
-COLOR_SCHEME = [255, 165, 0], [0,0,255], [165,0,38], [215,48,39], [244,109,67], [253,174,97], [254,224,144], [171,217,233], [116,173,209], [69,117,180], [49,54,149]
+COLOR_SCHEME = [255, 165, 0], [0,0,255], [0,255,0], [255,0,0], [244,109,67], [253,174,97], [254,224,144], [171,217,233], [116,173,209], [69,117,180], [49,54,149]
 
 class BinaryTreeMode(DrawingMode):
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
@@ -57,6 +57,7 @@ class BinaryTreeMode(DrawingMode):
                                 self._line_width)
                     cur_node += 1
                 cur_level += 1
+            drawer.main_canvas.set_colour(255,165,0)
 
     def _set_node_color(self, drawer : Drawer, tag : int):
         drawer.main_canvas.set_colour(COLOR_SCHEME[tag][0], COLOR_SCHEME[tag][1], COLOR_SCHEME[tag][2])

@@ -14,6 +14,8 @@ class RangeSearchAnimator(AnimationObject):
             self._est.append([(key, 0) for key in level])
         self._cur_level = 0
         self._cur_node = 0
+        self._save_level = self._cur_level
+        self._saved_node = self._cur_node
 
     def go_to_left_child(self):
         self._cur_level += 1
@@ -23,6 +25,18 @@ class RangeSearchAnimator(AnimationObject):
         self._cur_level += 1
         self._cur_node *= 2
         self._cur_node += 1
+
+    def go_to_parent(self):
+        self._cur_level -=1
+        self._cur_node = int(float(self._cur_node) / 2)
+
+    def save_node(self):
+        self._save_level = self._cur_level
+        self._saved_node = self._cur_node
+
+    def load_node(self):
+        self._cur_level = self._save_level
+        self._cur_node = self._saved_node
 
     def tag_cur_node(self, tag : int):
         self._est[self._cur_level][self._cur_node] = (self._est[self._cur_level][self._cur_node][0], tag)
