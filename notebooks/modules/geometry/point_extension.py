@@ -3,7 +3,7 @@ from .core import PointExtension, Point
 from typing import Any, SupportsFloat
 
 class PointList(PointExtension[list[Point]]):
-    """A point with an additonal list of points."""
+    """A point with an additional list of points."""
     
     def __init__(self, x: SupportsFloat, y: SupportsFloat, data : list[Point], tag : int = 0):
         super().__init__(x, y, data, tag)
@@ -13,7 +13,7 @@ class PointList(PointExtension[list[Point]]):
 
 
 class PointFloat(PointExtension[float]):
-    """A point with an additonal float."""
+    """A point with an additional float."""
 
     def __init__(self, x: SupportsFloat, y: SupportsFloat, data : float = 0):
         super().__init__(x, y, data)
@@ -23,7 +23,7 @@ class PointFloat(PointExtension[float]):
 
 
 class PointPair(PointExtension[Point]):
-    """A point with an additonal point."""
+    """A point with an additional point."""
 
     def __init__(self, x, y, data, tag = 0):
         super().__init__(x, y, data, tag)
@@ -31,6 +31,14 @@ class PointPair(PointExtension[Point]):
     def __eq__(self, other):
         return super().__eq__(other)
 
+class PointNode(PointExtension[tuple[int,int]]):
+    """A point with an additional tuple for layer and node number in a binary tree"""
+
+    def __init__(self, x: SupportsFloat, y: SupportsFloat, data: tuple[int,int]):
+        super().__init__(x, y, data)
+
+    def __eq__(self, other: Any) -> bool:
+        return super().__eq__(other)
 
 '''
 references a point in a list by storing the list and the position
@@ -39,7 +47,7 @@ overwrites the x, y, _x, _y properties from point to make sure operations from p
 correct values. This is necessary because the x/y paramter of the point class get never set because
 the super().__init__ method is never called
 
-
+(do not use)
 '''
 class PointReference(Point):    
     def __init__(self, container: list[Point], position: int):
