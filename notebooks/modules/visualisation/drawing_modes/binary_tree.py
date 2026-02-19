@@ -12,16 +12,19 @@ from ...geometry import (
     Point
 )
 
-COLOR_SCHEME = [255, 165, 0], [0,0,255], [0,255,0], [255,0,0], [244,109,67], [253,174,97], [254,224,144], [171,217,233], [116,173,209], [69,117,180], [49,54,149]
+COLOR_SCHEME1 = [255, 165, 0], [0,0,255], [0,255,0], [255,0,0], [244,109,67], [253,174,97], [254,224,144], [171,217,233], [116,173,209], [69,117,180], [49,54,149]
 
 class BinaryTreeMode(DrawingMode):
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
         super().__init__(point_radius, highlight_radius, line_width)
         self.binary_tree : Optional[EST[int]] = None
         self._node_radius = 11
+        self._color_scheme = [255, 165, 0], [0,0,255], [0,255,0], [255,0,0], [244,109,67], [253,174,97], [254,224,144], [171,217,233], [116,173,209], [69,117,180], [49,54,149]
+        self.first = True
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         if self.binary_tree is not None:
+            print("test")
             '''
             drawing when a new point is added. Since the tree rotates this can change the entire
             layout and the full tree needs to be redrawn
@@ -55,12 +58,13 @@ class BinaryTreeMode(DrawingMode):
                             drawer.main_canvas.draw_path(
                                 [p_self - self._node_radius * d_norm, p_parent + self._node_radius * d_norm],
                                 self._line_width)
+
                     cur_node += 1
                 cur_level += 1
             drawer.main_canvas.set_colour(255,165,0)
 
     def _set_node_color(self, drawer : Drawer, tag : int):
-        drawer.main_canvas.set_colour(COLOR_SCHEME[tag][0], COLOR_SCHEME[tag][1], COLOR_SCHEME[tag][2])
+        drawer.main_canvas.set_colour(self._color_scheme[tag][0], self._color_scheme[tag][1], self._color_scheme[tag][2])
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         pass

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from typing import override, Callable
-from .base import Node, BinaryTree, K, V, A, TreeTracker
+from .base.binary_tree import BinaryTree
+from .base import Node, K, V, A, TreeTracker
 from ...geometry import Comparator, ComparisonResult
 """
 implementation of a binary search tree

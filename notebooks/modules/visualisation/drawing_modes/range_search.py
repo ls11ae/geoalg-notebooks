@@ -33,10 +33,6 @@ class RangeSearchMode(BinaryTreeMode):
                 cur_level.append(point)
         if cur_level:
             level_order.append(cur_level)
-        drawer.main_canvas.clear()
-        drawer.front_canvas.clear()
-        drawer.back_canvas.clear()
-
         self._draw_tree(drawer, level_order)
 
 
