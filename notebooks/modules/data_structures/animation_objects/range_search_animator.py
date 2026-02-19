@@ -1,5 +1,5 @@
 from __future__ import annotations
-from ...geometry.animation_base import AnimationObject, AppendEvent, SetEvent, MultiEvent
+from ...geometry.animation_base import AnimationObject, AnimationEvent, AppendEvent, SetEvent, MultiEvent
 from ...geometry.core import Rectangle, Point
 from ...geometry import PointExtension
 from typing import Iterator
@@ -7,11 +7,15 @@ from ...data_structures import EST
 
 class RangeSearchAnimator(AnimationObject):
 
-    def __init__(self, est : EST):
+    def __init__(self, est : EST[int]):
         super().__init__()
         self._est = []
         for level in est.level_order():
             self._est.append([(key, 0) for key in level])
+        events = []
+        for point in self.points():
+            events.append(AppendEvent(point))
+        self._animation_events.append(MultiEvent(events))
         self._cur_level = 0
         self._cur_node = 0
         self._save_level = self._cur_level
@@ -40,6 +44,8 @@ class RangeSearchAnimator(AnimationObject):
 
     def tag_cur_node(self, tag : int):
         self._est[self._cur_level][self._cur_node] = (self._est[self._cur_level][self._cur_node][0], tag)
+        self._animation_events.append((SetEvent((2**self._cur_level) + self._cur_node - 1,
+                                                Point(self._est[self._cur_level][self._cur_node][0], self._cur_level, tag))))
 
     def points(self) -> Iterator[Point]:
         points = []

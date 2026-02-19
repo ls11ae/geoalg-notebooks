@@ -19,12 +19,11 @@ class BinaryTreeMode(DrawingMode):
         super().__init__(point_radius, highlight_radius, line_width)
         self.binary_tree : Optional[EST[int]] = None
         self._node_radius = 11
-        self._color_scheme = [255, 165, 0], [0,0,255], [0,255,0], [255,0,0], [244,109,67], [253,174,97], [254,224,144], [171,217,233], [116,173,209], [69,117,180], [49,54,149]
+        self._color_scheme = [255, 165, 0], [0,100,255], [0,255,100], [255,100,100], [244,109,67], [253,174,97], [254,224,144], [171,217,233], [116,173,209], [69,117,180], [49,54,149]
         self.first = True
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         if self.binary_tree is not None:
-            print("test")
             '''
             drawing when a new point is added. Since the tree rotates this can change the entire
             layout and the full tree needs to be redrawn
@@ -67,4 +66,16 @@ class BinaryTreeMode(DrawingMode):
         drawer.main_canvas.set_colour(self._color_scheme[tag][0], self._color_scheme[tag][1], self._color_scheme[tag][2])
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
-        pass
+        level_order = []
+        cur_level = []
+        nodes_on_level = 2 ** len(level_order)
+        for point in points:
+            if len(cur_level) >= nodes_on_level:
+                level_order.append(cur_level)
+                cur_level = [point]
+                nodes_on_level = 2 ** len(level_order)
+            else:
+                cur_level.append(point)
+        if cur_level:
+            level_order.append(cur_level)
+        self._draw_tree(drawer , level_order)

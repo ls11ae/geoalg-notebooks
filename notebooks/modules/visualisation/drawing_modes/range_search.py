@@ -34,7 +34,3 @@ class RangeSearchMode(BinaryTreeMode):
         if cur_level:
             level_order.append(cur_level)
         self._draw_tree(drawer, level_order)
-
-
-    def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
-        pass
