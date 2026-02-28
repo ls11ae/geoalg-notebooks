@@ -7,7 +7,7 @@ from .duality import DualityPointsMode, DualityLineMode, DualityLineSegmentMode,
 from .fixed_vertex_number_paths import FixedVertexNumberPathsMode
 from .illegal_edge import IllegalEdgeMode
 from .line_segment import LineSegmentsMode
-from .kd_tree import KDTreeMode
+from .kd_tree_construction import KDTreeConstructionMode
 from .line import LineMode
 from .monotone_partitioning import MonotonePartitioningMode
 from .path import PathMode

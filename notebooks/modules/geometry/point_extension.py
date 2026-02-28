@@ -15,8 +15,8 @@ class PointList(PointExtension[list[Point]]):
 class PointFloat(PointExtension[float]):
     """A point with an additional float."""
 
-    def __init__(self, x: SupportsFloat, y: SupportsFloat, data : float = 0):
-        super().__init__(x, y, data)
+    def __init__(self, x: SupportsFloat, y: SupportsFloat, data : float = 0, tag : int = 0):
+        super().__init__(x, y, data, tag)
 
     def __eq__(self, other: Any) -> bool:
         return super().__eq__(other)

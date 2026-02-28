@@ -7,6 +7,7 @@ from ..instance_handle import InstanceHandle
 
 class PointSetInstance(InstanceHandle[set[Point]]):
     def __init__(self, drawing_mode: Optional[DrawingMode] = None):
+        self._random_points_mode = 0
         if drawing_mode is None:
             drawing_mode = PointsMode()
         super().__init__(set(), drawing_mode, 250)
@@ -33,4 +34,7 @@ class PointSetInstance(InstanceHandle[set[Point]]):
 
     @override
     def generate_random_points(self, max_x: float, max_y: float, number: int) -> list[Point]:
-        return PointSetInstance.generate_random_points_gaussian(max_x, max_y, number)
+        if self._random_points_mode == 0:
+            return PointSetInstance.generate_random_points_gaussian(max_x, max_y, number)
+        else:
+            return PointSetInstance.generate_random_points_uniform(max_x, max_y, number)

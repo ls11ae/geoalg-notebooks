@@ -277,7 +277,6 @@ class Point:
         return Point(round(self._x, ndigits), round(self._y, ndigits))
     
 
-# TODO: move all sublcasses of point extension to own file
 class PointExtension(Point, Generic[P]):
     """Extends point by a generic data parameter. 
     
@@ -589,8 +588,8 @@ class Rectangle:
         return (point.x > self.left) and (point.x < self.right) and (point.y > self.lower) and (point.y < self.upper)
     
     def isOnBoundary(self, point : Point) -> bool:
-        return ((point.x == self.left or point.x == self.right) and point.y > self.lower and point.y < self.upper) or (
-                (point.y == self.lower or point.y == self.upper) and point.x > self.left and point.x < self.right)
+        return ((point.x == self.left or point.x == self.right) and self.lower < point.y < self.upper) or (
+                (point.y == self.lower or point.y == self.upper) and self.left < point.x < self.right)
 
     def isOutside(self, point : Point) -> bool:
         return (point.x < self.left) or (point.x > self.right) or (point.y < self.lower) or (point.y > self.upper)
@@ -604,6 +603,28 @@ class Rectangle:
             self._lower = point.y
         if point.y > self.upper:
             self._upper = point.y
+
+    def intersection(self, other: Rectangle) -> Rectangle | None:
+        if other is None:
+            return None
+        new_left = max(self._left, other._left)
+        new_right = min(self._right, other._right)
+        new_lower = max(self._lower, other._lower)
+        new_upper = min(self._upper, other._upper)
+
+        # Check if there is an actual overlap
+        if new_left < new_right and new_lower < new_upper:
+            return Rectangle(
+                Point(new_left, new_lower),
+                Point(new_right, new_upper)
+            )
+        # No intersection
+        return None
+
+    def contains(self, other : Rectangle) -> bool:
+        if other is None:
+            return False
+        return self._left < other._left and self._right > other._right and self._lower < other._lower and self._upper > other._upper
 
     def points(self) -> list[Point]:
         return [Point(self.left, self.lower), 
