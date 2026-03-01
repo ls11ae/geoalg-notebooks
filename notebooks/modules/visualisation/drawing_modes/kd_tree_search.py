@@ -14,14 +14,11 @@ from ...geometry import (
     Point
 )
 
-COLOR_SCHEME1 = [0,0,255], [255,0,0]
-
 class KDTreeSearchMode(DrawingMode):
 
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
         super().__init__(point_radius, highlight_radius, line_width)
         self._points = None
-        self._color_scheme = COLOR_SCHEME1
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
         nodes = []
@@ -38,7 +35,6 @@ class KDTreeSearchMode(DrawingMode):
                     search_area.append(point)
                 elif point.tag == 2:
                     current_search_area.append(point)
-        print(solution)
         max_index = max(nodes, key=lambda p : p.data).data
         point_heap = [None for _ in range(0, max_index + 1)]
         for point in nodes:
@@ -48,6 +44,8 @@ class KDTreeSearchMode(DrawingMode):
             drawer.main_canvas.clear()
             self._recursive_draw(drawer, 0,0, 400, 0, 400, 0)
             drawer.main_canvas.set_colour(255, 0, 0)
+            drawer.main_canvas.draw_path(search_area, self._line_width, close=True, transparent=True)
+            drawer.main_canvas.draw_path(current_search_area, self._line_width, close=True)
             drawer.main_canvas.draw_points(solution, self._point_radius)
             drawer.main_canvas.set_colour(0, 0, 255)
         self._points = None
@@ -79,9 +77,6 @@ class KDTreeSearchMode(DrawingMode):
                                      left, right, lower, cur_node.y, level + 1)
                 self._recursive_draw(drawer, rc_index,
                                      left, right, cur_node.y, upper, level + 1)
-
-    def _set_node_color(self, drawer : Drawer, tag : int):
-        drawer.main_canvas.set_colour(self._color_scheme[tag][0], self._color_scheme[tag][1], self._color_scheme[tag][2])
 
     def _draw_animation_step(self, drawer: Drawer, points: Iterable[Point]):
         self.draw(drawer, points)
