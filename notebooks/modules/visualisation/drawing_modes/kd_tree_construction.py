@@ -15,10 +15,6 @@ from ...geometry import (
 )
 
 class KDTreeConstructionMode(DrawingMode):
-    """
-    this is a very ugly fix but there just isn't another way :(
-    """
-
 
     def __init__(self, point_radius: int = DEFAULT_POINT_RADIUS, highlight_radius: int = DEFAULT_HIGHLIGHT_RADIUS, line_width: int = DEFAULT_LINE_WIDTH):
         super().__init__(point_radius, highlight_radius, line_width)

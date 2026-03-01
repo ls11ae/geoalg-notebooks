@@ -48,3 +48,6 @@ class KDTreeConstructionAnimator(AnimationObject):
 
     def points(self) -> Iterator[Point]:
         return iter(self._nodes)
+
+    def nodes(self):
+        return self._nodes

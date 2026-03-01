@@ -8,6 +8,7 @@ from .fixed_vertex_number_paths import FixedVertexNumberPathsMode
 from .illegal_edge import IllegalEdgeMode
 from .line_segment import LineSegmentsMode
 from .kd_tree_construction import KDTreeConstructionMode
+from .kd_tree_search import KDTreeSearchMode
 from .line import LineMode
 from .monotone_partitioning import MonotonePartitioningMode
 from .path import PathMode

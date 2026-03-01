@@ -584,8 +584,15 @@ class Rectangle:
 
     # -------- methods --------
 
-    def isInside(self, point : Point) -> bool:
+    def contains_point(self, point : Point) -> bool:
+        if point is None:
+            return False
         return (point.x > self.left) and (point.x < self.right) and (point.y > self.lower) and (point.y < self.upper)
+
+    def contains_rectangle(self, other : Rectangle) -> bool:
+        if other is None:
+            return False
+        return self._left <= other._left and self._right >= other._right and self._lower <= other._lower and self._upper >= other._upper
     
     def isOnBoundary(self, point : Point) -> bool:
         return ((point.x == self.left or point.x == self.right) and self.lower < point.y < self.upper) or (
@@ -621,10 +628,7 @@ class Rectangle:
         # No intersection
         return None
 
-    def contains(self, other : Rectangle) -> bool:
-        if other is None:
-            return False
-        return self._left < other._left and self._right > other._right and self._lower < other._lower and self._upper > other._upper
+
 
     def points(self) -> list[Point]:
         return [Point(self.left, self.lower), 
