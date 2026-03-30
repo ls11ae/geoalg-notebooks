@@ -31,7 +31,7 @@ class BoundingBoxAnimator(AnimationObject):
         self._updates : list[Point] = []
 
     def update(self, point : Point):
-        "Updates the boundary of the bounding box to contain the given point."
+        """Updates the boundary of the bounding box to contain the given point."""
         self._updates.append(point)
         if self._bounding_box is None:
             #append 4 points to have 4 initial corner-points

@@ -286,14 +286,14 @@ class DoublyConnectedEdgeList:
         edge_1_origin, edge_1_destination = edge_1.origin.point, edge_1.destination.point
         
         if edge_0.twin is edge_1:
-            return True
+            return True # TODO: is this correct?
         #point is left of both edges
-        case_a1 = point.orientation(edge_0_origin, edge_0_destination) == ORT.LEFT and point.orientation(edge_1_origin, edge_1_destination) == ORT.LEFT# Case A
+        case_a1 = point.orientation(edge_0_origin, edge_0_destination) == ORT.LEFT and point.orientation(edge_1_origin, edge_1_destination) == ORT.LEFT
         #point is left of the first edge and edges make a right turn
         case_a2 = point.orientation(edge_0_origin, edge_0_destination) == ORT.LEFT and edge_1_destination.orientation(edge_0_origin, edge_0_destination) == ORT.RIGHT
         #point is left of second edge and edges make a right turn
         case_b = (point.orientation(edge_1_origin, edge_1_destination) == ORT.LEFT and edge_0_origin.orientation(edge_1_origin, edge_1_destination) == ORT.RIGHT)
-        return case_a1 or case_a2 or case_b # Case C (where?)
+        return case_a1 or case_a2 or case_b
 
     def _split_face(self, edge: HalfEdge, face: Face) -> Face:
         inner_edge = edge if not edge.is_cycle_clockwise() else edge.twin

@@ -21,6 +21,18 @@ class Vertex:
             outgoing_edge = outgoing_edge.twin.next
         return outgoing_edges
 
+    def ingoing_edges(self) -> list[HalfEdge]:
+        ingoing_edges = []
+        ingoing_edge = self.edge.twin
+        if ingoing_edge.origin == self:  # single vertex
+            return []
+        ingoing_edges.append(ingoing_edge)  # at least one outgoing edge
+        ingoing_edge = ingoing_edge.next.twin
+        while ingoing_edge != self.edge.twin:
+            ingoing_edges.append(ingoing_edge)
+            ingoing_edge = ingoing_edge.next.twin
+        return ingoing_edges
+
     #outgoing and ingoing edges
     def incident_edges(self) -> list[HalfEdge]:
         incident_edges = []
