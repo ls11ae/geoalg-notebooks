@@ -1,7 +1,7 @@
 from ..core import Point, Line, LineSegment
 
 def dual_point(p : Point) -> Line:
-    return Line(Point(0,-p.y), Point(1000, 1000 * p.x -p.y))
+    return Line(Point(0,-p.y), Point(10, 10 * p.x -p.y))
 
 
 def dual_line(l : Line) -> Point:
