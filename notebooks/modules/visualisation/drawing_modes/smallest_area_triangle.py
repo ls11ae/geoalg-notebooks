@@ -1,7 +1,6 @@
 from ..drawing import DrawingMode, DEFAULT_POINT_RADIUS, DEFAULT_HIGHLIGHT_RADIUS, DEFAULT_LINE_WIDTH, Drawer
 from typing import Iterable
-from ...geometry import Point, AnimationEvent, PointList
-from ...data_structures.animation_objects import StateChangedEvent
+from ...geometry import Point, AnimationEvent, PointList, PointPair
 import time
 
 
@@ -10,51 +9,31 @@ class SmallestAreaTriangleMode(DrawingMode):
         super().__init__(point_radius, highlight_radius, line_width)
 
     def draw(self, drawer: Drawer, points: Iterable[Point]):
-        point_list = list(points)
         with drawer.main_canvas.hold():
             drawer.main_canvas.clear()
-            vertices = [point for point in point_list if isinstance(point, PointList)]
-            triangle = [point for point in point_list if not isinstance(point, PointList)]
-            for point in vertices:
-                drawer.main_canvas.draw_point(point, self._point_radius)
-                for neighbor in point.data:
-                    drawer.main_canvas.draw_path([point, neighbor], self._line_width)
-            if triangle:
-                drawer.main_canvas.set_colour(255,0,0)
-                drawer.main_canvas.draw_path(triangle, self._line_width, close = True)
-                drawer.main_canvas.set_colour(0,0,255)
+            for point in points:
+                if isinstance(point, PointPair):
+                    if point.tag == 0:
+                        drawer.main_canvas.draw_line(point, point.data, self._highlight_radius, True, True)
+                    elif point.tag == 1 or point.tag == 2:
+                        drawer.main_canvas.set_colour(255, 0, 0)
+                        drawer.main_canvas.draw_path([point, point.data], self._line_width, close=True)
+                        drawer.main_canvas.set_colour(0, 0, 255)
+                elif isinstance(point, PointList):
+                    if point.tag == 1:
+                        drawer.main_canvas.set_colour(255, 0, 0)
+                    drawer.main_canvas.draw_point(point, self._point_radius)
+                    for neighbor in point.data:
+                        drawer.main_canvas.draw_path([point, neighbor], self._line_width)
+                    drawer.main_canvas.set_colour(0, 0, 255)
+                else:
+                    if point.tag == 1:
+                        drawer.main_canvas.set_colour(255, 0, 0)
+                        drawer.main_canvas.draw_point(point, self._point_radius)
+                        drawer.main_canvas.set_colour(0, 0, 255)
+                    else:
+                        drawer.main_canvas.draw_point(point, self._point_radius)
+
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
-        for point in points:
-            # Draw point
-            drawer.main_canvas.draw_point(point, self._point_radius)
-            # Draw connections of the point
-            if isinstance(point, PointList):
-                for neighbor in point.data:
-                    drawer.main_canvas.draw_path([point, neighbor], self._line_width)
-
-
-    def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
-        dcel: list[Point] = []
-        event_iterator = iter(animation_events)
-        event = next(event_iterator, None)
-        while not isinstance(event, StateChangedEvent) and event is not None:
-            event.execute_on(dcel)
-            event = next(event_iterator, None)
-        
-        triangle = []
-        drawer.main_canvas.set_colour(255,0,0)
-        while event is not None:
-            event.execute_on(triangle)
-            with drawer.main_canvas.hold():
-                drawer.main_canvas.clear()
-                drawer.main_canvas.set_colour(0,0,255)
-                self.draw(drawer,dcel)
-                drawer.main_canvas.set_colour(255,0,0)
-                self._draw_animation_step(drawer, triangle)
-            
-            event = next(event_iterator, None)
-            time.sleep(animation_time_step)
-
-        drawer.main_canvas.set_colour(0,0,255)
-        self.draw(drawer,dcel + triangle)
+        self.draw(drawer,points)
