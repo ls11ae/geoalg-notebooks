@@ -236,7 +236,7 @@ class Point:
     def __eq__(self, other : Any) -> bool:
         if not isinstance(other, Point):
             return NotImplemented
-        return self._x == other._x and self._y == other._y
+        return self._x == other._x and self._y == other._y and self._tag == other._tag
 
     def __copy__(self) -> Point:
         return Point(self.x, self.y)

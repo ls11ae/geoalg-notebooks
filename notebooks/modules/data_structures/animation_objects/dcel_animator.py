@@ -178,24 +178,39 @@ class MinAreaTriangleAnimator(AnimationObject):
         self._animation_events.append(MultiEvent([AppendEvent(p) for p in t]))
         self._smallest_triangle = t
 
+    def highlight_vertex(self, p1 : Point):
+        self._animation_events.append(AppendEvent(Point(p1.x, p1.y, 1)))
+
+    def unhighlight_vertex(self, p1 : Point):
+        self._animation_events.append(DeleteEvent(Point(p1.x, p1.y, 1)))
+
     def highlight_edge(self, p1: Point, p2: Point):
         self._animation_events.append(AppendEvent(PointPair(p1.x, p1.y, p2, 2)))
 
     def unhighlight_edge(self, p1: Point, p2: Point):
         self._animation_events.append(DeleteEvent(PointPair(p1.x, p1.y, p2, 2)))
 
-    def animate_triangle(self, p0 : Point, p1 : Point, p2 : Point, p3 : Point):
-        area = 1 / 2 * abs(p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) + p3.x * (p1.y - p2.y))
-        p1_list = PointList(p1.x, p1.y, data=[p2,p3], tag = 1)
-        p2_list = PointList(p2.x, p2.y, data=[p3], tag = 1)
-        p3_list = PointList(p3.x, p3.y, data=[], tag = 1)
-        print([str(p) for p in [p0,p1,p2,p3]])
-        self._animation_events.append(MultiEvent([AppendEvent(p1_list), AppendEvent(p2_list), AppendEvent(p3_list), AppendEvent(p0)]))
-        #if area < self._smallest_area:
-         #   self._smallest_area = area
-          #  self._smallest_triangle = [p1_list, p2_list, p3_list]
-        #else:
-        self._animation_events.append(MultiEvent([PopEvent(),PopEvent(),PopEvent(),PopEvent()]))
+    def animate_triangle(self, p1 : Point, p2 : Point, p3 : Point):
+
+        draw_p1 = Point(min(max(p1.x, -10000), 10000), min(max(p1.y, -10000), 10000))
+        draw_p2 = Point(min(max(p2.x, -10000), 10000), min(max(p2.y, -10000), 10000))
+        draw_p3 = Point(min(max(p3.x, -10000), 10000), min(max(p3.y, -10000), 10000))
+        area = 1 / 2 * abs(draw_p1.x * (draw_p2.y - draw_p3.y) + draw_p2.x * (draw_p3.y - draw_p1.y) + p3.x * (draw_p1.y - draw_p2.y))
+        p1_list = PointList(draw_p1.x, draw_p1.y, data=[draw_p2,draw_p3], tag = 1)
+        p2_list = PointList(draw_p2.x, draw_p2.y, data=[draw_p3], tag = 1)
+        p3_list = PointList(draw_p3.x, draw_p3.y, data=[], tag = 1)
+        self._animation_events.append(MultiEvent([AppendEvent(p1_list), AppendEvent(p2_list), AppendEvent(p3_list)]))
+        if len(self._smallest_triangle) == 0:
+            self._smallest_area = area
+            self._smallest_triangle = [p1_list, p2_list, p3_list]
+        elif area < self._smallest_area:
+            self._animation_events.append(MultiEvent([DeleteEvent(self._smallest_triangle[0]),
+                                                      DeleteEvent(self._smallest_triangle[1]),
+                                                      DeleteEvent(self._smallest_triangle[2])]))
+            self._smallest_area = area
+            self._smallest_triangle = [p1_list, p2_list, p3_list]
+        else:
+            self._animation_events.append(MultiEvent([PopEvent(),PopEvent(),PopEvent()]))
 
     @property
     def smallest_triangle(self) -> list[Point]:
