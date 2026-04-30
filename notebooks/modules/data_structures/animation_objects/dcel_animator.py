@@ -1,6 +1,7 @@
 from __future__ import annotations
+
 from ...data_structures import DoublyConnectedEdgeList, Vertex, HalfEdge, Face
-from ...geometry import Rectangle, Point, PointList, Line, AnimationObject, AnimationEvent, AppendEvent, PopEvent, DeleteEvent, MultiEvent, PointPair
+from ...geometry import PointNode, Rectangle, Point, PointList, Line, AnimationObject, AnimationEvent, AppendEvent, PopEvent, DeleteEvent, MultiEvent, PointPair
 from typing import Iterator
 from itertools import chain
 
@@ -179,10 +180,10 @@ class MinAreaTriangleAnimator(AnimationObject):
         self._smallest_triangle = t
 
     def highlight_vertex(self, p1 : Point):
-        self._animation_events.append(AppendEvent(Point(p1.x, p1.y, 1)))
+        self._animation_events.append(AppendEvent(PointNode(p1.x, p1.y, data = (0,0))))
 
     def unhighlight_vertex(self, p1 : Point):
-        self._animation_events.append(DeleteEvent(Point(p1.x, p1.y, 1)))
+        self._animation_events.append(DeleteEvent(PointNode(p1.x, p1.y, data = (0,0))))
 
     def highlight_edge(self, p1: Point, p2: Point):
         self._animation_events.append(AppendEvent(PointPair(p1.x, p1.y, p2, 2)))

@@ -17,7 +17,6 @@ class TriangleInstance(InstanceHandle[Triangulation]):
         vertex = self._instance.insert_point(point)
         if vertex is None:
             return None
-        print(str(len(vertex.outgoing_edges())))
         return PointList(vertex.point.x, vertex.point.y, [e.destination.point for e in vertex.outgoing_edges()], 0)
 
     @override

@@ -1,6 +1,7 @@
 from ..drawing import DrawingMode, DEFAULT_POINT_RADIUS, DEFAULT_HIGHLIGHT_RADIUS, DEFAULT_LINE_WIDTH, Drawer
 from typing import Iterable
-from ...geometry import Point, AnimationEvent, PointList, PointPair
+
+from ...geometry import Point, AnimationEvent, PointList, PointPair, PointNode
 import time
 
 
@@ -25,6 +26,10 @@ class SmallestAreaTriangleMode(DrawingMode):
                     drawer.main_canvas.draw_point(point, self._point_radius)
                     for neighbor in point.data:
                         drawer.main_canvas.draw_path([point, neighbor], self._line_width)
+                    drawer.main_canvas.set_colour(0, 0, 255)
+                elif isinstance(point, PointNode):
+                    drawer.main_canvas.set_colour(255, 0, 0)
+                    drawer.main_canvas.draw_point(point, self._point_radius)
                     drawer.main_canvas.set_colour(0, 0, 255)
                 else:
                     if point.tag == 1:

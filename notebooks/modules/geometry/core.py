@@ -122,7 +122,8 @@ class Point:
         """
         if source == target:
             raise ValueError("Source and target need to be two different points.")
-
+        print(source.tag)
+        print(target.tag)
         self_direction = self - source
         target_direction = target - source
         signed_area = self_direction.perp_dot(target_direction)
@@ -236,7 +237,7 @@ class Point:
     def __eq__(self, other : Any) -> bool:
         if not isinstance(other, Point):
             return NotImplemented
-        return self._x == other._x and self._y == other._y and self._tag == other._tag
+        return self._x == other._x and self._y == other._y
 
     def __copy__(self) -> Point:
         return Point(self.x, self.y)
