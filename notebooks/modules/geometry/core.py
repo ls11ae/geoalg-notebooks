@@ -122,8 +122,6 @@ class Point:
         """
         if source == target:
             raise ValueError("Source and target need to be two different points.")
-        print(source.tag)
-        print(target.tag)
         self_direction = self - source
         target_direction = target - source
         signed_area = self_direction.perp_dot(target_direction)
