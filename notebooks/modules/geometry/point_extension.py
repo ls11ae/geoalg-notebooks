@@ -1,6 +1,12 @@
 from __future__ import annotations
+
+from copy import deepcopy
+
+from jedi.debug import enable_warning
+
 from .core import PointExtension, Point
-from typing import Any, SupportsFloat
+from typing import Any, SupportsFloat, Optional, TypeVar
+
 
 class PointList(PointExtension[list[Point]]):
     """A point with an additional list of points."""
@@ -39,6 +45,44 @@ class PointNode(PointExtension[tuple[int,int]]):
 
     def __eq__(self, other: Any) -> bool:
         return super().__eq__(other)
+
+class PointTree(PointExtension):
+    """A binary tree but points"""
+
+    def __init__(self, x: SupportsFloat, y: SupportsFloat, parent : Optional[PointTree], data):
+        super().__init__(x, y, data)
+        self._left : Optional[PointTree] = None
+        self._right : Optional[PointTree] = None
+        self._parent : Optional[PointTree] = parent
+
+    def __eq__(self, other: Any) -> bool:
+        return super().__eq__(other)
+
+    @property
+    def left(self) -> Optional[PointTree]:
+        return self._left
+
+    @property
+    def right(self) -> Optional[PointTree]:
+        return self._right
+
+    @property
+    def parent(self) -> Optional[PointTree]:
+        return self._parent
+
+    @left.setter
+    def left(self, new_left : PointTree):
+        self._left = new_left
+        new_left._parent = self
+
+    @right.setter
+    def right(self, new_right: PointTree):
+        self._right = new_right
+        new_right._parent = self
+
+    @parent.setter
+    def parent(self, new_parent : PointTree):
+        self._parent = new_parent
 
 '''
 references a point in a list by storing the list and the position

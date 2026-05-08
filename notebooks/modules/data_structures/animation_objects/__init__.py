@@ -5,4 +5,5 @@ from .edge_animator import *
 from .kd_tree_search_animator import KDTreeSearchAnimator
 from .kd_tree_construction_animator import KDTreeConstructionAnimator
 from .range_search_animator import *
+from .range_tree_animator import *
 from .voronoi_animator import *

@@ -117,3 +117,15 @@ class  DeleteEvent(AnimationEvent):
 class ClearEvent(AnimationEvent):
     def execute_on(self, points: list[Point]):
         points.clear()
+
+class SetAtEvent(AnimationEvent):
+    def __init__(self, index : int, point : Point):
+        super().__init__()
+        self._index = index
+        self._point = point
+
+    def execute_on(self, data : list[Point]):
+        if self._index >= len(data):
+            data.append(self._point)
+        else:
+            data[self._index] = self._point

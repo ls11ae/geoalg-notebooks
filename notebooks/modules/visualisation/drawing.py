@@ -190,6 +190,8 @@ class DrawingMode(ABC):
         pass
 
     def animate(self, drawer: Drawer, animation_events: Iterable[AnimationEvent], animation_time_step: float):
+        events = list(animation_events)
+        animation_events = iter(events)
         points: list[Point] = []
         event_iterator = iter(animation_events)
         event = next(event_iterator, None)

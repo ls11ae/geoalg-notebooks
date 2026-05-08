@@ -46,6 +46,8 @@ class RangeSearchAnimator(AnimationObject):
         self._animation_events.append((SetEvent((2**self._cur_level) + self._cur_node - 1,
                                                 Point(self._est[self._cur_level][self._cur_node][0], self._cur_level, tag))))
 
+
+
     def points(self) -> Iterator[Point]:
         points = []
         cur_level = 0
