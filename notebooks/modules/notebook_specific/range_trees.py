@@ -23,6 +23,7 @@ def y_leaves(node : YNode, rta : RangeTreeAnimator) -> list[Point]:
         rta.tag_cur_y(1)
         return [node.point]
     else:
+        rta.tag_cur_y(2)
         rta.go_to_left_child_y()
         left_leaves = y_leaves(node.left, rta)
         rta.go_to_parent_y()
@@ -35,7 +36,7 @@ def y_less_or_equal(node : YNode, upper_bound : int, rta : RangeTreeAnimator) ->
     if node.point.y <= upper_bound:
         #less than search term
         if node.left is not None and node.right is not None:
-            rta.tag_cur_y(1)
+            rta.tag_cur_y(2)
             rta.go_to_left_child_y()
             left_result = y_leaves(node.left, rta)
             rta.go_to_parent_y()
@@ -44,12 +45,12 @@ def y_less_or_equal(node : YNode, upper_bound : int, rta : RangeTreeAnimator) ->
             rta.go_to_parent_y()
             return left_result + right_result
         else:
-            rta.tag_cur_y(2)
+            rta.tag_cur_y(1)
             return [node.point]
     else:
         #more than search term
         if not node.left is None:
-            rta.tag_cur_y(1)
+            rta.tag_cur_y(2)
             rta.go_to_left_child_y()
             left_result = y_less_or_equal(node.left, upper_bound, rta)
             rta.go_to_parent_y()
@@ -62,7 +63,7 @@ def y_greater_or_equal(node : YNode, lower_bound : int, rta : RangeTreeAnimator)
     if node.point.y >= lower_bound:
         #more than search term
         if node.left is not None and node.right is not None:
-            rta.tag_cur_y(1)
+            rta.tag_cur_y(2)
             rta.go_to_left_child_y()
             left_result = y_greater_or_equal(node.left, lower_bound, rta)
             rta.go_to_parent_y()
@@ -71,12 +72,12 @@ def y_greater_or_equal(node : YNode, lower_bound : int, rta : RangeTreeAnimator)
             rta.go_to_parent_y()
             return left_result + right_result
         else:
-            rta.tag_cur_y(2)
+            rta.tag_cur_y(1)
             return [node.point]
     else:
         #less than search term
         if node.right is not None:
-            rta.tag_cur_y(1)
+            rta.tag_cur_y(2)
             rta.go_to_right_child_y()
             right_result = y_greater_or_equal(node.right, lower_bound, rta)
             rta.go_to_parent_y()
@@ -85,23 +86,23 @@ def y_greater_or_equal(node : YNode, lower_bound : int, rta : RangeTreeAnimator)
             rta.tag_cur_y(3)
             return []
 
-def y_find_splitting_node(node : YNode, lower_bound : int, upper_bound : int, rta : RangeTreeAnimator) -> YNode:
+def y_find_splitting_node(node : YNode, lower_bound : int, upper_bound : int, rta : RangeTreeAnimator) -> Optional[YNode]:
     if node.point.y > upper_bound:
         if node.left is None:
-            rta.tag_cur_y(3)
-            return node
+            rta.tag_cur_y(4)
+            return None
         else:
-            rta.tag_cur_y(1)
+            rta.tag_cur_y(2)
             rta.go_to_left_child_y()
             split_node = y_find_splitting_node(node.left, lower_bound,upper_bound, rta)
             rta.go_to_parent_y()
             return split_node
     elif node.point.y < lower_bound:
         if node.right is None:
-            rta.tag_cur_y(3)
-            return node
+            rta.tag_cur_y(4)
+            return None
         else:
-            rta.tag_cur_y(1)
+            rta.tag_cur_y(2)
             rta.go_to_right_child_y()
             split_node = y_find_splitting_node(node.right, lower_bound,upper_bound, rta)
             rta.go_to_parent_y()
@@ -115,9 +116,10 @@ def y_range_search(node: YNode, lower_bound: int, upper_bound: int, rta: RangeTr
     if splitting_node is None:
         return []
     if splitting_node.left is None and splitting_node.right is None:
+        rta.tag_cur_y(1)
         return [splitting_node.point]
     else:
-        rta.tag_cur_y(1)
+        rta.tag_cur_y(2)
         result = []
         if splitting_node.left is not None:
             rta.go_to_left_child_y()
@@ -129,13 +131,13 @@ def y_range_search(node: YNode, lower_bound: int, upper_bound: int, rta: RangeTr
             rta.go_to_parent_y()
         return result
 
-def x_find_splitting_node(node : XNode, lower_bound : int, upper_bound : int, rta : RangeTreeAnimator) -> XNode:
+def x_find_splitting_node(node : XNode, lower_bound : int, upper_bound : int, rta : RangeTreeAnimator) -> Optional[XNode]:
     if node.point.x > upper_bound:
         if node.left is None:
             rta.tag_cur_x(3)
-            return node
+            return None
         else:
-            rta.tag_cur_x(1)
+            rta.tag_cur_x(2)
             rta.go_to_left_child_x()
             split_node = x_find_splitting_node(node.left, lower_bound,upper_bound, rta)
             rta.go_to_parent_x()
@@ -143,13 +145,13 @@ def x_find_splitting_node(node : XNode, lower_bound : int, upper_bound : int, rt
     elif node.point.x < lower_bound:
         if node.right is None:
             rta.tag_cur_x(3)
-            return node
+            return None
         else:
-            rta.tag_cur_x(1)
+            rta.tag_cur_x(2)
             rta.go_to_right_child_x()
             split_node = x_find_splitting_node(node.right, lower_bound,upper_bound, rta)
             rta.go_to_parent_x()
             return split_node
     else:
-        rta.tag_cur_x(2)
+        rta.tag_cur_x(1)
         return node

@@ -627,7 +627,24 @@ class Rectangle:
         # No intersection
         return None
 
+    def combine(self, other : Rectangle) -> Rectangle:
+        if other is None:
+            return self
+        new_left = min(self._left, other._left)
+        new_right = max(self._right, other._right)
+        new_lower = min(self._lower, other._lower)
+        new_upper = max(self._upper, other._upper)
+        return Rectangle(Point(new_left,new_lower), Point(new_right, new_upper))
 
+    def split_x(self, x : float) -> Optional[tuple[Rectangle, Rectangle]]:
+        if self._left >= x or self._right <= x:
+            return None
+        return Rectangle(Point(self._left, self._lower), Point(x, self._upper)), Rectangle(Point(x, self._lower), Point(self._right, self._upper))
+
+    def split_y(self, y : float) -> Optional[tuple[Rectangle, Rectangle]]:
+        if self._lower >= y or self._upper <= y:
+            return None
+        return Rectangle(Point(self._left, self._lower), Point(self._right, y)), Rectangle(Point(self._left, y), Point(self._right, self._upper))
 
     def points(self) -> list[Point]:
         return [Point(self.left, self.lower), 
