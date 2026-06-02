@@ -1,11 +1,7 @@
 from __future__ import annotations
-
-from copy import deepcopy
-
-from jedi.debug import enable_warning
-
+from collections import deque
 from .core import PointExtension, Point
-from typing import Any, SupportsFloat, Optional, TypeVar
+from typing import Any, SupportsFloat, Optional
 
 
 class PointList(PointExtension[list[Point]]):
@@ -83,6 +79,18 @@ class PointTree(PointExtension):
     @parent.setter
     def parent(self, new_parent : PointTree):
         self._parent = new_parent
+
+    def level_order(self):
+        if self is None:
+            return
+        queue = deque([self])
+        while queue:
+            node = queue.popleft()
+            yield node
+            if node._left is not None:
+                queue.append(node._left)
+            if node._right is not None:
+                queue.append(node._right)
 
 '''
 references a point in a list by storing the list and the position

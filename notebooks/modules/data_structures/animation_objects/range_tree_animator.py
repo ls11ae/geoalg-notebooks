@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from ...geometry.animation_base import AnimationObject, AnimationEvent, AppendEvent, MultiEvent, SetAtEvent
-from ...geometry import Point, PointList, Rectangle
+from ...geometry import Point, PointList
 from ...geometry import PointTree
-from typing import Iterator, Optional
+from typing import Iterator
 from enum import Enum
-from ...data_structures import EST
 
 
 class TreeDirection(Enum):
@@ -29,8 +28,6 @@ class TreePath:
     def parent(self):
         if len(self.path) > 0 and self.path[-1] is not TreeDirection.PARENT:
             self.path.pop()
-        else:
-            self.path.append(TreeDirection.PARENT)
 
     def copy(self) -> TreePath:
         copy = TreePath()
@@ -66,7 +63,7 @@ class RangeTreeAnimator(AnimationObject):
         if self._saved_x is None:
             return
         self._cur_x = self._saved_x
-        self._x_path = self._saved_x_path
+        self._x_path = self._saved_x_path.copy()
 
     def set_cur_x(self, point : Point, tag : int):
         self._cur_x.x = point.x
@@ -77,6 +74,9 @@ class RangeTreeAnimator(AnimationObject):
     def tag_cur_x(self, tag : int):
         self._cur_x.tag = tag
         self._animation_events.append(SetXNodeEvent(self._x_path.path.copy(), Point(self._cur_x.x, self._cur_x.y, tag)))
+        if tag == 1:
+            self._result.append(Point(self._cur_x.x, self._cur_x.y))
+            self._animation_events.append(AppendEvent(Point(self._cur_x.x, self._cur_x.y)))
 
     def go_to_left_child_x(self):
         if self._cur_x.left is None:
@@ -112,12 +112,14 @@ class RangeTreeAnimator(AnimationObject):
         self._cur_y.x = point.x
         self._cur_y.y = point.y
         self._cur_y.tag = tag
-        if animate:
-            self._animation_events.append(SetYNodeEvent(self._x_path.path.copy(),self._y_path.path.copy(), Point(point.x, point.y, tag)))
+        self._animation_events.append(SetYNodeEvent(self._x_path.path.copy(),self._y_path.path.copy(), Point(point.x, point.y, tag)))
 
     def tag_cur_y(self, tag : int):
         self._cur_y.tag = tag
         self._animation_events.append(SetYNodeEvent(self._x_path.path.copy(), self._y_path.path.copy(), Point(self._cur_y.x, self._cur_y.y, tag)))
+        if tag == 1:
+            self._result.append(Point(self._cur_y.x, self._cur_y.y))
+            self._animation_events.append(AppendEvent(Point(self._cur_y.x, self._cur_y.y)))
         
     def go_to_left_child_y(self):
         if self._cur_y.left is None:
@@ -143,8 +145,8 @@ class RangeTreeAnimator(AnimationObject):
         self._y_path.reset()
 
     def start_search_mode(self, lower_x : int, upper_x : int, lower_y : int, upper_y : int):
-        self._animation_events.clear()
-        self._animation_events.append(AppendEvent(self._root))
+        merged_event = MultiEvent(self._animation_events)
+        self._animation_events = [merged_event]
         p_ll = PointList(lower_x, lower_y, [Point(lower_x, upper_y), Point(upper_x, lower_y)])
         p_ur = PointList(upper_x, upper_y, [Point(lower_x, upper_y), Point(upper_x, lower_y)])
         self._search_area = [p_ll, p_ur]
@@ -152,9 +154,14 @@ class RangeTreeAnimator(AnimationObject):
 
     def set_search_result(self, points : list[Point]):
         self._result = points
+        self._animation_events.append(MultiEvent([AppendEvent(point) for point in points]))
 
     def points(self) -> Iterator[Point]:
         return iter([self._root] + self._search_area + self._result)
+
+    def reset_y(self):
+        self._cur_y = self._cur_x.data
+        self._y_path.reset()
 
 
 class SetXNodeEvent(AnimationEvent):
@@ -184,7 +191,7 @@ class SetXNodeEvent(AnimationEvent):
         target = get_node(root, self._path[:-1])
         if self._path[-1] == TreeDirection.LEFT:
             if target.left is None:
-                target.left = PointTree(self._node.x, self._node.y, None, PointTree(0,0,None,None))
+                target.left = PointTree(self._node.x, self._node.y, target, PointTree(0,0,None,None))
                 target.left.tag = self._node.tag
                 target.left.data.tag = -1
             else:
@@ -193,7 +200,7 @@ class SetXNodeEvent(AnimationEvent):
                 target.left.tag = self._node.tag
         elif self._path[-1] == TreeDirection.RIGHT:
             if target.right is None:
-                target.right = PointTree(self._node.x, self._node.y, None, PointTree(0,0,None,None))
+                target.right = PointTree(self._node.x, self._node.y, target, PointTree(0,0,None,None))
                 target.right.tag = self._node.tag
                 target.right.data.tag = -1
             else:
@@ -225,7 +232,7 @@ class SetYNodeEvent(AnimationEvent):
         y_target = get_node(y_root, self._y_path[:-1])
         if self._y_path[-1] == TreeDirection.LEFT:
             if y_target.left is None:
-                y_target.left = PointTree(self._node.x, self._node.y, None, None)
+                y_target.left = PointTree(self._node.x, self._node.y, y_target, None)
                 y_target.left.tag = self._node.tag
             else:
                 y_target.left.x = self._node.x
@@ -233,7 +240,7 @@ class SetYNodeEvent(AnimationEvent):
                 y_target.left.tag = self._node.tag
         elif self._y_path[-1] == TreeDirection.RIGHT:
             if y_target.right is None:
-                y_target.right = PointTree(self._node.x, self._node.y, None, None)
+                y_target.right = PointTree(self._node.x, self._node.y, y_target, None)
                 y_target.right.tag = self._node.tag
             else:
                 y_target.right.x = self._node.x

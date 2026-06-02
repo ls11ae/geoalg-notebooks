@@ -34,7 +34,7 @@ class RangeTreeMode(DrawingMode):
             for point in points:
                 if isinstance(point, PointTree):
                     self._drawn_lines = []
-                    self.draw_x_tree(point, 1, drawer)
+                    self.draw_x_tree(point, drawer)
                 elif isinstance(point, PointList):
                     # search area box
                     drawer.front_canvas.set_colour(255, 0, 0)
@@ -47,7 +47,7 @@ class RangeTreeMode(DrawingMode):
                     drawer.front_canvas.draw_point(point, self._point_radius)
                     drawer.front_canvas.set_colour(0, 0, 255)
 
-    def draw_x_tree(self, tree : PointTree, lw_factor : int, drawer: Drawer):
+    def draw_x_tree(self, tree : PointTree,drawer: Drawer):
         if tree is None or tree.tag == -1 or tree.x in self._drawn_lines:
             return
         if tree.tag == 0:
@@ -63,8 +63,8 @@ class RangeTreeMode(DrawingMode):
         drawer.back_canvas.set_colour(0, 0, 255)
         self.draw_y_tree_points(tree.data, tree.x, drawer)
 
-        self.draw_x_tree(tree.left, lw_factor + 1, drawer)#left
-        self.draw_x_tree(tree.right, lw_factor + 1, drawer)#right
+        self.draw_x_tree(tree.left, drawer)#left
+        self.draw_x_tree(tree.right, drawer)#right
 
     def draw_y_tree_points(self, tree : PointTree, x : float, drawer: Drawer):
         if tree is None or tree.tag == -1:
@@ -77,19 +77,11 @@ class RangeTreeMode(DrawingMode):
             drawer.main_canvas.set_colour(0, 255, 255)
         elif tree.tag == 3:
             drawer.main_canvas.set_colour(255, 0, 0)
-        #print(tree)
         drawer.main_canvas.draw_point(Point(x, tree.y), self._point_radius / 2)
         drawer.main_canvas.set_colour(255, 165, 0)
 
         self.draw_y_tree_points(tree.left, x, drawer)
         self.draw_y_tree_points(tree.right, x, drawer)
-
-    def draw_y_tree_lines(self, tree : PointTree, x : float, lw_factor : int, drawer: Drawer):
-        if tree is None or tree.tag == -1:
-            return
-        drawer.main_canvas.draw_line(Point(0, tree.y),Point(400, tree.y), self._point_radius / lw_factor)
-        self.draw_y_tree_lines(tree.left, x, lw_factor,drawer)
-        self.draw_y_tree_lines(tree.right, x, lw_factor,drawer)
 
     def _draw_animation_step(self, drawer: Drawer, points: list[Point]):
         self.draw(drawer, points)
