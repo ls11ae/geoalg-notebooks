@@ -10,3 +10,4 @@ from .triangle_tree import Triangulation
 from .binary_trees import *
 
 from .animation_objects import *
+from .quadtree import Quadtree

@@ -1,5 +1,6 @@
 from .binary_tree import BinaryTreeInstance
 from .dcel import DCELInstance
+from .gridPoints import GridPointInstance
 from .line_segment_set import LineSegmentSetInstance
 from .line_set import LineSetInstance
 from .point_location import PointLocationInstance

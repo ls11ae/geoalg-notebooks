@@ -15,6 +15,7 @@ from .path import PathMode
 from .point_location import PointLocationMode
 from .points import PointsMode
 from .polygon import PolygonMode
+from .quad_tree import QuadTreeMode
 from .range_search import RangeSearchMode
 from .range_tree import RangeTreeMode
 from .smallest_area_triangle import SmallestAreaTriangleMode
